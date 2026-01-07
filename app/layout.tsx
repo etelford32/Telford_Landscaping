@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
+import { AuthProvider } from "@/lib/authContext";
 
 export const metadata: Metadata = {
   title: "Telford Landscapes | Professional Landscaping in Auburn, Roseville & Granite Bay",
@@ -24,11 +23,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <Navigation />
-        <main className="min-h-screen">
+        <AuthProvider>
           {children}
-        </main>
-        <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -123,31 +123,33 @@ export default function DemoOverlay({ onClose }: DemoOverlayProps) {
             </div>
 
             <div className="space-y-3">
-              <button
-                disabled
-                className="w-full bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold cursor-not-allowed"
-              >
-                Join Waitlist (Coming Soon)
-              </button>
               <Link
-                href="#contact"
-                onClick={() => setShowSubscribePrompt(false)}
+                href="/signup"
                 className="block w-full bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors text-center"
               >
-                Contact Us for Custom Design
+                Start Designing Free →
+              </Link>
+              <Link
+                href="/login"
+                className="block w-full bg-white border-2 border-primary-600 text-primary-600 px-6 py-3 rounded-lg font-semibold hover:bg-primary-50 transition-colors text-center"
+              >
+                Already have an account? Sign In
               </Link>
             </div>
           </div>
         </div>
       )}
 
-      {/* Bottom Banner */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary-900 to-earth-800 text-white rounded-full px-6 py-3 shadow-2xl z-10">
+      {/* Bottom Banner - CTA */}
+      <Link
+        href="/signup"
+        className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-full px-6 py-3 shadow-2xl z-10 transition-all hover:scale-105 hover:shadow-3xl"
+      >
         <p className="text-sm font-semibold flex items-center gap-2">
           <Sparkles className="w-4 h-4" />
-          <span>Interactive 3D Demo - Try Telford Landscapes PRO</span>
+          <span>Start Designing Your Landscape - Free →</span>
         </p>
-      </div>
+      </Link>
     </>
   );
 }
