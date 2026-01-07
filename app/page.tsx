@@ -15,55 +15,55 @@ import HeroCanvas from "@/components/HeroCanvas";
 export default function Home() {
   return (
     <>
-      {/* Hero Section with Interactive Canvas */}
-      <section className="relative bg-gradient-to-br from-primary-900 via-primary-800 to-earth-800 text-white overflow-hidden">
-        {/* Hero Canvas - Customizable for future interactive visuals */}
+      {/* Hero Section with Interactive 3D Demo */}
+      <section className="relative bg-gradient-to-br from-primary-900 via-primary-800 to-earth-800 text-white overflow-hidden h-[calc(100vh-5rem)] min-h-[600px]">
+        {/* Interactive 3D Landscape Scene */}
         <HeroCanvas />
 
-        {/* Optional overlay pattern */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjAzIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40 pointer-events-none"></div>
+        {/* Content Overlay */}
+        <div className="relative h-full flex flex-col justify-center z-10 pointer-events-none">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 drop-shadow-2xl">
+                Where Technology Meets Nature
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto drop-shadow-lg">
+                Professional landscaping and handyman services transforming outdoor spaces in Auburn, Roseville, Granite Bay, Lincoln, and Loomis
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pointer-events-auto">
+                <Link
+                  href="#contact"
+                  className="bg-white text-primary-900 px-8 py-4 rounded-lg font-semibold hover:bg-primary-50 transition-all shadow-xl hover:shadow-2xl flex items-center gap-2 text-lg"
+                >
+                  Get Free Consultation
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link
+                  href="/portfolio"
+                  className="bg-white/10 backdrop-blur-sm border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all shadow-xl text-lg"
+                >
+                  View Our Work
+                </Link>
+              </div>
+            </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
-          <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-6">
-              Where Technology Meets Nature
-            </h1>
-            <p className="text-xl sm:text-2xl text-primary-100 mb-8 max-w-3xl mx-auto">
-              Professional landscaping and handyman services transforming outdoor spaces in Auburn, Roseville, Granite Bay, Lincoln, and Loomis
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link
-                href="#contact"
-                className="bg-white text-primary-900 px-8 py-4 rounded-lg font-semibold hover:bg-primary-50 transition-colors flex items-center gap-2 text-lg"
-              >
-                Get Free Consultation
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link
-                href="/portfolio"
-                className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition-colors text-lg"
-              >
-                View Our Work
-              </Link>
-            </div>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="flex flex-col items-center">
-              <CheckCircle2 className="w-12 h-12 text-primary-300 mb-3" />
-              <h3 className="font-semibold text-lg">Licensed Business</h3>
-              <p className="text-primary-200 text-sm">Telford Projects LLC</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <Star className="w-12 h-12 text-primary-300 mb-3" />
-              <h3 className="font-semibold text-lg">Quality Guaranteed</h3>
-              <p className="text-primary-200 text-sm">Contractor License Pending</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <MapPin className="w-12 h-12 text-primary-300 mb-3" />
-              <h3 className="font-semibold text-lg">Local Experts</h3>
-              <p className="text-primary-200 text-sm">Serving Greater Sacramento Area</p>
+            {/* Trust Indicators */}
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+                <CheckCircle2 className="w-10 h-10 text-white mb-2" />
+                <h3 className="font-semibold text-base">Licensed Business</h3>
+                <p className="text-white/80 text-sm">Telford Projects LLC</p>
+              </div>
+              <div className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+                <Star className="w-10 h-10 text-white mb-2" />
+                <h3 className="font-semibold text-base">Quality Guaranteed</h3>
+                <p className="text-white/80 text-sm">Contractor License Pending</p>
+              </div>
+              <div className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-xl p-4 shadow-lg">
+                <MapPin className="w-10 h-10 text-white mb-2" />
+                <h3 className="font-semibold text-base">Local Experts</h3>
+                <p className="text-white/80 text-sm">Greater Sacramento Area</p>
+              </div>
             </div>
           </div>
         </div>
