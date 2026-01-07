@@ -183,53 +183,126 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Coming Soon - PRO Features */}
-      <section className="py-20 bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="inline-block bg-primary-600 text-white px-4 py-2 rounded-full text-sm font-semibold mb-6">
-              COMING SOON
+      {/* World's First Growth Simulation Feature */}
+      <section className="py-20 bg-gradient-to-br from-primary-900 to-primary-800 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-10 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-primary-300 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-12">
+            <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 px-6 py-2 rounded-full text-sm font-bold mb-6 animate-pulse">
+              🌟 WORLD'S FIRST
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              Telford Landscapes PRO
+            <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+              Time Travel for Your Landscape
             </h2>
-            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              Revolutionary 3D landscape design tools - Design your dream yard with cutting-edge technology
+            <p className="text-xl text-white/90 mb-4 max-w-3xl mx-auto">
+              See your plants grow from year 1 to year 30 in real-time 3D
             </p>
+            <p className="text-lg text-white/80 max-w-2xl mx-auto">
+              Our revolutionary growth simulation technology lets you visualize exactly how your landscape will evolve over decades—before you plant a single seed.
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-5xl mx-auto">
-              <div className="text-center">
-                <div className="bg-primary-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">📱</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-5xl mx-auto">
+            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
+              <div className="text-4xl mb-4">⏱️</div>
+              <h3 className="font-bold text-xl mb-2">30-Year Simulation</h3>
+              <p className="text-white/80">Watch your plants mature from saplings to full-grown specimens with a simple slider</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
+              <div className="text-4xl mb-4">🎯</div>
+              <h3 className="font-bold text-xl mb-2">Drag & Drop Design</h3>
+              <p className="text-white/80">Place, rotate, and arrange plants in an intuitive 3D workspace with snap-to-grid precision</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
+              <div className="text-4xl mb-4">🌿</div>
+              <h3 className="font-bold text-xl mb-2">Native Plant Library</h3>
+              <p className="text-white/80">Start with premium California natives like Japanese Maple, Sawara Cypress, and Atlas Cedar</p>
+            </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link
+              href="/app"
+              className="inline-block bg-white text-primary-900 px-10 py-5 rounded-xl font-bold hover:bg-primary-50 transition-all shadow-2xl hover:shadow-3xl hover:scale-105 text-lg"
+            >
+              Try the Design Tool Now →
+            </Link>
+            <p className="mt-4 text-white/70">Free to explore • PRO features coming soon at $15/month</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Professional Services */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              Professional Installation Available
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Design your dream landscape with our 3D tool, then let our expert team bring it to life
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl border-2 border-primary-200 hover:shadow-xl transition-shadow">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="bg-primary-600 p-3 rounded-full">
+                  <span className="text-2xl">🎨</span>
                 </div>
-                <h3 className="font-semibold text-lg mb-2">iPhone 3D Mapping</h3>
-                <p className="text-gray-400">Use your iPhone to capture accurate 3D maps of your yard</p>
+                <h3 className="text-2xl font-bold text-gray-900">Design Phase</h3>
               </div>
-              <div className="text-center">
-                <div className="bg-primary-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🌿</span>
-                </div>
-                <h3 className="font-semibold text-lg mb-2">3D Plant Library</h3>
-                <p className="text-gray-400">Browse native California plants in stunning 3D detail</p>
-              </div>
-              <div className="text-center">
-                <div className="bg-primary-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🎨</span>
-                </div>
-                <h3 className="font-semibold text-lg mb-2">Design & Visualize</h3>
-                <p className="text-gray-400">Create and visualize your landscape before installation</p>
-              </div>
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <span>Use our free 3D design tool</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <span>Visualize growth over 30 years</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <span>Save and share your designs</span>
+                </li>
+              </ul>
             </div>
 
-            <div className="mt-12">
-              <p className="text-2xl font-semibold mb-4">Just $15/month</p>
-              <button
-                disabled
-                className="bg-gray-700 text-gray-400 px-8 py-4 rounded-lg font-semibold cursor-not-allowed"
-              >
-                Launching Soon - Stay Tuned
-              </button>
+            <div className="bg-gradient-to-br from-earth-50 to-white p-8 rounded-xl border-2 border-earth-200 hover:shadow-xl transition-shadow">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="bg-earth-600 p-3 rounded-full">
+                  <span className="text-2xl">🔨</span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Installation Phase</h3>
+              </div>
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
+                  <span>Share design for instant quote</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
+                  <span>Professional installation team</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
+                  <span>Licensed & insured service</span>
+                </li>
+              </ul>
             </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link
+              href="#contact"
+              className="inline-block bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Request Professional Installation Quote
+            </Link>
           </div>
         </div>
       </section>
