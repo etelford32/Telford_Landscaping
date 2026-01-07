@@ -11,12 +11,14 @@ A modern landscape design and service platform for Telford Projects LLC, featuri
 
 ## Current Features (Phase 1)
 
-- SEO-optimized landing page
+- SEO-optimized landing page with interactive hero canvas
 - Professional portfolio showcase
-- Service area highlights
+- Service area highlights (Auburn, Roseville, Granite Bay, Lincoln, Loomis)
 - Contact form for consultations
 - Responsive design for all devices
 - Fast, modern web application
+- Animated hero canvas (customizable for future interactive visuals)
+- Ready for deployment to Vercel
 
 ## Planned Features
 
@@ -72,21 +74,40 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
+## Deployment
+
+**Ready to deploy!** See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy to Vercel
+
+```bash
+# Option 1: CLI
+vercel --prod
+
+# Option 2: GitHub Integration (Recommended)
+# Push to GitHub and import to Vercel dashboard
+# Automatic deployments on every push!
+```
+
 ## Project Structure
 
 ```
 Telford_Landscaping/
 ├── app/
 │   ├── layout.tsx          # Root layout with navigation
-│   ├── page.tsx            # Landing page
+│   ├── page.tsx            # Landing page with hero canvas
 │   ├── portfolio/
 │   │   └── page.tsx        # Portfolio page
 │   └── globals.css         # Global styles
 ├── components/
 │   ├── Navigation.tsx      # Header navigation
-│   └── Footer.tsx          # Footer component
+│   ├── Footer.tsx          # Footer component
+│   └── HeroCanvas.tsx      # Interactive hero canvas
 ├── public/                 # Static assets (add images here)
-└── PROJECT_OUTLINE.md      # Detailed project roadmap
+├── PROJECT_OUTLINE.md      # Detailed project roadmap
+├── DEPLOYMENT.md           # Deployment guide
+├── vercel.json             # Vercel configuration
+└── .env.example            # Environment variables template
 ```
 
 ## Adding Content
