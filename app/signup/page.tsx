@@ -1,19 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
 import Link from "next/link";
 import { TreePine, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signup } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirectUrl, setRedirectUrl] = useState("/app");
+
+  useEffect(() => {
+    // Get redirect URL from query params
+    const redirect = searchParams.get("redirect");
+    if (redirect) {
+      setRedirectUrl(redirect);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +32,7 @@ export default function SignupPage() {
 
     try {
       await signup(email, password, name);
-      router.push("/app");
+      router.push(redirectUrl);
     } catch (err: any) {
       setError(err.message || "Signup failed");
     } finally {
@@ -169,7 +179,10 @@ export default function SignupPage() {
           <div className="mt-6 text-center">
             <p className="text-gray-600">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary-600 font-semibold hover:text-primary-700">
+              <Link
+                href={redirectUrl !== "/app" ? `/login?redirect=${encodeURIComponent(redirectUrl)}` : "/login"}
+                className="text-primary-600 font-semibold hover:text-primary-700"
+              >
                 Sign in
               </Link>
             </p>
@@ -177,5 +190,17 @@ export default function SignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-earth-800 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   );
 }
