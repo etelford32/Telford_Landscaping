@@ -45,12 +45,12 @@ export default function PlantCarePage() {
   ];
 
   const locations = [
-    'Diablo/East Bay Hills',
-    'Los Altos/Atherton',
-    'Marin County',
-    'Wine Country (Napa/Sonoma)',
-    'El Dorado Hills/Granite Bay',
-    'Other'
+    'Auburn',
+    'Loomis',
+    'Granite Bay',
+    'Roseville',
+    'Newcastle',
+    'Lincoln'
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -144,8 +144,8 @@ export default function PlantCarePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center border border-white/20 hover:bg-white/20 transition-all">
               <Award className="w-10 h-10 text-primary-300 mx-auto mb-3" />
-              <h3 className="text-2xl font-bold text-white mb-2">Certified Arborist</h3>
-              <p className="text-primary-100">ISA Certified with 15+ years experience</p>
+              <h3 className="text-2xl font-bold text-white mb-2">Plant Vitality Expert and Arborist</h3>
+              <p className="text-primary-100">10 years of hands-on experience</p>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center border border-white/20 hover:bg-white/20 transition-all">
               <Shield className="w-10 h-10 text-primary-300 mx-auto mb-3" />
