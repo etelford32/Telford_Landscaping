@@ -17,7 +17,7 @@ import PlantToolbox from "./PlantToolbox";
 import StructureToolbox from "./StructureToolbox";
 import { HouseModel } from "./HouseModel";
 import { GrassyGround, DecorativeRocks } from "./GrassyGround";
-import { Trash2, RotateCw, Copy, Clock, Home, Move, MousePointer2, Maximize2 } from "lucide-react";
+import { Trash2, RotateCw, Copy, Clock, Home, Move, MousePointer2, Maximize2, Undo2, Redo2, Save, Upload, Download } from "lucide-react";
 
 // Import OOP Systems
 import { CameraController } from "@/lib/editor/CameraController";
@@ -25,6 +25,13 @@ import { SelectionManager } from "@/lib/editor/SelectionManager";
 import { DragController } from "@/lib/editor/DragController";
 import { SceneManager } from "@/lib/editor/SceneManager";
 import { snapToGrid } from "./DesignGrid";
+
+// Import new features
+import { useUndoRedo } from "@/lib/hooks/useUndoRedo";
+import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
+import PropertyPanel from "./PropertyPanel";
+import DebugPanel from "./DebugPanel";
+import { saveDesign, loadDesign, saveToLocalStorage, loadFromLocalStorage } from "@/lib/design/saveLoad";
 
 // Scene Component
 function Scene({
@@ -140,19 +147,54 @@ export default function EnhancedDesignCanvas() {
     return sm;
   }, []);
 
-  // State
-  const [plants, setPlants] = useState<PlacedPlant[]>([]);
-  const [structures, setStructures] = useState<PlacedStructure[]>([]);
+  // State with undo/redo support
+  interface DesignState {
+    plants: PlacedPlant[];
+    structures: PlacedStructure[];
+  }
+
+  const {
+    state: designState,
+    setState: setDesignState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    historySize,
+  } = useUndoRedo<DesignState>(
+    { plants: [], structures: [] },
+    50 // max history
+  );
+
   const [selectedPlantId, setSelectedPlantId] = useState<string | null>(null);
   const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
   const [selectedHouseId, setSelectedHouseId] = useState<string | null>(null);
   const [age, setAge] = useState<number>(5);
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'move'>('select');
+  const [showPropertyPanel, setShowPropertyPanel] = useState(true);
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const mousePosition = useRef(new Vector2());
   const cameraRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const plants = designState.plants;
+  const structures = designState.structures;
+
+  const setPlants = (newPlants: PlacedPlant[] | ((prev: PlacedPlant[]) => PlacedPlant[])) => {
+    setDesignState((prev) => ({
+      ...prev,
+      plants: typeof newPlants === 'function' ? newPlants(prev.plants) : newPlants,
+    }));
+  };
+
+  const setStructures = (newStructures: PlacedStructure[] | ((prev: PlacedStructure[]) => PlacedStructure[])) => {
+    setDesignState((prev) => ({
+      ...prev,
+      structures: typeof newStructures === 'function' ? newStructures(prev.structures) : newStructures,
+    }));
+  };
 
   // Register plants with systems
   useEffect(() => {
@@ -354,6 +396,140 @@ export default function EnhancedDesignCanvas() {
     }
   };
 
+  // Save/Load Functions
+  const handleSave = () => {
+    const name = prompt("Enter design name:", "My Landscape Design");
+    if (name) {
+      saveDesign(name, plants, structures, age);
+    }
+  };
+
+  const handleLoad = async () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await loadDesign(file);
+      setDesignState({ plants: data.plants, structures: data.structures });
+      setAge(data.age);
+    } catch (error) {
+      alert("Failed to load design: " + (error as Error).message);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    const interval = setInterval(() => {
+      saveToLocalStorage("landscape-autosave", plants, structures, age);
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [plants, structures, age]);
+
+  // Load autosave on mount
+  useEffect(() => {
+    const autosave = loadFromLocalStorage("landscape-autosave");
+    if (autosave && autosave.plants.length > 0) {
+      const shouldLoad = confirm("Found auto-saved design. Load it?");
+      if (shouldLoad) {
+        setDesignState({ plants: autosave.plants, structures: autosave.structures });
+        setAge(autosave.age);
+      }
+    }
+  }, []);
+
+  // Keyboard Shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'z',
+      ctrl: true,
+      handler: () => undo(),
+      description: 'Undo',
+    },
+    {
+      key: 'y',
+      ctrl: true,
+      handler: () => redo(),
+      description: 'Redo',
+    },
+    {
+      key: 'z',
+      ctrl: true,
+      shift: true,
+      handler: () => redo(),
+      description: 'Redo (alternate)',
+    },
+    {
+      key: 'd',
+      handler: () => {
+        if (selectedPlantId) deletePlant();
+        else if (selectedStructureId) deleteStructure();
+      },
+      description: 'Delete selected',
+    },
+    {
+      key: 'Delete',
+      handler: () => {
+        if (selectedPlantId) deletePlant();
+        else if (selectedStructureId) deleteStructure();
+      },
+      description: 'Delete selected',
+    },
+    {
+      key: 'c',
+      handler: () => {
+        if (selectedPlantId) duplicatePlant();
+        else if (selectedStructureId) duplicateStructure();
+      },
+      description: 'Copy selected',
+    },
+    {
+      key: 'r',
+      handler: () => {
+        if (selectedPlantId) rotatePlant();
+        else if (selectedStructureId) rotateStructure();
+      },
+      description: 'Rotate selected',
+    },
+    {
+      key: 's',
+      ctrl: true,
+      handler: (e) => {
+        e.preventDefault();
+        handleSave();
+      },
+      description: 'Save design',
+    },
+    {
+      key: 'o',
+      ctrl: true,
+      handler: (e) => {
+        e.preventDefault();
+        handleLoad();
+      },
+      description: 'Open design',
+    },
+    {
+      key: 'Escape',
+      handler: () => {
+        setSelectedPlantId(null);
+        setSelectedStructureId(null);
+        setSelectedHouseId(null);
+        selectionManager.clearSelection();
+      },
+      description: 'Deselect all',
+    },
+  ]);
+
   return (
     <div className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100">
       {/* Plant Toolbox - Left */}
@@ -372,30 +548,76 @@ export default function EnhancedDesignCanvas() {
         selectedStructureId={selectedStructureId || undefined}
       />
 
-      {/* Mode Toggle - Top Left */}
-      <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-3 z-20 flex gap-2">
-        <button
-          onClick={() => setDragMode('select')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
-            dragMode === 'select'
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <MousePointer2 className="w-4 h-4" />
-          Select
-        </button>
-        <button
-          onClick={() => setDragMode('move')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
-            dragMode === 'move'
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          <Move className="w-4 h-4" />
-          Move
-        </button>
+      {/* Main Toolbar - Top Left */}
+      <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-3 z-20 space-y-3">
+        {/* Mode Toggle */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setDragMode('select')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+              dragMode === 'select'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <MousePointer2 className="w-4 h-4" />
+            Select
+          </button>
+          <button
+            onClick={() => setDragMode('move')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all ${
+              dragMode === 'move'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <Move className="w-4 h-4" />
+            Move
+          </button>
+        </div>
+
+        {/* Undo/Redo & Save/Load */}
+        <div className="flex gap-2 pt-3 border-t border-gray-200">
+          <button
+            onClick={undo}
+            disabled={!canUndo}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
+              canUndo
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+            }`}
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all ${
+              canRedo
+                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+            }`}
+            title="Redo (Ctrl+Y)"
+          >
+            <Redo2 className="w-4 h-4" />
+          </button>
+          <div className="w-px bg-gray-300 mx-1"></div>
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all"
+            title="Save Design (Ctrl+S)"
+          >
+            <Save className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleLoad}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700 transition-all"
+            title="Load Design (Ctrl+O)"
+          >
+            <Upload className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* 3D Canvas */}
@@ -451,10 +673,25 @@ export default function EnhancedDesignCanvas() {
         </p>
       </div>
 
-      {/* Selected Plant Controls */}
+      {/* Property Panel for detailed editing */}
+      {showPropertyPanel && (
+        <PropertyPanel
+          selectedPlant={selectedPlant}
+          selectedStructure={selectedStructure}
+          onPlantUpdate={(updatedPlant) => {
+            setPlants(plants.map(p => p.id === updatedPlant.id ? updatedPlant : p));
+          }}
+          onStructureUpdate={(updatedStructure) => {
+            setStructures(structures.map(s => s.id === updatedStructure.id ? updatedStructure : s));
+          }}
+          onClose={() => setShowPropertyPanel(false)}
+        />
+      )}
+
+      {/* Quick Action Controls - Bottom Right */}
       {selectedPlant && !selectedStructure && (
         <div className="absolute bottom-24 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-4 w-64 z-20">
-          <h3 className="font-bold text-gray-900 mb-3">Selected Plant</h3>
+          <h3 className="font-bold text-gray-900 mb-3">Quick Actions</h3>
           <div className="space-y-3">
             <div className="flex gap-2">
               <button
@@ -483,10 +720,9 @@ export default function EnhancedDesignCanvas() {
         </div>
       )}
 
-      {/* Selected Structure Controls */}
       {selectedStructure && !selectedPlant && (
         <div className="absolute bottom-24 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-4 w-64 z-20">
-          <h3 className="font-bold text-gray-900 mb-3">Selected Structure</h3>
+          <h3 className="font-bold text-gray-900 mb-3">Quick Actions</h3>
           <div className="space-y-3">
             <div className="flex gap-2">
               <button
@@ -557,9 +793,28 @@ export default function EnhancedDesignCanvas() {
           </div>
         </div>
         <p className="text-xs text-gray-600 mt-2 pt-2 border-t">
-          Click to select • Orbit/pan/zoom with mouse
+          Click to select • Orbit/pan/zoom with mouse • Ctrl+Z/Y to undo/redo
         </p>
       </div>
+
+      {/* Debug Panel */}
+      <DebugPanel
+        plantsCount={plants.length}
+        structuresCount={structures.length}
+        housesCount={sceneManager.getHouses().length}
+        historySize={historySize}
+        canUndo={canUndo}
+        canRedo={canRedo}
+      />
+
+      {/* Hidden file input for loading designs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".landscape.json,.json"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
     </div>
   );
 }
