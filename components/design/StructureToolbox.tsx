@@ -49,7 +49,7 @@ export default function StructureToolbox({ onStructureSelect, selectedStructureI
 
         {/* Category filter */}
         <div className="flex gap-2 flex-wrap">
-          {["all", "hardscape", "vertical", "overhead", "water-feature", "outdoor-living"].map((cat) => (
+          {["all", "hardscape", "path", "vertical", "overhead", "water-feature", "outdoor-living"].map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}

@@ -38,6 +38,12 @@ export function StructureModel({ structure, onClick }: StructureModelProps) {
       return <FenceModel structure={structure} size={size} onClick={onClick} />;
     case 'stone-retaining-wall':
     case 'gabion-wall':
+    case 'concrete-block-wall':
+    case 'stucco-wall':
+    case 'dry-stack-stone-wall':
+    case 'brick-garden-wall':
+    case 'boulder-wall':
+    case 'wood-retaining-wall':
       return <WallModel structure={structure} size={size} onClick={onClick} />;
 
     // Overhead structures
@@ -72,6 +78,18 @@ export function StructureModel({ structure, onClick }: StructureModelProps) {
       return <OutdoorShowerModel structure={structure} size={size} onClick={onClick} />;
     case 'raised-planter':
       return <RaisedPlanterModel structure={structure} size={size} onClick={onClick} />;
+
+    // Paths
+    case 'concrete-paver-path':
+    case 'stone-paver-path':
+    case 'rubble-path':
+    case 'decomposed-granite-path':
+    case 'crushed-rock-path':
+    case 'pea-gravel-path':
+    case 'sand-path':
+    case 'stepping-stone-path':
+    case 'brick-path':
+      return <PathModel structure={structure} size={size} onClick={onClick} />;
 
     default:
       return <DefaultStructureModel structure={structure} size={size} onClick={onClick} />;
@@ -294,8 +312,26 @@ function FenceModel({ structure, size, onClick }: any) {
 }
 
 function WallModel({ structure, size, onClick }: any) {
+  const getWallColor = () => {
+    switch (structure.structureId) {
+      case 'gabion-wall': return '#708090'; // Slate gray
+      case 'concrete-block-wall': return '#9E9E9E'; // Gray concrete
+      case 'stucco-wall': return '#F5E6D3'; // Cream stucco
+      case 'dry-stack-stone-wall': return '#7A6E5D'; // Stone brown
+      case 'brick-garden-wall': return '#9B5448'; // Red brick
+      case 'boulder-wall': return '#696969'; // Dim gray
+      case 'wood-retaining-wall': return '#6D5C47'; // Dark wood
+      case 'stone-retaining-wall': return '#808080'; // Gray
+      default: return '#808080';
+    }
+  };
+
   const isGabion = structure.structureId === 'gabion-wall';
-  const wallColor = isGabion ? '#708090' : '#808080';
+  const isBrick = structure.structureId === 'brick-garden-wall';
+  const isWood = structure.structureId === 'wood-retaining-wall';
+  const isBoulder = structure.structureId === 'boulder-wall';
+  const isStucco = structure.structureId === 'stucco-wall';
+  const isDryStack = structure.structureId === 'dry-stack-stone-wall';
 
   return (
     <group
@@ -303,27 +339,113 @@ function WallModel({ structure, size, onClick }: any) {
       rotation={[0, structure.rotation, 0]}
       onClick={onClick}
     >
-      {/* Main wall structure */}
-      <mesh position={[0, size.height / 2, 0]} castShadow receiveShadow>
-        <boxGeometry args={[size.width, size.height, size.depth]} />
-        <meshStandardMaterial
-          color={structure.selected ? '#ffeb3b' : wallColor}
-          emissive={structure.selected ? '#ffeb3b' : '#000000'}
-          emissiveIntensity={structure.selected ? 0.2 : 0}
-          roughness={0.95}
-        />
-      </mesh>
+      {isBoulder ? (
+        // Boulder wall - large individual rocks
+        <>
+          {Array.from({ length: Math.floor(size.width / 2.5) * Math.floor(size.height / 1.5) }, (_, i) => {
+            const col = i % Math.floor(size.width / 2.5);
+            const row = Math.floor(i / Math.floor(size.width / 2.5));
+            const x = -size.width / 2 + col * 2.5 + 1.25;
+            const y = row * 1.5 + 0.75;
+            const z = (Math.random() - 0.5) * size.depth * 0.8;
+            const scale = 0.7 + Math.random() * 0.3;
+            return (
+              <mesh key={i} position={[x, y, z]} castShadow receiveShadow>
+                <sphereGeometry args={[scale, 8, 6]} />
+                <meshStandardMaterial
+                  color={structure.selected ? '#ffeb3b' : getWallColor()}
+                  emissive={structure.selected ? '#ffeb3b' : '#000000'}
+                  emissiveIntensity={structure.selected ? 0.2 : 0}
+                  roughness={0.95}
+                />
+              </mesh>
+            );
+          })}
+        </>
+      ) : isWood ? (
+        // Wood wall - horizontal timbers
+        <>
+          {Array.from({ length: Math.floor(size.height / 0.67) }, (_, i) => (
+            <mesh key={i} position={[0, i * 0.67 + 0.33, 0]} castShadow receiveShadow>
+              <boxGeometry args={[size.width, 0.6, size.depth]} />
+              <meshStandardMaterial
+                color={structure.selected ? '#ffeb3b' : getWallColor()}
+                emissive={structure.selected ? '#ffeb3b' : '#000000'}
+                emissiveIntensity={structure.selected ? 0.2 : 0}
+                roughness={0.8}
+              />
+            </mesh>
+          ))}
+          {/* Support posts */}
+          {Array.from({ length: Math.floor(size.width / 4) + 1 }, (_, i) => (
+            <mesh key={`post-${i}`} position={[-size.width / 2 + i * 4, size.height / 2, -size.depth / 2]} castShadow>
+              <boxGeometry args={[0.3, size.height, 0.3]} />
+              <meshStandardMaterial color="#4A3A2A" roughness={0.9} />
+            </mesh>
+          ))}
+        </>
+      ) : (
+        <>
+          {/* Main wall structure */}
+          <mesh position={[0, size.height / 2, 0]} castShadow receiveShadow>
+            <boxGeometry args={[size.width, size.height, size.depth]} />
+            <meshStandardMaterial
+              color={structure.selected ? '#ffeb3b' : getWallColor()}
+              emissive={structure.selected ? '#ffeb3b' : '#000000'}
+              emissiveIntensity={structure.selected ? 0.2 : 0}
+              roughness={isStucco ? 0.7 : 0.95}
+            />
+          </mesh>
 
-      {/* Stone texture lines */}
-      {!isGabion && Array.from({ length: Math.floor(size.height / 0.5) }).map((_, i) => (
-        <mesh
-          key={i}
-          position={[0, i * 0.5 + 0.25, size.depth / 2 + 0.01]}
-        >
-          <planeGeometry args={[size.width, 0.02]} />
-          <meshBasicMaterial color="#000000" transparent opacity={0.2} />
-        </mesh>
-      ))}
+          {/* Texture patterns */}
+          {isBrick && Array.from({ length: Math.floor(size.height / 0.33) }).map((_, row) => (
+            <group key={row}>
+              {Array.from({ length: Math.floor(size.width / 0.67) }).map((_, col) => {
+                const offset = row % 2 === 0 ? 0 : 0.33;
+                return (
+                  <mesh
+                    key={`brick-${row}-${col}`}
+                    position={[-size.width / 2 + col * 0.67 + offset, row * 0.33 + 0.16, size.depth / 2 + 0.01]}
+                  >
+                    <planeGeometry args={[0.65, 0.31]} />
+                    <meshBasicMaterial color="#000000" transparent opacity={0.15} />
+                  </mesh>
+                );
+              })}
+            </group>
+          ))}
+
+          {/* Stone course lines for non-gabion, non-brick, non-stucco walls */}
+          {!isGabion && !isBrick && !isStucco && !isDryStack && Array.from({ length: Math.floor(size.height / 0.5) }).map((_, i) => (
+            <mesh
+              key={i}
+              position={[0, i * 0.5 + 0.25, size.depth / 2 + 0.01]}
+            >
+              <planeGeometry args={[size.width, 0.02]} />
+              <meshBasicMaterial color="#000000" transparent opacity={0.2} />
+            </mesh>
+          ))}
+
+          {/* Dry stack irregular stones */}
+          {isDryStack && Array.from({ length: Math.floor(size.height / 0.4) }).map((_, row) => (
+            <group key={row}>
+              {Array.from({ length: Math.floor(size.width / 1.5) + 1 }).map((_, col) => {
+                const offset = (row % 2) * 0.3;
+                const width = 1.2 + Math.random() * 0.6;
+                return (
+                  <mesh
+                    key={`stone-${row}-${col}`}
+                    position={[-size.width / 2 + col * 1.5 + offset, row * 0.4 + 0.2, size.depth / 2 + 0.01]}
+                  >
+                    <planeGeometry args={[width, 0.38]} />
+                    <meshBasicMaterial color="#000000" transparent opacity={0.25} />
+                  </mesh>
+                );
+              })}
+            </group>
+          ))}
+        </>
+      )}
 
       {structure.selected && (
         <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -939,6 +1061,128 @@ function RaisedPlanterModel({ structure, size, onClick }: any) {
       {structure.selected && (
         <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[Math.max(size.width, size.depth) * 0.6, Math.max(size.width, size.depth) * 0.62, 32]} />
+          <meshBasicMaterial color="#ffff00" transparent opacity={0.8} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+// ===== PATH MODELS =====
+
+function PathModel({ structure, size, onClick }: any) {
+  const getPathColor = () => {
+    switch (structure.structureId) {
+      case 'concrete-paver-path': return '#B0B0B0'; // Light gray
+      case 'stone-paver-path': return '#C9A87C'; // Tan stone
+      case 'rubble-path': return '#8B7D6B'; // Dark tan
+      case 'decomposed-granite-path': return '#D4A574'; // Golden tan
+      case 'crushed-rock-path': return '#A0A0A0'; // Gray rock
+      case 'pea-gravel-path': return '#C0B4A0'; // Beige gravel
+      case 'sand-path': return '#F4E4C1'; // Sand color
+      case 'stepping-stone-path': return '#A89968'; // Stone tan
+      case 'brick-path': return '#B85450'; // Brick red
+      default: return '#B0B0B0';
+    }
+  };
+
+  const isSteppingStone = structure.structureId === 'stepping-stone-path';
+  const isPaved = ['concrete-paver-path', 'stone-paver-path', 'brick-path'].includes(structure.structureId);
+  const isLoose = ['rubble-path', 'decomposed-granite-path', 'crushed-rock-path', 'pea-gravel-path', 'sand-path'].includes(structure.structureId);
+
+  return (
+    <group
+      position={[structure.position.x, 0, structure.position.z]}
+      rotation={[0, structure.rotation, 0]}
+      onClick={onClick}
+    >
+      {isSteppingStone ? (
+        // Stepping stones - individual pavers with gaps
+        <>
+          {Array.from({ length: Math.floor(size.depth / 2.5) }, (_, i) => {
+            const offset = (i % 2) * 0.5; // Alternate left/right
+            return (
+              <mesh key={i} position={[offset, size.height / 2, -size.depth / 2 + i * 2.5 + 1]} receiveShadow castShadow>
+                <cylinderGeometry args={[0.8, 0.8, size.height, 6]} />
+                <meshStandardMaterial
+                  color={structure.selected ? '#ffeb3b' : getPathColor()}
+                  emissive={structure.selected ? '#ffeb3b' : '#000000'}
+                  emissiveIntensity={structure.selected ? 0.2 : 0}
+                  roughness={0.9}
+                />
+              </mesh>
+            );
+          })}
+        </>
+      ) : isPaved ? (
+        // Paved paths - show paver pattern
+        <>
+          {/* Main path surface */}
+          <mesh position={[0, size.height / 2, 0]} receiveShadow castShadow>
+            <boxGeometry args={[size.width, size.height, size.depth]} />
+            <meshStandardMaterial
+              color={structure.selected ? '#ffeb3b' : getPathColor()}
+              emissive={structure.selected ? '#ffeb3b' : '#000000'}
+              emissiveIntensity={structure.selected ? 0.2 : 0}
+              roughness={0.8}
+            />
+          </mesh>
+
+          {/* Paver joints - grid pattern */}
+          {Array.from({ length: Math.floor(size.depth / 2) }, (_, i) => (
+            <mesh key={`joint-${i}`} position={[0, size.height + 0.01, -size.depth / 2 + i * 2]} receiveShadow>
+              <boxGeometry args={[size.width, 0.02, 0.1]} />
+              <meshStandardMaterial color="#444444" roughness={1} />
+            </mesh>
+          ))}
+        </>
+      ) : (
+        // Loose material paths - textured surface
+        <>
+          {/* Main path surface */}
+          <mesh position={[0, size.height / 2, 0]} receiveShadow castShadow>
+            <boxGeometry args={[size.width, size.height, size.depth]} />
+            <meshStandardMaterial
+              color={structure.selected ? '#ffeb3b' : getPathColor()}
+              emissive={structure.selected ? '#ffeb3b' : '#000000'}
+              emissiveIntensity={structure.selected ? 0.2 : 0}
+              roughness={1}
+            />
+          </mesh>
+
+          {/* Texture bumps for loose materials */}
+          {Array.from({ length: 20 }, (_, i) => {
+            const x = (Math.random() - 0.5) * size.width * 0.8;
+            const z = (Math.random() - 0.5) * size.depth * 0.8;
+            const radius = 0.1 + Math.random() * 0.15;
+            return (
+              <mesh key={`bump-${i}`} position={[x, size.height + 0.05, z]} receiveShadow>
+                <sphereGeometry args={[radius, 8, 8]} />
+                <meshStandardMaterial color={getPathColor()} roughness={1} />
+              </mesh>
+            );
+          })}
+        </>
+      )}
+
+      {/* Edge borders for all paths except stepping stones */}
+      {!isSteppingStone && (
+        <>
+          <mesh position={[-size.width / 2, size.height / 2, 0]} receiveShadow castShadow>
+            <boxGeometry args={[0.15, size.height + 0.1, size.depth]} />
+            <meshStandardMaterial color="#654321" roughness={0.9} />
+          </mesh>
+          <mesh position={[size.width / 2, size.height / 2, 0]} receiveShadow castShadow>
+            <boxGeometry args={[0.15, size.height + 0.1, size.depth]} />
+            <meshStandardMaterial color="#654321" roughness={0.9} />
+          </mesh>
+        </>
+      )}
+
+      {/* Selection indicator */}
+      {structure.selected && (
+        <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[Math.max(size.width, size.depth) * 0.5, Math.max(size.width, size.depth) * 0.52, 32]} />
           <meshBasicMaterial color="#ffff00" transparent opacity={0.8} />
         </mesh>
       )}

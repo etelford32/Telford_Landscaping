@@ -4,7 +4,7 @@ export interface OutdoorStructure {
   id: string;
   commonName: string;
   description: string;
-  category: 'hardscape' | 'vertical' | 'overhead' | 'water-feature' | 'outdoor-living';
+  category: 'hardscape' | 'vertical' | 'overhead' | 'water-feature' | 'outdoor-living' | 'path';
   materials: string[];
   dimensions: StructureDimensions;
   color: string; // For visual identification in UI
@@ -430,6 +430,235 @@ export const STRUCTURE_LIBRARY: OutdoorStructure[] = [
     },
     color: '#8B7355', // Burlywood4
     styles: ['farmhouse', 'modern', 'functional'],
+  },
+
+  // ===== PATHS & WALKWAYS =====
+  {
+    id: 'concrete-paver-path',
+    commonName: 'Concrete Paver Path',
+    description: 'Modern concrete paver walkway in clean geometric shapes. Durable and versatile.',
+    category: 'path',
+    materials: ['Concrete Pavers', 'Sand Base', 'Edging'],
+    dimensions: {
+      baseWidth: 4,
+      baseDepth: 12,
+      height: 0.25,
+      customizable: true,
+    },
+    color: '#B0B0B0', // Light gray
+    styles: ['modern', 'contemporary', 'minimalist'],
+  },
+  {
+    id: 'stone-paver-path',
+    commonName: 'Natural Stone Paver Path',
+    description: 'Irregular natural stone pavers for an organic, flowing walkway. Classic California style.',
+    category: 'path',
+    materials: ['Flagstone', 'Sand', 'Gravel'],
+    dimensions: {
+      baseWidth: 3.5,
+      baseDepth: 12,
+      height: 0.3,
+      customizable: true,
+    },
+    color: '#C9A87C', // Tan stone
+    styles: ['natural', 'rustic', 'cottage'],
+  },
+  {
+    id: 'rubble-path',
+    commonName: 'Rubble Stone Path',
+    description: 'Chunky natural stone rubble pathway. Rustic and natural with excellent drainage.',
+    category: 'path',
+    materials: ['Stone Rubble', 'Gravel Base'],
+    dimensions: {
+      baseWidth: 3,
+      baseDepth: 10,
+      height: 0.4,
+      customizable: true,
+    },
+    color: '#8B7D6B', // Dark tan
+    styles: ['rustic', 'natural', 'woodland'],
+  },
+  {
+    id: 'decomposed-granite-path',
+    commonName: 'Decomposed Granite Path',
+    description: 'California favorite - permeable DG pathway that compacts naturally. Perfect for xeriscape.',
+    category: 'path',
+    materials: ['Decomposed Granite', 'Stabilizer', 'Edging'],
+    dimensions: {
+      baseWidth: 4,
+      baseDepth: 12,
+      height: 0.15,
+      customizable: true,
+    },
+    color: '#D4A574', // Golden tan
+    styles: ['xeriscape', 'natural', 'mediterranean'],
+  },
+  {
+    id: 'crushed-rock-path',
+    commonName: 'Crushed Rock Path',
+    description: 'Angular crushed rock pathway that locks together. Great drainage and rustic appeal.',
+    category: 'path',
+    materials: ['Crushed Rock', 'Base Rock', 'Edging'],
+    dimensions: {
+      baseWidth: 3.5,
+      baseDepth: 10,
+      height: 0.2,
+      customizable: true,
+    },
+    color: '#A0A0A0', // Gray rock
+    styles: ['industrial', 'rustic', 'modern'],
+  },
+  {
+    id: 'pea-gravel-path',
+    commonName: 'Pea Gravel Path',
+    description: 'Smooth rounded pea gravel for comfortable walking. Classic cottage garden material.',
+    category: 'path',
+    materials: ['Pea Gravel', 'Landscape Fabric', 'Edging'],
+    dimensions: {
+      baseWidth: 3,
+      baseDepth: 10,
+      height: 0.2,
+      customizable: true,
+    },
+    color: '#C0B4A0', // Beige gravel
+    styles: ['cottage', 'traditional', 'natural'],
+  },
+  {
+    id: 'sand-path',
+    commonName: 'Sand Path',
+    description: 'Soft sand pathway for beach-inspired or zen gardens. Requires edging to contain.',
+    category: 'path',
+    materials: ['Play Sand', 'Edging', 'Base'],
+    dimensions: {
+      baseWidth: 3,
+      baseDepth: 8,
+      height: 0.15,
+      customizable: true,
+    },
+    color: '#F4E4C1', // Sand color
+    styles: ['coastal', 'zen', 'tropical'],
+  },
+  {
+    id: 'stepping-stone-path',
+    commonName: 'Stepping Stone Path',
+    description: 'Individual stone pavers set in grass or groundcover. Informal and charming.',
+    category: 'path',
+    materials: ['Stone Pavers', 'Gravel'],
+    dimensions: {
+      baseWidth: 2,
+      baseDepth: 12,
+      height: 0.2,
+      customizable: true,
+    },
+    color: '#A89968', // Stone tan
+    styles: ['cottage', 'natural', 'informal'],
+  },
+  {
+    id: 'brick-path',
+    commonName: 'Brick Paver Path',
+    description: 'Traditional red brick pathway in running bond or herringbone pattern.',
+    category: 'path',
+    materials: ['Clay Brick', 'Sand', 'Edging'],
+    dimensions: {
+      baseWidth: 3.5,
+      baseDepth: 12,
+      height: 0.25,
+      customizable: true,
+    },
+    color: '#B85450', // Brick red
+    styles: ['traditional', 'classic', 'colonial'],
+  },
+
+  // ===== ADDITIONAL WALLS =====
+  {
+    id: 'concrete-block-wall',
+    commonName: 'Concrete Block Wall',
+    description: 'Solid concrete masonry wall for privacy and security. Can be stuccoed or painted.',
+    category: 'vertical',
+    materials: ['CMU Blocks', 'Rebar', 'Mortar'],
+    dimensions: {
+      baseWidth: 10,
+      baseDepth: 0.67,
+      height: 6,
+      customizable: true,
+    },
+    color: '#9E9E9E', // Gray concrete
+    styles: ['modern', 'industrial', 'contemporary'],
+  },
+  {
+    id: 'stucco-wall',
+    commonName: 'Stucco Garden Wall',
+    description: 'Mediterranean-style stucco wall with smooth finish. Classic California architecture.',
+    category: 'vertical',
+    materials: ['Stucco', 'Lath', 'Paint'],
+    dimensions: {
+      baseWidth: 12,
+      baseDepth: 0.5,
+      height: 5,
+      customizable: true,
+    },
+    color: '#F5E6D3', // Cream stucco
+    styles: ['mediterranean', 'spanish', 'tuscan'],
+  },
+  {
+    id: 'dry-stack-stone-wall',
+    commonName: 'Dry Stack Stone Wall',
+    description: 'Mortarless stacked stone wall in traditional style. Beautiful natural texture.',
+    category: 'vertical',
+    materials: ['Natural Stone', 'Capstones'],
+    dimensions: {
+      baseWidth: 8,
+      baseDepth: 2,
+      height: 3,
+      customizable: true,
+    },
+    color: '#7A6E5D', // Stone brown
+    styles: ['rustic', 'traditional', 'farmhouse'],
+  },
+  {
+    id: 'brick-garden-wall',
+    commonName: 'Brick Garden Wall',
+    description: 'Traditional red brick wall with mortar joints. Timeless and elegant.',
+    category: 'vertical',
+    materials: ['Clay Brick', 'Mortar', 'Capstones'],
+    dimensions: {
+      baseWidth: 10,
+      baseDepth: 0.67,
+      height: 4,
+      customizable: true,
+    },
+    color: '#9B5448', // Red brick
+    styles: ['traditional', 'colonial', 'classic'],
+  },
+  {
+    id: 'boulder-wall',
+    commonName: 'Boulder Retaining Wall',
+    description: 'Large natural boulders for dramatic retaining walls. Natural and substantial.',
+    category: 'vertical',
+    materials: ['Large Boulders', 'Gravel Backfill'],
+    dimensions: {
+      baseWidth: 12,
+      baseDepth: 3,
+      height: 4,
+      customizable: true,
+    },
+    color: '#696969', // Dim gray
+    styles: ['natural', 'rustic', 'modern'],
+  },
+  {
+    id: 'wood-retaining-wall',
+    commonName: 'Timber Retaining Wall',
+    description: 'Horizontal timber wall for gentle slopes. Natural wood with rustic charm.',
+    category: 'vertical',
+    materials: ['Pressure Treated Timber', 'Rebar', 'Gravel'],
+    dimensions: {
+      baseWidth: 10,
+      baseDepth: 1.5,
+      height: 3,
+      customizable: true,
+    },
+    color: '#6D5C47', // Dark wood
+    styles: ['rustic', 'natural', 'craftsman'],
   },
 ];
 
