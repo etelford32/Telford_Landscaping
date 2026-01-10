@@ -10,11 +10,14 @@ import { OrbitControls, PerspectiveCamera, Sky } from "@react-three/drei";
 import { Suspense, useState, useRef, useEffect, useMemo } from "react";
 import { Vector2, Vector3 } from "three";
 import { PlacedPlant } from "@/lib/plantData";
+import { PlacedStructure } from "@/lib/structureData";
 import { PlantModel } from "./PlantModels";
+import { StructureModel } from "./StructureModels";
 import PlantToolbox from "./PlantToolbox";
+import StructureToolbox from "./StructureToolbox";
 import { HouseModel } from "./HouseModel";
 import { GrassyGround, DecorativeRocks } from "./GrassyGround";
-import { Trash2, RotateCw, Copy, Clock, Home, Move, MousePointer2 } from "lucide-react";
+import { Trash2, RotateCw, Copy, Clock, Home, Move, MousePointer2, Maximize2 } from "lucide-react";
 
 // Import OOP Systems
 import { CameraController } from "@/lib/editor/CameraController";
@@ -26,23 +29,29 @@ import { snapToGrid } from "./DesignGrid";
 // Scene Component
 function Scene({
   plants,
+  structures,
   sceneManager,
   selectionManager,
   dragController,
   age,
   onPlantClick,
+  onStructureClick,
   onHouseClick,
   selectedPlantId,
+  selectedStructureId,
   selectedHouseId,
 }: {
   plants: PlacedPlant[];
+  structures: PlacedStructure[];
   sceneManager: SceneManager;
   selectionManager: SelectionManager;
   dragController: DragController;
   age: number;
   onPlantClick: (id: string) => void;
+  onStructureClick: (id: string) => void;
   onHouseClick: (id: string) => void;
   selectedPlantId: string | null;
+  selectedStructureId: string | null;
   selectedHouseId: string | null;
 }) {
   const houses = sceneManager.getHouses();
@@ -79,6 +88,15 @@ function Scene({
           house={house}
           onClick={() => onHouseClick(house.id)}
           isSelected={house.id === selectedHouseId}
+        />
+      ))}
+
+      {/* Structures */}
+      {structures.map((structure) => (
+        <StructureModel
+          key={structure.id}
+          structure={structure}
+          onClick={() => onStructureClick(structure.id)}
         />
       ))}
 
@@ -124,7 +142,9 @@ export default function EnhancedDesignCanvas() {
 
   // State
   const [plants, setPlants] = useState<PlacedPlant[]>([]);
+  const [structures, setStructures] = useState<PlacedStructure[]>([]);
   const [selectedPlantId, setSelectedPlantId] = useState<string | null>(null);
+  const [selectedStructureId, setSelectedStructureId] = useState<string | null>(null);
   const [selectedHouseId, setSelectedHouseId] = useState<string | null>(null);
   const [age, setAge] = useState<number>(5);
   const [isDragging, setIsDragging] = useState(false);
@@ -173,11 +193,11 @@ export default function EnhancedDesignCanvas() {
     };
   }, [plants, selectionManager, dragController]);
 
-  // Handle plant drop from toolbox
+  // Handle drop from toolbox (plants or structures)
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const plantId = e.dataTransfer.getData("plantId");
-    if (!plantId) return;
+    const structureId = e.dataTransfer.getData("structureId");
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -188,18 +208,29 @@ export default function EnhancedDesignCanvas() {
     const snappedX = snapToGrid(x, 1);
     const snappedZ = snapToGrid(z, 1);
 
-    const newPlant: PlacedPlant = {
-      id: `plant-${Date.now()}-${Math.random()}`,
-      speciesId: plantId,
-      position: { x: snappedX, y: 0, z: snappedZ },
-      rotation: 0,
-      scale: 1,
-      age: age,
-      variant: 0,
-      selected: false,
-    };
-
-    setPlants([...plants, newPlant]);
+    if (plantId) {
+      const newPlant: PlacedPlant = {
+        id: `plant-${Date.now()}-${Math.random()}`,
+        speciesId: plantId,
+        position: { x: snappedX, y: 0, z: snappedZ },
+        rotation: 0,
+        scale: 1,
+        age: age,
+        variant: 0,
+        selected: false,
+      };
+      setPlants([...plants, newPlant]);
+    } else if (structureId) {
+      const newStructure: PlacedStructure = {
+        id: `structure-${Date.now()}-${Math.random()}`,
+        structureId: structureId,
+        position: { x: snappedX, y: 0, z: snappedZ },
+        rotation: 0,
+        scale: 1,
+        selected: false,
+      };
+      setStructures([...structures, newStructure]);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -211,12 +242,28 @@ export default function EnhancedDesignCanvas() {
   const handlePlantClick = (plantId: string) => {
     selectionManager.select(plantId);
     setSelectedHouseId(null);
+    setSelectedStructureId(null);
+  };
+
+  // Handle structure click
+  const handleStructureClick = (structureId: string) => {
+    setSelectedStructureId(structureId);
+    setSelectedPlantId(null);
+    setSelectedHouseId(null);
+    selectionManager.clearSelection();
+
+    // Mark structure as selected
+    setStructures(structures.map(s => ({
+      ...s,
+      selected: s.id === structureId
+    })));
   };
 
   // Handle house click
   const handleHouseClick = (houseId: string) => {
     setSelectedHouseId(houseId);
     setSelectedPlantId(null);
+    setSelectedStructureId(null);
     selectionManager.clearSelection();
   };
 
@@ -260,6 +307,45 @@ export default function EnhancedDesignCanvas() {
     );
   };
 
+  // Structure actions
+  const selectedStructure = structures.find((s) => s.id === selectedStructureId);
+
+  const deleteStructure = () => {
+    if (!selectedStructureId) return;
+    setStructures(structures.filter((s) => s.id !== selectedStructureId));
+    setSelectedStructureId(null);
+  };
+
+  const duplicateStructure = () => {
+    if (!selectedStructureId) return;
+    const structure = structures.find((s) => s.id === selectedStructureId);
+    if (!structure) return;
+
+    const newStructure: PlacedStructure = {
+      ...structure,
+      id: `structure-${Date.now()}-${Math.random()}`,
+      position: {
+        x: structure.position.x + 3,
+        y: structure.position.y,
+        z: structure.position.z + 3,
+      },
+      selected: false,
+    };
+
+    setStructures([...structures, newStructure]);
+  };
+
+  const rotateStructure = () => {
+    if (!selectedStructureId) return;
+    setStructures(
+      structures.map((s) =>
+        s.id === selectedStructureId
+          ? { ...s, rotation: (s.rotation + Math.PI / 4) % (Math.PI * 2) }
+          : s
+      )
+    );
+  };
+
   // Focus camera on house
   const focusOnHouse = (houseId: string) => {
     const house = sceneManager.getHouse(houseId);
@@ -270,12 +356,20 @@ export default function EnhancedDesignCanvas() {
 
   return (
     <div className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100">
-      {/* Plant Toolbox */}
+      {/* Plant Toolbox - Left */}
       <PlantToolbox
         onPlantSelect={(species) => {
           // Handle plant selection if needed
         }}
         selectedPlantId={selectedPlantId || undefined}
+      />
+
+      {/* Structure Toolbox - Right */}
+      <StructureToolbox
+        onStructureSelect={(structure) => {
+          // Handle structure selection if needed
+        }}
+        selectedStructureId={selectedStructureId || undefined}
       />
 
       {/* Mode Toggle - Top Left */}
@@ -318,13 +412,16 @@ export default function EnhancedDesignCanvas() {
           <Suspense fallback={null}>
             <Scene
               plants={plants}
+              structures={structures}
               sceneManager={sceneManager}
               selectionManager={selectionManager}
               dragController={dragController}
               age={age}
               onPlantClick={handlePlantClick}
+              onStructureClick={handleStructureClick}
               onHouseClick={handleHouseClick}
               selectedPlantId={selectedPlantId}
+              selectedStructureId={selectedStructureId}
               selectedHouseId={selectedHouseId}
             />
           </Suspense>
@@ -355,8 +452,8 @@ export default function EnhancedDesignCanvas() {
       </div>
 
       {/* Selected Plant Controls */}
-      {selectedPlant && (
-        <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-4 w-64 z-20">
+      {selectedPlant && !selectedStructure && (
+        <div className="absolute bottom-24 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-4 w-64 z-20">
           <h3 className="font-bold text-gray-900 mb-3">Selected Plant</h3>
           <div className="space-y-3">
             <div className="flex gap-2">
@@ -377,6 +474,38 @@ export default function EnhancedDesignCanvas() {
             </div>
             <button
               onClick={deletePlant}
+              className="w-full flex items-center justify-center gap-2 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Structure Controls */}
+      {selectedStructure && !selectedPlant && (
+        <div className="absolute bottom-24 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-4 w-64 z-20">
+          <h3 className="font-bold text-gray-900 mb-3">Selected Structure</h3>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <button
+                onClick={rotateStructure}
+                className="flex-1 flex items-center justify-center gap-2 bg-amber-600 text-white px-3 py-2 rounded-lg hover:bg-amber-700 transition-colors text-sm"
+              >
+                <RotateCw className="w-4 h-4" />
+                Rotate
+              </button>
+              <button
+                onClick={duplicateStructure}
+                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Copy className="w-4 h-4" />
+                Copy
+              </button>
+            </div>
+            <button
+              onClick={deleteStructure}
               className="w-full flex items-center justify-center gap-2 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
             >
               <Trash2 className="w-4 h-4" />
@@ -407,16 +536,29 @@ export default function EnhancedDesignCanvas() {
       )}
 
       {/* Instructions */}
-      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-4 max-w-xs z-20">
-        <h3 className="font-bold text-gray-900 mb-2 text-sm">OOP 3D Editor</h3>
-        <ul className="text-xs text-gray-700 space-y-1">
-          <li>• Drag plants from toolbox to canvas</li>
-          <li>• Click plants or houses to select</li>
-          <li>• Use mode toggle for select/move</li>
-          <li>• Timeline slider shows growth</li>
-          <li>• Rotate, copy, or delete plants</li>
-          <li>• Orbit, pan, zoom with mouse</li>
-        </ul>
+      <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-4 max-w-md z-20">
+        <h3 className="font-bold text-gray-900 mb-2 text-sm">3D Design Tool</h3>
+        <div className="grid grid-cols-2 gap-x-4 text-xs text-gray-700 space-y-1">
+          <div>
+            <p className="font-semibold text-primary-600 mb-1">Plants:</p>
+            <ul className="space-y-0.5">
+              <li>• Drag from left toolbox</li>
+              <li>• 30 CA native species</li>
+              <li>• Watch 30-year growth</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-semibold text-amber-600 mb-1">Structures:</p>
+            <ul className="space-y-0.5">
+              <li>• Drag from right toolbox</li>
+              <li>• Patios, pergolas, fences</li>
+              <li>• Water features & more</li>
+            </ul>
+          </div>
+        </div>
+        <p className="text-xs text-gray-600 mt-2 pt-2 border-t">
+          Click to select • Orbit/pan/zoom with mouse
+        </p>
       </div>
     </div>
   );
