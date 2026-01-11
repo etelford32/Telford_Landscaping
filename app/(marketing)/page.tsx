@@ -21,26 +21,51 @@ export default function Home() {
         <HeroCanvas />
 
         {/* Content Overlay */}
-        <div className="relative h-full flex flex-col justify-center z-10 pointer-events-none">
+        <div className="relative h-full flex flex-col justify-end pb-32 z-10 pointer-events-none">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="text-center mb-8">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 drop-shadow-2xl">
+              <h1
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8"
+                style={{
+                  color: '#87CEEB',
+                  textShadow: `
+                    -2px -2px 0 #FF8C00,
+                    2px -2px 0 #FF8C00,
+                    -2px 2px 0 #FF8C00,
+                    2px 2px 0 #FF8C00,
+                    -3px -3px 0 #FFD700,
+                    3px -3px 0 #FFD700,
+                    -3px 3px 0 #FFD700,
+                    3px 3px 0 #FFD700,
+                    0 0 30px rgba(255,215,0,0.5),
+                    0 0 60px rgba(135,206,235,0.3)
+                  `
+                }}
+              >
                 Where Technology Meets Nature
               </h1>
-              <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto drop-shadow-lg">
+              <p className="text-lg sm:text-xl md:text-2xl text-white mb-10 max-w-3xl mx-auto drop-shadow-lg font-medium">
                 Professional landscaping and handyman services transforming outdoor spaces in Auburn, Roseville, Granite Bay, Lincoln, and Loomis
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pointer-events-auto">
                 <Link
+                  href="/design"
+                  className="bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-10 py-5 rounded-xl font-bold hover:from-yellow-500 hover:to-orange-600 transition-all shadow-2xl hover:shadow-3xl flex items-center gap-3 text-xl border-2 border-yellow-300 hover:scale-105 transform"
+                >
+                  <span>🎨</span>
+                  Design Your Own
+                  <ArrowRight className="w-6 h-6" />
+                </Link>
+                <Link
                   href="#contact"
-                  className="bg-white text-primary-900 px-8 py-4 rounded-lg font-semibold hover:bg-primary-50 transition-all shadow-xl hover:shadow-2xl flex items-center gap-2 text-lg"
+                  className="bg-white text-primary-900 px-8 py-5 rounded-xl font-semibold hover:bg-primary-50 transition-all shadow-xl hover:shadow-2xl flex items-center gap-2 text-lg hover:scale-105 transform"
                 >
                   Get Free Consultation
                   <ArrowRight className="w-5 h-5" />
                 </Link>
                 <Link
                   href="/portfolio"
-                  className="bg-white/10 backdrop-blur-sm border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all shadow-xl text-lg"
+                  className="bg-white/10 backdrop-blur-sm border-2 border-white text-white px-8 py-5 rounded-xl font-semibold hover:bg-white/20 transition-all shadow-xl text-lg hover:scale-105 transform"
                 >
                   View Our Work
                 </Link>
