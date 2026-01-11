@@ -1,10 +1,11 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Sky } from "@react-three/drei";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef, useImperativeHandle, forwardRef } from "react";
 import House3D from "./House3D";
 import { Tree, Bush, FlowerBed, Rock } from "./Landscaping";
+import CameraControls from "./CameraControls";
 
 function Ground() {
   return (
@@ -111,31 +112,133 @@ function Scene() {
 
 export default function LandscapeScene() {
   const [isRotating, setIsRotating] = useState(true);
+  const controlsRef = useRef<any>(null);
+  const cameraRef = useRef<any>(null);
+
+  const handleZoomIn = () => {
+    if (controlsRef.current && cameraRef.current) {
+      const currentDistance = controlsRef.current.getDistance();
+      const newDistance = Math.max(8, currentDistance - 2);
+
+      const direction = cameraRef.current.position.clone().sub(controlsRef.current.target).normalize();
+      const newPosition = controlsRef.current.target.clone().add(direction.multiplyScalar(newDistance));
+
+      cameraRef.current.position.copy(newPosition);
+      controlsRef.current.update();
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (controlsRef.current && cameraRef.current) {
+      const currentDistance = controlsRef.current.getDistance();
+      const newDistance = Math.min(25, currentDistance + 2);
+
+      const direction = cameraRef.current.position.clone().sub(controlsRef.current.target).normalize();
+      const newPosition = controlsRef.current.target.clone().add(direction.multiplyScalar(newDistance));
+
+      cameraRef.current.position.copy(newPosition);
+      controlsRef.current.update();
+    }
+  };
+
+  const handleRotateLeft = () => {
+    if (controlsRef.current && cameraRef.current) {
+      const angle = -Math.PI / 8; // 22.5 degrees
+      const currentPos = cameraRef.current.position.clone();
+      const target = controlsRef.current.target;
+
+      const x = currentPos.x - target.x;
+      const z = currentPos.z - target.z;
+
+      const newX = x * Math.cos(angle) - z * Math.sin(angle);
+      const newZ = x * Math.sin(angle) + z * Math.cos(angle);
+
+      cameraRef.current.position.set(newX + target.x, currentPos.y, newZ + target.z);
+      controlsRef.current.update();
+    }
+  };
+
+  const handleRotateRight = () => {
+    if (controlsRef.current && cameraRef.current) {
+      const angle = Math.PI / 8; // 22.5 degrees
+      const currentPos = cameraRef.current.position.clone();
+      const target = controlsRef.current.target;
+
+      const x = currentPos.x - target.x;
+      const z = currentPos.z - target.z;
+
+      const newX = x * Math.cos(angle) - z * Math.sin(angle);
+      const newZ = x * Math.sin(angle) + z * Math.cos(angle);
+
+      cameraRef.current.position.set(newX + target.x, currentPos.y, newZ + target.z);
+      controlsRef.current.update();
+    }
+  };
+
+  const handlePanLeft = () => {
+    if (controlsRef.current && cameraRef.current) {
+      const panDistance = 2;
+      controlsRef.current.target.x -= panDistance;
+      cameraRef.current.position.x -= panDistance;
+      controlsRef.current.update();
+    }
+  };
+
+  const handlePanRight = () => {
+    if (controlsRef.current && cameraRef.current) {
+      const panDistance = 2;
+      controlsRef.current.target.x += panDistance;
+      cameraRef.current.position.x += panDistance;
+      controlsRef.current.update();
+    }
+  };
+
+  const handleReset = () => {
+    if (controlsRef.current && cameraRef.current) {
+      cameraRef.current.position.set(12, 8, 12);
+      controlsRef.current.target.set(0, 1, 0);
+      controlsRef.current.update();
+      setIsRotating(true);
+    }
+  };
 
   return (
-    <Canvas
-      shadows
-      className="w-full h-full"
-      gl={{ antialias: true, alpha: true }}
-      onPointerDown={() => setIsRotating(false)}
-    >
-      <PerspectiveCamera makeDefault position={[12, 8, 12]} fov={50} />
+    <>
+      <Canvas
+        shadows
+        className="w-full h-full"
+        gl={{ antialias: true, alpha: true }}
+        onPointerDown={() => setIsRotating(false)}
+      >
+        <PerspectiveCamera ref={cameraRef} makeDefault position={[12, 8, 12]} fov={50} />
 
-      <OrbitControls
-        enablePan={false}
-        enableZoom={true}
-        minDistance={8}
-        maxDistance={25}
-        maxPolarAngle={Math.PI / 2.2}
-        minPolarAngle={Math.PI / 6}
-        autoRotate={isRotating}
-        autoRotateSpeed={0.5}
-        target={[0, 1, 0]}
+        <OrbitControls
+          ref={controlsRef}
+          enablePan={true}
+          enableZoom={true}
+          minDistance={8}
+          maxDistance={25}
+          maxPolarAngle={Math.PI / 2.2}
+          minPolarAngle={Math.PI / 6}
+          autoRotate={isRotating}
+          autoRotateSpeed={0.5}
+          target={[0, 1, 0]}
+        />
+
+        <Suspense fallback={null}>
+          <Scene />
+        </Suspense>
+      </Canvas>
+
+      <CameraControls
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onRotateLeft={handleRotateLeft}
+        onRotateRight={handleRotateRight}
+        onPanLeft={handlePanLeft}
+        onPanRight={handlePanRight}
+        onReset={handleReset}
       />
-
-      <Suspense fallback={null}>
-        <Scene />
-      </Suspense>
-    </Canvas>
+    </>
   );
 }
