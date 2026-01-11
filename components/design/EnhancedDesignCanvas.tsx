@@ -32,6 +32,11 @@ import { useKeyboardShortcuts } from "@/lib/hooks/useKeyboardShortcuts";
 import PropertyPanel from "./PropertyPanel";
 import DebugPanel from "./DebugPanel";
 import { saveDesign, loadDesign, saveToLocalStorage, loadFromLocalStorage } from "@/lib/design/saveLoad";
+import { MeasurementGrid, DimensionLine } from "./MeasurementGrid";
+import { TransformGizmo } from "./TransformGizmo";
+import EditingToolbar from "./EditingToolbar";
+import PrecisionEditPanel, { PrecisionEditData } from "./PrecisionEditPanel";
+import { EditMode, createEditModeController } from "@/lib/editor/EditModeController";
 
 // Scene Component
 function Scene({
@@ -47,6 +52,11 @@ function Scene({
   selectedPlantId,
   selectedStructureId,
   selectedHouseId,
+  showGrid,
+  showMeasurements,
+  editMode,
+  onTransform,
+  gridSize,
 }: {
   plants: PlacedPlant[];
   structures: PlacedStructure[];
@@ -60,9 +70,23 @@ function Scene({
   selectedPlantId: string | null;
   selectedStructureId: string | null;
   selectedHouseId: string | null;
+  showGrid: boolean;
+  showMeasurements: boolean;
+  editMode: EditMode;
+  onTransform: (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z', delta: number) => void;
+  gridSize: number;
 }) {
   const houses = sceneManager.getHouses();
   const ground = sceneManager.getGround();
+
+  // Get selected object position for gizmo
+  const selectedPlant = plants.find(p => p.id === selectedPlantId);
+  const selectedStructure = structures.find(s => s.id === selectedStructureId);
+  const selectedPosition: [number, number, number] | null = selectedPlant
+    ? [selectedPlant.position.x, selectedPlant.position.y, selectedPlant.position.z]
+    : selectedStructure
+    ? [selectedStructure.position.x, selectedStructure.position.y, selectedStructure.position.z]
+    : null;
 
   return (
     <>
@@ -84,9 +108,19 @@ function Scene({
       <ambientLight intensity={0.6} />
       <hemisphereLight args={["#87CEEB", "#4a7c2f", 0.5]} />
 
+      {/* Measurement Grid */}
+      {showGrid && (
+        <MeasurementGrid
+          size={50}
+          divisions={50}
+          subDivisions={Math.max(1, Math.round(1 / gridSize))}
+          showLabels={true}
+        />
+      )}
+
       {/* Grassy Ground */}
-      <GrassyGround ground={ground} />
-      <DecorativeRocks size={ground.size} count={20} />
+      {!showGrid && <GrassyGround ground={ground} />}
+      {!showGrid && <DecorativeRocks size={ground.size} count={20} />}
 
       {/* Houses */}
       {houses.map((house) => (
@@ -115,6 +149,16 @@ function Scene({
           onClick={() => onPlantClick(plant.id)}
         />
       ))}
+
+      {/* Transform Gizmo */}
+      {selectedPosition && (editMode === 'move' || editMode === 'scale' || editMode === 'rotate') && (
+        <TransformGizmo
+          position={selectedPosition}
+          onTransform={onTransform}
+          mode={editMode === 'move' ? 'translate' : editMode === 'scale' ? 'scale' : 'rotate'}
+          size={2}
+        />
+      )}
     </>
   );
 }
@@ -173,6 +217,69 @@ export default function EnhancedDesignCanvas() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'move'>('select');
   const [showPropertyPanel, setShowPropertyPanel] = useState(true);
+
+  // Edit mode controller
+  const editModeController = useMemo(() => createEditModeController(), []);
+  const [editMode, setEditMode] = useState<EditMode>('select');
+  const [showGrid, setShowGrid] = useState(false);
+  const [showMeasurements, setShowMeasurements] = useState(false);
+  const [snapToGridEnabled, setSnapToGridEnabled] = useState(true);
+  const [gridSize, setGridSize] = useState(1);
+  const [showPrecisionPanel, setShowPrecisionPanel] = useState(false);
+
+  // Update edit mode controller when settings change
+  useEffect(() => {
+    editModeController.setMode(editMode);
+    editModeController.setSnapMode(snapToGridEnabled ? 'grid' : 'none');
+    editModeController.setGridSize(gridSize);
+  }, [editMode, snapToGridEnabled, gridSize, editModeController]);
+
+  // Handle transform operations from gizmo
+  const handleTransform = (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z', delta: number) => {
+    const snappedDelta = snapToGridEnabled ? editModeController.snapToGrid(delta) : delta;
+
+    if (selectedPlantId) {
+      setPlants(plants.map(p => {
+        if (p.id === selectedPlantId) {
+          if (type === 'move') {
+            return {
+              ...p,
+              position: {
+                x: axis === 'x' ? p.position.x + snappedDelta : p.position.x,
+                y: axis === 'y' ? p.position.y + snappedDelta : p.position.y,
+                z: axis === 'z' ? p.position.z + snappedDelta : p.position.z,
+              },
+            };
+          } else if (type === 'scale') {
+            return { ...p, scale: Math.max(0.1, p.scale + snappedDelta * 0.1) };
+          } else if (type === 'rotate') {
+            return { ...p, rotation: p.rotation + snappedDelta };
+          }
+        }
+        return p;
+      }));
+    } else if (selectedStructureId) {
+      setStructures(structures.map(s => {
+        if (s.id === selectedStructureId) {
+          if (type === 'move') {
+            return {
+              ...s,
+              position: {
+                x: axis === 'x' ? s.position.x + snappedDelta : s.position.x,
+                y: axis === 'y' ? s.position.y + snappedDelta : s.position.y,
+                z: axis === 'z' ? s.position.z + snappedDelta : s.position.z,
+              },
+            };
+          } else if (type === 'scale') {
+            return { ...s, scale: Math.max(0.1, s.scale + snappedDelta * 0.1) };
+          } else if (type === 'rotate') {
+            return { ...s, rotation: s.rotation + snappedDelta };
+          }
+        }
+        return s;
+      }));
+    }
+  };
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const mousePosition = useRef(new Vector2());
@@ -388,6 +495,73 @@ export default function EnhancedDesignCanvas() {
     );
   };
 
+  // Create precision edit data from selected object
+  const precisionEditData: PrecisionEditData | null = useMemo(() => {
+    if (selectedPlant) {
+      return {
+        x: selectedPlant.position.x,
+        y: selectedPlant.position.y,
+        z: selectedPlant.position.z,
+        width: selectedPlant.scale,
+        height: selectedPlant.scale,
+        depth: selectedPlant.scale,
+        rotationX: 0,
+        rotationY: selectedPlant.rotation * (180 / Math.PI), // Convert to degrees
+        rotationZ: 0,
+        lockX: false,
+        lockY: false,
+        lockZ: false,
+        maintainAspectRatio: true,
+      };
+    } else if (selectedStructure) {
+      return {
+        x: selectedStructure.position.x,
+        y: selectedStructure.position.y,
+        z: selectedStructure.position.z,
+        width: selectedStructure.scale,
+        height: selectedStructure.scale,
+        depth: selectedStructure.scale,
+        rotationX: 0,
+        rotationY: selectedStructure.rotation * (180 / Math.PI), // Convert to degrees
+        rotationZ: 0,
+        lockX: false,
+        lockY: false,
+        lockZ: false,
+        maintainAspectRatio: true,
+      };
+    }
+    return null;
+  }, [selectedPlant, selectedStructure]);
+
+  // Handle precision panel changes
+  const handlePrecisionEdit = (data: PrecisionEditData) => {
+    if (selectedPlantId) {
+      setPlants(plants.map(p => {
+        if (p.id === selectedPlantId) {
+          return {
+            ...p,
+            position: { x: data.x, y: data.y, z: data.z },
+            scale: data.width,
+            rotation: data.rotationY * (Math.PI / 180), // Convert to radians
+          };
+        }
+        return p;
+      }));
+    } else if (selectedStructureId) {
+      setStructures(structures.map(s => {
+        if (s.id === selectedStructureId) {
+          return {
+            ...s,
+            position: { x: data.x, y: data.y, z: data.z },
+            scale: data.width,
+            rotation: data.rotationY * (Math.PI / 180), // Convert to radians
+          };
+        }
+        return s;
+      }));
+    }
+  };
+
   // Focus camera on house
   const focusOnHouse = (houseId: string) => {
     const house = sceneManager.getHouse(houseId);
@@ -528,6 +702,47 @@ export default function EnhancedDesignCanvas() {
       },
       description: 'Deselect all',
     },
+    // Edit mode shortcuts
+    {
+      key: 'q',
+      handler: () => setEditMode('select'),
+      description: 'Select mode',
+    },
+    {
+      key: 'w',
+      handler: () => setEditMode('move'),
+      description: 'Move mode',
+    },
+    {
+      key: 'e',
+      handler: () => setEditMode('scale'),
+      description: 'Scale mode',
+    },
+    {
+      key: 't',
+      handler: () => setEditMode('rotate'),
+      description: 'Rotate mode',
+    },
+    {
+      key: 'v',
+      handler: () => setEditMode('vertex'),
+      description: 'Vertex edit mode',
+    },
+    {
+      key: 'm',
+      handler: () => setEditMode('measure'),
+      description: 'Measure mode',
+    },
+    {
+      key: 'g',
+      handler: () => setShowGrid(!showGrid),
+      description: 'Toggle grid',
+    },
+    {
+      key: 'p',
+      handler: () => setShowPrecisionPanel(!showPrecisionPanel),
+      description: 'Toggle precision panel',
+    },
   ]);
 
   return (
@@ -645,6 +860,11 @@ export default function EnhancedDesignCanvas() {
               selectedPlantId={selectedPlantId}
               selectedStructureId={selectedStructureId}
               selectedHouseId={selectedHouseId}
+              showGrid={showGrid}
+              showMeasurements={showMeasurements}
+              editMode={editMode}
+              onTransform={handleTransform}
+              gridSize={gridSize}
             />
           </Suspense>
         </Canvas>
@@ -672,6 +892,35 @@ export default function EnhancedDesignCanvas() {
           Slide to see how your landscape will look over time
         </p>
       </div>
+
+      {/* Editing Toolbar - Bottom Left */}
+      <div className="absolute bottom-4 left-4 z-20">
+        <EditingToolbar
+          mode={editMode}
+          onModeChange={setEditMode}
+          showGrid={showGrid}
+          onToggleGrid={() => setShowGrid(!showGrid)}
+          showMeasurements={showMeasurements}
+          onToggleMeasurements={() => setShowMeasurements(!showMeasurements)}
+          snapToGrid={snapToGridEnabled}
+          onToggleSnap={() => setSnapToGridEnabled(!snapToGridEnabled)}
+          gridSize={gridSize}
+          onGridSizeChange={setGridSize}
+        />
+      </div>
+
+      {/* Precision Edit Panel - Right Side */}
+      {precisionEditData && (selectedPlantId || selectedStructureId) && (
+        <div className="absolute top-4 right-4 z-20">
+          <PrecisionEditPanel
+            data={precisionEditData}
+            onChange={handlePrecisionEdit}
+            snapToGrid={snapToGridEnabled}
+            gridSize={gridSize}
+            unit="feet"
+          />
+        </div>
+      )}
 
       {/* Property Panel for detailed editing */}
       {showPropertyPanel && (

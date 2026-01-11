@@ -49,7 +49,7 @@ export default function StructureToolbox({ onStructureSelect, selectedStructureI
 
         {/* Category filter */}
         <div className="flex gap-2 flex-wrap">
-          {["all", "hardscape", "vertical", "overhead", "water-feature", "outdoor-living"].map((cat) => (
+          {["all", "hardscape", "path", "vertical", "overhead", "water-feature", "outdoor-living"].map((cat) => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
@@ -131,7 +131,7 @@ export default function StructureToolbox({ onStructureSelect, selectedStructureI
                     <span className="font-semibold">Depth:</span> {structure.dimensions.baseDepth} ft
                   </div>
                   <div className="col-span-2">
-                    <span className="font-semibold">Height:</span> {structure.dimensions.baseHeight} ft
+                    <span className="font-semibold">Height:</span> {structure.dimensions.height} ft
                   </div>
                 </div>
                 <div>
