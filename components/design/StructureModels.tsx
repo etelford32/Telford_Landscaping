@@ -961,8 +961,8 @@ function PizzaOvenModel({ structure, size, onClick }: any) {
       </mesh>
 
       {/* Opening */}
-      <mesh position={[0, size.height * 0.55, size.depth / 2]} castShadow>
-        <cylinderGeometry args={[0.6, 0.6, 0.3, 12, 1, false, 0, Math.PI]} rotation={[0, 0, Math.PI / 2]} />
+      <mesh position={[0, size.height * 0.55, size.depth / 2]} rotation={[0, 0, Math.PI / 2]} castShadow>
+        <cylinderGeometry args={[0.6, 0.6, 0.3, 12, 1, false, 0, Math.PI]} />
         <meshStandardMaterial color="#1a1a1a" />
       </mesh>
 

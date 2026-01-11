@@ -293,7 +293,7 @@ export default function PropertyPanel({
               </div>
               <div className="flex justify-between">
                 <span>Height:</span>
-                <span className="font-medium">{structure.dimensions.baseHeight} ft</span>
+                <span className="font-medium">{structure.dimensions.height} ft</span>
               </div>
               <div className="flex justify-between">
                 <span>Materials:</span>

@@ -6,7 +6,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Vector3 } from 'three';
+import { Vector3, Quaternion, Euler } from 'three';
 import { ThreeEvent } from '@react-three/fiber';
 
 export interface Vertex {
@@ -83,11 +83,11 @@ export function VertexEditor({
 
         // Calculate rotation to align with edge
         const up = new Vector3(0, 1, 0);
-        const quaternion = new THREE.Quaternion().setFromUnitVectors(
+        const quaternion = new Quaternion().setFromUnitVectors(
           up,
           direction.normalize()
         );
-        const euler = new THREE.Euler().setFromQuaternion(quaternion);
+        const euler = new Euler().setFromQuaternion(quaternion);
 
         return (
           <mesh

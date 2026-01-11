@@ -131,7 +131,7 @@ export default function StructureToolbox({ onStructureSelect, selectedStructureI
                     <span className="font-semibold">Depth:</span> {structure.dimensions.baseDepth} ft
                   </div>
                   <div className="col-span-2">
-                    <span className="font-semibold">Height:</span> {structure.dimensions.baseHeight} ft
+                    <span className="font-semibold">Height:</span> {structure.dimensions.height} ft
                   </div>
                 </div>
                 <div>
