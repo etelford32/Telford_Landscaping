@@ -21,6 +21,7 @@ export default function Navigation() {
     { href: "/", label: "Home", icon: TreePine, color: "from-green-500 to-emerald-600" },
     { href: "/plant-care", label: "Plant Care", icon: Sprout, color: "from-emerald-500 to-green-600" },
     { href: "/fertilization", label: "Fertilization", icon: Droplets, color: "from-blue-500 to-cyan-600" },
+    { href: "/irrigation", label: "Irrigation", icon: Droplets, color: "from-cyan-500 to-blue-600" },
     { href: "/app", label: "Design Tool", icon: Palette, color: "from-primary-500 to-primary-700", featured: true },
     { href: "/portfolio", label: "Portfolio", icon: Camera, color: "from-earth-500 to-earth-700" },
     { href: "/#contact", label: "Contact", icon: Mail, color: "from-sky-500 to-blue-600" },
