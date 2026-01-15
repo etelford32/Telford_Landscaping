@@ -1,0 +1,240 @@
+{
+  "version": "1.0.0",
+  "assets": [
+    {
+      "id": "japanese-maple-model",
+      "type": "model",
+      "name": "Japanese Maple Tree",
+      "path": "models/plants/japanese-maple.glb",
+      "category": "plants",
+      "tags": ["tree", "deciduous", "ornamental", "northern-california"],
+      "priority": 10,
+      "metadata": {
+        "speciesId": "japanese-maple",
+        "commonName": "Japanese Maple",
+        "scientificName": "Acer palmatum",
+        "matureHeight": 20,
+        "matureWidth": 18,
+        "growthRate": "slow",
+        "zone": "6-8"
+      },
+      "lods": [
+        { "distance": 0, "path": "models/plants/japanese-maple-high.glb" },
+        { "distance": 50, "path": "models/plants/japanese-maple-medium.glb" },
+        { "distance": 100, "path": "models/plants/japanese-maple-low.glb" }
+      ]
+    },
+    {
+      "id": "blue-spruce-model",
+      "type": "model",
+      "name": "Blue Spruce Tree",
+      "path": "models/plants/blue-spruce.glb",
+      "category": "plants",
+      "tags": ["tree", "evergreen", "conifer", "northern-california"],
+      "priority": 10,
+      "metadata": {
+        "speciesId": "blue-spruce",
+        "commonName": "Blue Spruce",
+        "scientificName": "Picea pungens",
+        "matureHeight": 60,
+        "matureWidth": 20,
+        "growthRate": "slow",
+        "zone": "2-7"
+      }
+    },
+    {
+      "id": "coast-redwood-model",
+      "type": "model",
+      "name": "Coast Redwood",
+      "path": "models/plants/coast-redwood.glb",
+      "category": "plants",
+      "tags": ["tree", "evergreen", "conifer", "native", "northern-california"],
+      "priority": 8,
+      "metadata": {
+        "speciesId": "coast-redwood",
+        "commonName": "Coast Redwood",
+        "scientificName": "Sequoia sempervirens",
+        "matureHeight": 200,
+        "matureWidth": 30,
+        "growthRate": "fast",
+        "zone": "7-9",
+        "native": true
+      }
+    },
+    {
+      "id": "california-lilac-model",
+      "type": "model",
+      "name": "California Lilac",
+      "path": "models/plants/california-lilac.glb",
+      "category": "plants",
+      "tags": ["shrub", "evergreen", "flowering", "native", "northern-california"],
+      "priority": 7,
+      "metadata": {
+        "speciesId": "california-lilac",
+        "commonName": "California Lilac",
+        "scientificName": "Ceanothus",
+        "matureHeight": 6,
+        "matureWidth": 8,
+        "growthRate": "medium",
+        "zone": "8-10",
+        "native": true
+      }
+    },
+    {
+      "id": "lavender-model",
+      "type": "model",
+      "name": "English Lavender",
+      "path": "models/plants/lavender.glb",
+      "category": "plants",
+      "tags": ["perennial", "flowering", "aromatic", "drought-tolerant"],
+      "priority": 6,
+      "metadata": {
+        "speciesId": "english-lavender",
+        "commonName": "English Lavender",
+        "scientificName": "Lavandula angustifolia",
+        "matureHeight": 2,
+        "matureWidth": 3,
+        "growthRate": "medium",
+        "zone": "5-9"
+      }
+    },
+    {
+      "id": "grass-texture",
+      "type": "texture",
+      "name": "Grass Lawn Texture",
+      "path": "textures/grass/grass-albedo.jpg",
+      "category": "ground",
+      "tags": ["grass", "lawn", "ground"],
+      "priority": 10,
+      "maps": {
+        "albedo": "textures/grass/grass-albedo.jpg",
+        "normal": "textures/grass/grass-normal.jpg",
+        "roughness": "textures/grass/grass-roughness.jpg",
+        "ao": "textures/grass/grass-ao.jpg"
+      },
+      "metadata": {
+        "repeat": { "x": 10, "y": 10 }
+      }
+    },
+    {
+      "id": "mulch-texture",
+      "type": "texture",
+      "name": "Wood Mulch Texture",
+      "path": "textures/mulch/mulch-albedo.jpg",
+      "category": "ground",
+      "tags": ["mulch", "ground", "landscaping"],
+      "priority": 8,
+      "maps": {
+        "albedo": "textures/mulch/mulch-albedo.jpg",
+        "normal": "textures/mulch/mulch-normal.jpg",
+        "roughness": "textures/mulch/mulch-roughness.jpg"
+      }
+    },
+    {
+      "id": "gravel-texture",
+      "type": "texture",
+      "name": "Gravel Texture",
+      "path": "textures/gravel/gravel-albedo.jpg",
+      "category": "ground",
+      "tags": ["gravel", "stone", "ground"],
+      "priority": 6,
+      "maps": {
+        "albedo": "textures/gravel/gravel-albedo.jpg",
+        "normal": "textures/gravel/gravel-normal.jpg",
+        "roughness": "textures/gravel/gravel-roughness.jpg",
+        "ao": "textures/gravel/gravel-ao.jpg"
+      }
+    },
+    {
+      "id": "fence-wood-texture",
+      "type": "texture",
+      "name": "Wood Fence Texture",
+      "path": "textures/wood/fence-albedo.jpg",
+      "category": "structures",
+      "tags": ["wood", "fence", "structure"],
+      "priority": 7,
+      "maps": {
+        "albedo": "textures/wood/fence-albedo.jpg",
+        "normal": "textures/wood/fence-normal.jpg",
+        "roughness": "textures/wood/fence-roughness.jpg"
+      }
+    },
+    {
+      "id": "concrete-patio-texture",
+      "type": "texture",
+      "name": "Concrete Patio Texture",
+      "path": "textures/concrete/patio-albedo.jpg",
+      "category": "structures",
+      "tags": ["concrete", "patio", "structure"],
+      "priority": 7,
+      "maps": {
+        "albedo": "textures/concrete/patio-albedo.jpg",
+        "normal": "textures/concrete/patio-normal.jpg",
+        "roughness": "textures/concrete/patio-roughness.jpg",
+        "ao": "textures/concrete/patio-ao.jpg"
+      }
+    },
+    {
+      "id": "wooden-fence-model",
+      "type": "model",
+      "name": "Wooden Fence Section",
+      "path": "models/structures/wooden-fence.glb",
+      "category": "structures",
+      "tags": ["fence", "wood", "structure", "boundary"],
+      "priority": 8,
+      "metadata": {
+        "type": "fence",
+        "material": "wood",
+        "length": 8,
+        "height": 6
+      }
+    },
+    {
+      "id": "stone-patio-model",
+      "type": "model",
+      "name": "Stone Patio",
+      "path": "models/structures/stone-patio.glb",
+      "category": "structures",
+      "tags": ["patio", "stone", "structure", "outdoor-living"],
+      "priority": 7,
+      "metadata": {
+        "type": "patio",
+        "material": "stone",
+        "width": 12,
+        "depth": 16
+      }
+    },
+    {
+      "id": "garden-bench-model",
+      "type": "model",
+      "name": "Garden Bench",
+      "path": "models/structures/garden-bench.glb",
+      "category": "structures",
+      "tags": ["bench", "seating", "furniture", "decoration"],
+      "priority": 5,
+      "metadata": {
+        "type": "furniture",
+        "material": "wood",
+        "width": 6,
+        "depth": 2,
+        "height": 3
+      }
+    },
+    {
+      "id": "raised-bed-model",
+      "type": "model",
+      "name": "Raised Garden Bed",
+      "path": "models/structures/raised-bed.glb",
+      "category": "structures",
+      "tags": ["raised-bed", "planter", "structure", "gardening"],
+      "priority": 6,
+      "metadata": {
+        "type": "planter",
+        "material": "wood",
+        "width": 8,
+        "depth": 4,
+        "height": 2
+      }
+    }
+  ]
+}

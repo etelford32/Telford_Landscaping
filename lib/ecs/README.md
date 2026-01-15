@@ -321,13 +321,64 @@ class RenderSystem extends BaseSystem {
 - **No unnecessary re-renders**: UI only updates when component data changes
 - **Deterministic**: Easy to profile and optimize
 
+## ✅ Completed Systems
+
+### TransformSystem
+Handles movement, rotation, and scaling operations:
+- `translate()` - Move entities (relative or absolute)
+- `rotate()` - Rotate entities
+- `scale()` - Scale entities
+- `snapToGrid()` - Snap to grid alignment
+- `lookAt()` - Orient entity toward target
+- `getDistance()` - Calculate distance between entities
+- `translateMultiple()` - Batch move operations
+
+### MaterialSystem
+Updates materials based on selection/hover state:
+- Selection highlights (emissive glow)
+- Hover effects (brightness modulation)
+- Locked entity visuals (desaturated + transparent)
+- Hidden entity handling
+- Caches original materials for reset
+
+### GrowthSystem
+Plant aging and size calculations:
+- Real-time or manual growth control
+- Growth curve interpolation (custom per species)
+- Care tracking (pruning, fertilization intervals)
+- Health degradation over time
+- Global age control (timeline slider)
+
+### RenderSystem
+Bridges ECS components to Three.js:
+- Lazy mesh creation (only when needed)
+- Component-to-mesh synchronization
+- Mesh lifecycle management (create/update/dispose)
+- Raycasting support for entity selection
+- Shadow and frustum culling configuration
+- Geometry type support: sphere, box, cylinder, cone, plane, torus
+- Material type support: standard (PBR), physical, basic, lambert
+
+## 📖 Complete Example
+
+See `examples/BasicIntegration.ts` for a full working example that demonstrates:
+- World initialization with all systems
+- Creating plant and structure entities
+- Update loop integration
+- User interaction handling (selection, movement)
+- Timeline slider for plant growth
+- Save/load functionality
+- Raycasting for entity picking
+
 ## 🚀 Next Steps
 
-1. Create Systems (Transform, Material, Growth, Render)
-2. Create AssetManager for texture loading
+1. ✅ ~~Create Systems (Transform, Material, Growth, Render)~~ **COMPLETED**
+2. Create AssetManager for texture loading and caching
 3. Integrate with existing PlantModels/StructureModels
-4. Add LOD (Level of Detail) system
-5. Add physics system (optional)
+4. Add LOD (Level of Detail) system for performance
+5. Add physics system (optional - collision detection)
+6. Create React hooks for ECS integration (`useWorld`, `useEntity`, `useComponent`)
+7. Build UI components for timeline control and property editing
 
 ## 📚 Further Reading
 
