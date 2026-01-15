@@ -29,5 +29,8 @@ export * from './components';
 // Systems
 export * from './systems';
 
+// Assets
+export * from './assets';
+
 // Examples (for reference)
 export * from './examples/BasicIntegration';
