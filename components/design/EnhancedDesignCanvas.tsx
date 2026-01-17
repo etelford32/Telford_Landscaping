@@ -38,6 +38,7 @@ import EditingToolbar from "./EditingToolbar";
 import EnhancedPrecisionEdit from "./EnhancedPrecisionEdit";
 import { PrecisionEditData } from "./PrecisionEditPanel";
 import TutorialPanel from "./TutorialPanel";
+import GridClickEditor, { GridPointsVisualizer } from "./GridClickEditor";
 import { EditMode, createEditModeController } from "@/lib/editor/EditModeController";
 
 // Scene Component
@@ -56,9 +57,12 @@ function Scene({
   selectedHouseId,
   showGrid,
   showMeasurements,
+  showGridPoints,
   editMode,
   onTransform,
   gridSize,
+  onGridClick,
+  gridClickEnabled,
 }: {
   plants: PlacedPlant[];
   structures: PlacedStructure[];
@@ -74,9 +78,12 @@ function Scene({
   selectedHouseId: string | null;
   showGrid: boolean;
   showMeasurements: boolean;
+  showGridPoints: boolean;
   editMode: EditMode;
   onTransform: (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z', delta: number) => void;
   gridSize: number;
+  onGridClick: (position: { x: number; y: number; z: number }) => void;
+  gridClickEnabled: boolean;
 }) {
   const houses = sceneManager.getHouses();
   const ground = sceneManager.getGround();
@@ -109,6 +116,27 @@ function Scene({
       />
       <ambientLight intensity={0.6} />
       <hemisphereLight args={["#87CEEB", "#4a7c2f", 0.5]} />
+
+      {/* Grid Click Editor - Interactive placement layer */}
+      {gridClickEnabled && (
+        <GridClickEditor
+          gridSize={50}
+          cellSize={gridSize}
+          onGridClick={onGridClick}
+          enabled={true}
+          showPreview={true}
+          previewColor="#4ade80"
+        />
+      )}
+
+      {/* Grid Points Visualizer */}
+      {showGridPoints && (
+        <GridPointsVisualizer
+          gridSize={50}
+          cellSize={gridSize}
+          enabled={true}
+        />
+      )}
 
       {/* Measurement Grid */}
       {showGrid && (
@@ -227,9 +255,14 @@ export default function EnhancedDesignCanvas() {
   const [editMode, setEditMode] = useState<EditMode>('select');
   const [showGrid, setShowGrid] = useState(false);
   const [showMeasurements, setShowMeasurements] = useState(false);
+  const [showGridPoints, setShowGridPoints] = useState(false);
   const [snapToGridEnabled, setSnapToGridEnabled] = useState(true);
   const [gridSize, setGridSize] = useState(1);
   const [showPrecisionPanel, setShowPrecisionPanel] = useState(false);
+
+  // Grid click placement
+  const [gridClickEnabled, setGridClickEnabled] = useState(false);
+  const [pendingPlantSpecies, setPendingPlantSpecies] = useState<any>(null);
 
   // Update edit mode controller when settings change
   useEffect(() => {
@@ -396,6 +429,8 @@ export default function EnhancedDesignCanvas() {
     selectionManager.select(plantId);
     setSelectedHouseId(null);
     setSelectedStructureId(null);
+    setGridClickEnabled(false);
+    setPendingPlantSpecies(null);
   };
 
   // Handle structure click
@@ -404,6 +439,8 @@ export default function EnhancedDesignCanvas() {
     setSelectedPlantId(null);
     setSelectedHouseId(null);
     selectionManager.clearSelection();
+    setGridClickEnabled(false);
+    setPendingPlantSpecies(null);
 
     // Mark structure as selected
     setStructures(structures.map(s => ({
@@ -418,6 +455,33 @@ export default function EnhancedDesignCanvas() {
     setSelectedPlantId(null);
     setSelectedStructureId(null);
     selectionManager.clearSelection();
+    setGridClickEnabled(false);
+    setPendingPlantSpecies(null);
+  };
+
+  // Handle grid click placement
+  const handleGridClick = (position: { x: number; y: number; z: number }) => {
+    if (pendingPlantSpecies) {
+      const newPlant: PlacedPlant = {
+        id: `plant-${Date.now()}-${Math.random()}`,
+        speciesId: pendingPlantSpecies.id,
+        position,
+        rotation: 0,
+        scale: 1,
+        age: age,
+        variant: 0,
+        selected: false,
+      };
+      setPlants([...plants, newPlant]);
+      // Don't clear pending species - allow multiple placements
+    }
+  };
+
+  // Handle plant selection from toolbox
+  const handlePlantSelect = (species: any) => {
+    setPendingPlantSpecies(species);
+    setGridClickEnabled(true);
+    setEditMode('select');
   };
 
   // Plant actions
@@ -759,10 +823,7 @@ export default function EnhancedDesignCanvas() {
       {/* Plant Toolbox - Left */}
       {showPlantToolbox && (
         <EnhancedPlantToolbox
-          onPlantSelect={(species) => {
-            // Handle plant selection if needed
-            console.log('Plant selected:', species);
-          }}
+          onPlantSelect={handlePlantSelect}
           selectedPlantId={selectedPlantId || undefined}
           visible={showPlantToolbox}
           onClose={() => setShowPlantToolbox(false)}
@@ -876,9 +937,12 @@ export default function EnhancedDesignCanvas() {
               selectedHouseId={selectedHouseId}
               showGrid={showGrid}
               showMeasurements={showMeasurements}
+              showGridPoints={showGridPoints}
               editMode={editMode}
               onTransform={handleTransform}
               gridSize={gridSize}
+              onGridClick={handleGridClick}
+              gridClickEnabled={gridClickEnabled}
             />
           </Suspense>
         </Canvas>
