@@ -39,6 +39,7 @@ import EnhancedPrecisionEdit from "./EnhancedPrecisionEdit";
 import { PrecisionEditData } from "./PrecisionEditPanel";
 import TutorialPanel from "./TutorialPanel";
 import GridClickEditor, { GridPointsVisualizer } from "./GridClickEditor";
+import DesignHub from "./DesignHub";
 import { EditMode, createEditModeController } from "@/lib/editor/EditModeController";
 
 // Scene Component
@@ -638,15 +639,58 @@ export default function EnhancedDesignCanvas() {
     }
   };
 
-  // Save/Load Functions
-  const handleSave = () => {
-    const name = prompt("Enter design name:", "My Landscape Design");
-    if (name) {
-      saveDesign(name, plants, structures, age);
+  // Unified handlers for DesignHub
+  const handleCopy = () => {
+    if (selectedPlantId) {
+      duplicatePlant();
+    } else if (selectedStructureId) {
+      duplicateStructure();
     }
   };
 
-  const handleLoad = async () => {
+  const handleDelete = () => {
+    if (selectedPlantId) {
+      deletePlant();
+    } else if (selectedStructureId) {
+      deleteStructure();
+    }
+  };
+
+  const handleResetCamera = () => {
+    // Camera reset logic would go here
+    console.log('Reset camera');
+  };
+
+  const handleFocusSelected = () => {
+    // Focus on selected object logic would go here
+    console.log('Focus on selected');
+  };
+
+  // Save/Load Functions
+  const handleSave = () => {
+    const data = { plants, structures, age, name: `Design ${new Date().toLocaleDateString()}`, version: '1.0', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() };
+    saveToLocalStorage(data);
+    alert('Design saved!');
+  };
+
+  const handleLoad = () => {
+    const data = loadFromLocalStorage();
+    if (data) {
+      setPlants(data.plants);
+      setStructures(data.structures || []);
+      setAge(data.age || 5);
+      alert('Design loaded!');
+    } else {
+      alert('No saved design found');
+    }
+  };
+
+  const handleExport = () => {
+    const data = { plants, structures, age, name: `Design ${new Date().toLocaleDateString()}`, version: '1.0', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() };
+    saveDesign(data, `design-${Date.now()}.landscape.json`);
+  };
+
+  const handleLoadFile = async () => {
     fileInputRef.current?.click();
   };
 
@@ -812,6 +856,9 @@ export default function EnhancedDesignCanvas() {
       description: 'Toggle precision panel',
     },
   ]);
+
+  // Selection count
+  const selectedCount = (selectedPlantId ? 1 : 0) + (selectedStructureId ? 1 : 0) + (selectedHouseId ? 1 : 0);
 
   return (
     <div className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100">
@@ -1123,6 +1170,47 @@ export default function EnhancedDesignCanvas() {
           Click to select • Orbit/pan/zoom with mouse • Ctrl+Z/Y to undo/redo
         </p>
       </div>
+
+      {/* Design Hub - Bottom Toolbar */}
+      <DesignHub
+        selectedCount={selectedCount}
+        editMode={editMode}
+        onEditModeChange={(mode) => {
+          setEditMode(mode);
+          if (mode !== 'select') {
+            setGridClickEnabled(false);
+            setPendingPlantSpecies(null);
+          }
+        }}
+        showGrid={showGrid}
+        onToggleGrid={() => setShowGrid(!showGrid)}
+        showMeasurements={showMeasurements}
+        onToggleMeasurements={() => setShowMeasurements(!showMeasurements)}
+        showGridPoints={showGridPoints}
+        onToggleGridPoints={() => setShowGridPoints(!showGridPoints)}
+        gridSize={gridSize}
+        onGridSizeChange={setGridSize}
+        snapToGrid={snapToGridEnabled}
+        onToggleSnap={() => setSnapToGridEnabled(!snapToGridEnabled)}
+        age={age}
+        onAgeChange={setAge}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onSave={handleSave}
+        onLoad={handleLoad}
+        onExport={handleExport}
+        onCopy={handleCopy}
+        onDelete={handleDelete}
+        canCopy={selectedCount > 0}
+        canDelete={selectedCount > 0}
+        onResetCamera={handleResetCamera}
+        onFocusSelected={handleFocusSelected}
+        onTogglePrecision={() => setShowPrecisionPanel(!showPrecisionPanel)}
+        onToggleProperties={() => setShowPropertyPanel(!showPropertyPanel)}
+        onToggleHelp={() => setShowTutorial(!showTutorial)}
+      />
 
       {/* Debug Panel */}
       <DebugPanel
