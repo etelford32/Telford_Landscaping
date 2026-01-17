@@ -6,7 +6,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from 'react';
-import { Box3, Vector3, Group } from 'three';
+import { Box3, Vector3, Group, BoxGeometry } from 'three';
 import { Html } from '@react-three/drei';
 
 interface SelectionBoxProps {
@@ -65,7 +65,7 @@ export default function SelectionBox({
       {/* Wireframe Edges */}
       {showBounds && (
         <lineSegments position={center}>
-          <edgesGeometry args={[new THREE.BoxGeometry(size.x + 0.2, size.y + 0.2, size.z + 0.2)]} />
+          <edgesGeometry args={[new BoxGeometry(size.x + 0.2, size.y + 0.2, size.z + 0.2)]} />
           <lineBasicMaterial color={color} linewidth={2} />
         </lineSegments>
       )}
