@@ -32,5 +32,11 @@ export * from './systems';
 // Assets
 export * from './assets';
 
+// React Hooks
+export * from './hooks';
+
+// Integration Utilities
+export * from './integration';
+
 // Examples (for reference)
 export * from './examples/BasicIntegration';
