@@ -926,6 +926,10 @@ export default function EnhancedDesignCanvas() {
   // Selection count
   const selectedCount = (selectedPlantId ? 1 : 0) + (selectedStructureId ? 1 : 0) + (selectedHouseId ? 1 : 0);
 
+  // Map EditMode to DesignHub's supported modes
+  const designHubEditMode: 'select' | 'move' | 'rotate' | 'scale' =
+    editMode === 'vertex' || editMode === 'measure' ? 'select' : editMode;
+
   return (
     <div className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100">
       {/* Tutorial Panel */}
@@ -1240,7 +1244,7 @@ export default function EnhancedDesignCanvas() {
       {/* Design Hub - Bottom Toolbar */}
       <DesignHub
         selectedCount={selectedCount}
-        editMode={editMode}
+        editMode={designHubEditMode}
         onEditModeChange={(mode) => {
           setEditMode(mode);
           if (mode !== 'select') {
