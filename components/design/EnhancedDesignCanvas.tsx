@@ -270,7 +270,16 @@ export default function EnhancedDesignCanvas() {
     editModeController.setMode(editMode);
     editModeController.setSnapMode(snapToGridEnabled ? 'grid' : 'none');
     editModeController.setGridSize(gridSize);
-  }, [editMode, snapToGridEnabled, gridSize, editModeController]);
+    dragController.setSnapToGrid(snapToGridEnabled);
+    dragController.setGridSize(gridSize);
+  }, [editMode, snapToGridEnabled, gridSize, editModeController, dragController]);
+
+  // Initialize camera controller when camera ref is ready
+  useEffect(() => {
+    if (cameraRef.current) {
+      cameraController.setCamera(cameraRef.current);
+    }
+  }, [cameraController]);
 
   // Handle transform operations from gizmo
   const handleTransform = (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z', delta: number) => {
@@ -657,37 +666,65 @@ export default function EnhancedDesignCanvas() {
   };
 
   const handleResetCamera = () => {
-    // Camera reset logic would go here
-    console.log('Reset camera');
+    cameraController.reset();
+    if (cameraRef.current) {
+      cameraController.setCamera(cameraRef.current);
+    }
   };
 
   const handleFocusSelected = () => {
-    // Focus on selected object logic would go here
-    console.log('Focus on selected');
+    if (selectedPlant) {
+      cameraController.focusOnPoint(
+        new Vector3(selectedPlant.position.x, selectedPlant.position.y, selectedPlant.position.z),
+        12
+      );
+      if (cameraRef.current) {
+        cameraController.setCamera(cameraRef.current);
+      }
+    } else if (selectedStructure) {
+      cameraController.focusOnPoint(
+        new Vector3(selectedStructure.position.x, selectedStructure.position.y, selectedStructure.position.z),
+        12
+      );
+      if (cameraRef.current) {
+        cameraController.setCamera(cameraRef.current);
+      }
+    } else if (selectedHouseId) {
+      const house = sceneManager.getHouses().find(h => h.id === selectedHouseId);
+      if (house) {
+        cameraController.focusOnPoint(
+          new Vector3(house.position.x, house.position.y, house.position.z),
+          12
+        );
+        if (cameraRef.current) {
+          cameraController.setCamera(cameraRef.current);
+        }
+      }
+    }
   };
 
   // Save/Load Functions
   const handleSave = () => {
-    const data = { plants, structures, age, name: `Design ${new Date().toLocaleDateString()}`, version: '1.0', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() };
-    saveToLocalStorage(data);
-    alert('Design saved!');
+    saveToLocalStorage('landscape-design', plants, structures, age);
+    alert('Design saved to browser storage!');
   };
 
   const handleLoad = () => {
-    const data = loadFromLocalStorage();
+    const data = loadFromLocalStorage('landscape-design');
     if (data) {
-      setPlants(data.plants);
-      setStructures(data.structures || []);
+      setDesignState({ plants: data.plants, structures: data.structures });
       setAge(data.age || 5);
-      alert('Design loaded!');
+      alert('Design loaded from browser storage!');
     } else {
-      alert('No saved design found');
+      alert('No saved design found in browser storage');
     }
   };
 
   const handleExport = () => {
-    const data = { plants, structures, age, name: `Design ${new Date().toLocaleDateString()}`, version: '1.0', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() };
-    saveDesign(data, `design-${Date.now()}.landscape.json`);
+    const designName = prompt('Enter design name:', 'My Landscape Design');
+    if (designName) {
+      saveDesign(designName, plants, structures, age);
+    }
   };
 
   const handleLoadFile = async () => {
@@ -811,8 +848,37 @@ export default function EnhancedDesignCanvas() {
         setSelectedStructureId(null);
         setSelectedHouseId(null);
         selectionManager.clearSelection();
+        setGridClickEnabled(false);
+        setPendingPlantSpecies(null);
       },
-      description: 'Deselect all',
+      description: 'Deselect all / Exit placement mode',
+    },
+    {
+      key: 'F1',
+      handler: (e) => {
+        e.preventDefault();
+        setShowTutorial(!showTutorial);
+      },
+      description: 'Toggle help/tutorial',
+    },
+    {
+      key: 'f',
+      handler: () => handleFocusSelected(),
+      description: 'Focus camera on selected',
+    },
+    {
+      key: 'h',
+      handler: () => handleResetCamera(),
+      description: 'Reset camera to home position',
+    },
+    {
+      key: 'd',
+      ctrl: true,
+      handler: (e) => {
+        e.preventDefault();
+        handleCopy();
+      },
+      description: 'Duplicate selected',
     },
     // Edit mode shortcuts
     {
