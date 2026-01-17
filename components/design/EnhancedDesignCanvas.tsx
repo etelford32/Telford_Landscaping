@@ -13,7 +13,7 @@ import { PlacedPlant } from "@/lib/plantData";
 import { PlacedStructure } from "@/lib/structureData";
 import { PlantModel } from "./PlantModels";
 import { StructureModel } from "./StructureModels";
-import PlantToolbox from "./PlantToolbox";
+import EnhancedPlantToolbox from "./EnhancedPlantToolbox";
 import StructureToolbox from "./StructureToolbox";
 import { HouseModel } from "./HouseModel";
 import { GrassyGround, DecorativeRocks } from "./GrassyGround";
@@ -35,7 +35,9 @@ import { saveDesign, loadDesign, saveToLocalStorage, loadFromLocalStorage } from
 import { MeasurementGrid, DimensionLine } from "./MeasurementGrid";
 import { TransformGizmo } from "./TransformGizmo";
 import EditingToolbar from "./EditingToolbar";
-import PrecisionEditPanel, { PrecisionEditData } from "./PrecisionEditPanel";
+import EnhancedPrecisionEdit from "./EnhancedPrecisionEdit";
+import { PrecisionEditData } from "./PrecisionEditPanel";
+import TutorialPanel from "./TutorialPanel";
 import { EditMode, createEditModeController } from "@/lib/editor/EditModeController";
 
 // Scene Component
@@ -217,6 +219,8 @@ export default function EnhancedDesignCanvas() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState<'select' | 'move'>('select');
   const [showPropertyPanel, setShowPropertyPanel] = useState(true);
+  const [showPlantToolbox, setShowPlantToolbox] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(true);
 
   // Edit mode controller
   const editModeController = useMemo(() => createEditModeController(), []);
@@ -747,13 +751,23 @@ export default function EnhancedDesignCanvas() {
 
   return (
     <div className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100">
+      {/* Tutorial Panel */}
+      {showTutorial && (
+        <TutorialPanel onClose={() => setShowTutorial(false)} />
+      )}
+
       {/* Plant Toolbox - Left */}
-      <PlantToolbox
-        onPlantSelect={(species) => {
-          // Handle plant selection if needed
-        }}
-        selectedPlantId={selectedPlantId || undefined}
-      />
+      {showPlantToolbox && (
+        <EnhancedPlantToolbox
+          onPlantSelect={(species) => {
+            // Handle plant selection if needed
+            console.log('Plant selected:', species);
+          }}
+          selectedPlantId={selectedPlantId || undefined}
+          visible={showPlantToolbox}
+          onClose={() => setShowPlantToolbox(false)}
+        />
+      )}
 
       {/* Structure Toolbox - Right */}
       <StructureToolbox
@@ -910,16 +924,16 @@ export default function EnhancedDesignCanvas() {
       </div>
 
       {/* Precision Edit Panel - Right Side */}
-      {precisionEditData && (selectedPlantId || selectedStructureId) && (
-        <div className="absolute top-4 right-4 z-20">
-          <PrecisionEditPanel
-            data={precisionEditData}
-            onChange={handlePrecisionEdit}
-            snapToGrid={snapToGridEnabled}
-            gridSize={gridSize}
-            unit="feet"
-          />
-        </div>
+      {showPrecisionPanel && precisionEditData && (selectedPlantId || selectedStructureId) && (
+        <EnhancedPrecisionEdit
+          data={precisionEditData}
+          onChange={handlePrecisionEdit}
+          onClose={() => setShowPrecisionPanel(false)}
+          visible={showPrecisionPanel}
+          snapToGrid={snapToGridEnabled}
+          onToggleSnap={() => setSnapToGridEnabled(!snapToGridEnabled)}
+          gridSize={gridSize}
+        />
       )}
 
       {/* Property Panel for detailed editing */}
