@@ -7,3 +7,5 @@ export * from './MaterialSystem';
 export * from './GrowthSystem';
 export * from './RenderSystem';
 export * from './EnhancedRenderSystem';
+export * from './PlantRenderSystem';
+export * from './InstancedPlantRenderSystem';
