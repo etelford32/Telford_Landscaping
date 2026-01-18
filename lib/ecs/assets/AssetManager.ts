@@ -198,7 +198,7 @@ export class AssetManager {
         options
       );
       asset.maps = maps;
-      asset.texture = maps.albedo; // Primary texture
+      asset.texture = maps?.albedo; // Primary texture
     } else {
       // Load single texture
       const texture = await this.textureLoader.loadTexture(
@@ -312,11 +312,11 @@ export class AssetManager {
 
       this.manifest = await response.json();
       this.log(
-        `Manifest loaded: ${this.manifest.assets.length} assets registered`
+        `Manifest loaded: ${this.manifest?.assets?.length ?? 0} assets registered`
       );
 
       // Build preload queue (sorted by priority)
-      this.preloadQueue = [...this.manifest.assets]
+      this.preloadQueue = [...(this.manifest?.assets ?? [])]
         .filter((a) => a.priority !== undefined && a.priority > 0)
         .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 

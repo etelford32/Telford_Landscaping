@@ -2,7 +2,8 @@
 
 import { PlacedPlant, getPlantSpecies } from "@/lib/plantData";
 import { PlacedStructure, getStructure } from "@/lib/structureData";
-import { Sliders, X } from "lucide-react";
+import { Sliders } from "lucide-react";
+import DraggablePanel from "./DraggablePanel";
 
 interface PropertyPanelProps {
   selectedPlant?: PlacedPlant | null;
@@ -26,22 +27,16 @@ export default function PropertyPanel({
     if (!species) return null;
 
     return (
-      <div className="absolute right-4 top-1/4 w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden z-30">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sliders className="w-5 h-5" />
-            <h3 className="font-bold">Plant Properties</h3>
-          </div>
-          {onClose && (
-            <button onClick={onClose} className="hover:bg-white/20 rounded p-1 transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+      <DraggablePanel
+        title="Plant Properties"
+        icon={<Sliders className="w-5 h-5" />}
+        defaultPosition={{ x: typeof window !== 'undefined' ? window.innerWidth - 400 : 800, y: 100 }}
+        defaultSize={{ width: 320, height: 500 }}
+        headerColor="from-primary-600 to-primary-700"
+        onClose={onClose}
+        id="property-panel-plant"
+      >
+        <div className="p-4 space-y-4 overflow-y-auto h-full">
           {/* Plant Info */}
           <div className="bg-primary-50 rounded-lg p-3">
             <h4 className="font-bold text-sm text-primary-900 mb-1">{species.commonName}</h4>
@@ -169,7 +164,7 @@ export default function PropertyPanel({
             </div>
           </div>
         </div>
-      </div>
+      </DraggablePanel>
     );
   }
 
@@ -178,22 +173,16 @@ export default function PropertyPanel({
     if (!structure) return null;
 
     return (
-      <div className="absolute right-4 top-1/4 w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden z-30">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sliders className="w-5 h-5" />
-            <h3 className="font-bold">Structure Properties</h3>
-          </div>
-          {onClose && (
-            <button onClick={onClose} className="hover:bg-white/20 rounded p-1 transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="p-4 space-y-4 max-h-[500px] overflow-y-auto">
+      <DraggablePanel
+        title="Structure Properties"
+        icon={<Sliders className="w-5 h-5" />}
+        defaultPosition={{ x: typeof window !== 'undefined' ? window.innerWidth - 400 : 800, y: 100 }}
+        defaultSize={{ width: 320, height: 500 }}
+        headerColor="from-amber-600 to-amber-700"
+        onClose={onClose}
+        id="property-panel-structure"
+      >
+        <div className="p-4 space-y-4 overflow-y-auto h-full">
           {/* Structure Info */}
           <div className="bg-amber-50 rounded-lg p-3">
             <h4 className="font-bold text-sm text-amber-900 mb-1">{structure.commonName}</h4>
@@ -302,7 +291,7 @@ export default function PropertyPanel({
             </div>
           </div>
         </div>
-      </div>
+      </DraggablePanel>
     );
   }
 

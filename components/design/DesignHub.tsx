@@ -33,6 +33,8 @@ import {
   ChevronDown,
   HelpCircle,
   Sparkles,
+  Minus,
+  Maximize,
 } from 'lucide-react';
 
 interface DesignHubProps {
@@ -127,9 +129,20 @@ export default function DesignHub({
       {/* Collapse/Expand Button */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm px-4 py-1 rounded-t-lg shadow-lg hover:bg-gray-50 transition-colors border-t border-x border-gray-200"
+        className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm px-4 py-1 rounded-t-lg shadow-lg hover:bg-gray-50 transition-colors border-t border-x border-gray-200 flex items-center gap-2"
+        title={isExpanded ? 'Minimize Design Hub' : 'Expand Design Hub'}
       >
-        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+        {isExpanded ? (
+          <>
+            <Minus className="w-3 h-3" />
+            <ChevronDown className="w-4 h-4" />
+          </>
+        ) : (
+          <>
+            <Maximize className="w-3 h-3" />
+            <ChevronUp className="w-4 h-4" />
+          </>
+        )}
       </button>
 
       {isExpanded ? (

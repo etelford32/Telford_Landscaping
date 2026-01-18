@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PLANT_LIBRARY, PlantSpecies } from "@/lib/plantData";
 import { TreePine, Search, Info } from "lucide-react";
+import DraggablePanel from "./DraggablePanel";
 
 interface PlantToolboxProps {
   onPlantSelect: (species: PlantSpecies) => void;
@@ -24,19 +25,24 @@ export default function PlantToolbox({ onPlantSelect, selectedPlantId }: PlantTo
   });
 
   return (
-    <div className="absolute left-4 top-4 bottom-4 w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden flex flex-col z-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <TreePine className="w-6 h-6" />
-          <h2 className="text-xl font-bold">Plant Library</h2>
-        </div>
-        <p className="text-sm text-primary-100">
+    <DraggablePanel
+      title="Plant Library"
+      icon={<TreePine className="w-6 h-6" />}
+      defaultPosition={{ x: 20, y: 20 }}
+      defaultSize={{ width: 320, height: 600 }}
+      minSize={{ width: 280, height: 400 }}
+      maxSize={{ width: 400, height: 800 }}
+      headerColor="from-primary-600 to-primary-700"
+      id="plant-toolbox"
+      closable={false}
+    >
+      <div className="flex flex-col h-full">
+        {/* Description */}
+        <div className="px-4 pt-2 pb-3 text-sm text-primary-700 bg-primary-50/50">
           Drag plants onto the design canvas
-        </p>
-      </div>
+        </div>
 
-      {/* Search and Filters */}
+        {/* Search and Filters */}
       <div className="p-4 border-b border-gray-200 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -173,13 +179,14 @@ export default function PlantToolbox({ onPlantSelect, selectedPlantId }: PlantTo
         ))}
       </div>
 
-      {/* Footer tips */}
-      <div className="p-3 bg-primary-50 border-t border-primary-100 text-xs text-primary-800">
-        <p className="flex items-center gap-1">
-          <span className="font-semibold">💡 Tip:</span>
-          Drag plants onto the grid to start designing!
-        </p>
+        {/* Footer tips */}
+        <div className="p-3 bg-primary-50 border-t border-primary-100 text-xs text-primary-800 mt-auto">
+          <p className="flex items-center gap-1">
+            <span className="font-semibold">💡 Tip:</span>
+            Drag plants onto the grid to start designing!
+          </p>
+        </div>
       </div>
-    </div>
+    </DraggablePanel>
   );
 }
