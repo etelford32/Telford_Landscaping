@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { STRUCTURE_LIBRARY, OutdoorStructure } from "@/lib/structureData";
 import { Home, Search, Info } from "lucide-react";
+import DraggablePanel from "./DraggablePanel";
 
 interface StructureToolboxProps {
   onStructureSelect: (structure: OutdoorStructure) => void;
@@ -22,19 +23,24 @@ export default function StructureToolbox({ onStructureSelect, selectedStructureI
   });
 
   return (
-    <div className="absolute right-4 top-4 bottom-4 w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden flex flex-col z-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Home className="w-6 h-6" />
-          <h2 className="text-xl font-bold">Structure Library</h2>
-        </div>
-        <p className="text-sm text-amber-100">
+    <DraggablePanel
+      title="Structure Library"
+      icon={<Home className="w-6 h-6" />}
+      defaultPosition={{ x: typeof window !== 'undefined' ? window.innerWidth - 340 : 900, y: 20 }}
+      defaultSize={{ width: 320, height: 600 }}
+      minSize={{ width: 280, height: 400 }}
+      maxSize={{ width: 400, height: 800 }}
+      headerColor="from-amber-600 to-amber-700"
+      id="structure-toolbox"
+      closable={false}
+    >
+      <div className="flex flex-col h-full">
+        {/* Description */}
+        <div className="px-4 pt-2 pb-3 text-sm text-amber-700 bg-amber-50/50">
           Add hardscape and features to your design
-        </p>
-      </div>
+        </div>
 
-      {/* Search and Filters */}
+        {/* Search and Filters */}
       <div className="p-4 border-b border-gray-200 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -153,13 +159,14 @@ export default function StructureToolbox({ onStructureSelect, selectedStructureI
         ))}
       </div>
 
-      {/* Footer tips */}
-      <div className="p-3 bg-amber-50 border-t border-amber-100 text-xs text-amber-800">
-        <p className="flex items-center gap-1">
-          <span className="font-semibold">💡 Tip:</span>
-          Add structures to create your perfect outdoor space!
-        </p>
+        {/* Footer tips */}
+        <div className="p-3 bg-amber-50 border-t border-amber-100 text-xs text-amber-800 mt-auto">
+          <p className="flex items-center gap-1">
+            <span className="font-semibold">💡 Tip:</span>
+            Add structures to create your perfect outdoor space!
+          </p>
+        </div>
       </div>
-    </div>
+    </DraggablePanel>
   );
 }

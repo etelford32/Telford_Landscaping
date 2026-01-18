@@ -142,10 +142,10 @@ export default function EnhancedPlantToolbox({
                   {plant.category}
                 </span>
                 <span>
-                  H: {plant.growthData.height[15].toFixed(1)}'
+                  H: {(plant.growthData.baseHeightGrowth[15] || plant.growthData.maxHeight).toFixed(1)}'
                 </span>
                 <span>
-                  W: {plant.growthData.width[15].toFixed(1)}'
+                  W: {(plant.growthData.baseWidthGrowth[15] || plant.growthData.maxWidth).toFixed(1)}'
                 </span>
               </div>
 

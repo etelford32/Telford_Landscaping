@@ -81,7 +81,7 @@ function Scene({
   showMeasurements: boolean;
   showGridPoints: boolean;
   editMode: EditMode;
-  onTransform: (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z', delta: number) => void;
+  onTransform: (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz' | 'xyz', delta: number) => void;
   gridSize: number;
   onGridClick: (position: { x: number; y: number; z: number }) => void;
   gridClickEnabled: boolean;
@@ -282,8 +282,13 @@ export default function EnhancedDesignCanvas() {
   }, [cameraController]);
 
   // Handle transform operations from gizmo
-  const handleTransform = (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z', delta: number) => {
+  const handleTransform = (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz' | 'xyz', delta: number) => {
     const snappedDelta = snapToGridEnabled ? editModeController.snapToGrid(delta) : delta;
+
+    // Determine which axes to apply the delta to
+    const applyToX = axis.includes('x');
+    const applyToY = axis.includes('y');
+    const applyToZ = axis.includes('z');
 
     if (selectedPlantId) {
       setPlants(plants.map(p => {
@@ -292,9 +297,9 @@ export default function EnhancedDesignCanvas() {
             return {
               ...p,
               position: {
-                x: axis === 'x' ? p.position.x + snappedDelta : p.position.x,
-                y: axis === 'y' ? p.position.y + snappedDelta : p.position.y,
-                z: axis === 'z' ? p.position.z + snappedDelta : p.position.z,
+                x: applyToX ? p.position.x + snappedDelta : p.position.x,
+                y: applyToY ? p.position.y + snappedDelta : p.position.y,
+                z: applyToZ ? p.position.z + snappedDelta : p.position.z,
               },
             };
           } else if (type === 'scale') {
@@ -312,9 +317,9 @@ export default function EnhancedDesignCanvas() {
             return {
               ...s,
               position: {
-                x: axis === 'x' ? s.position.x + snappedDelta : s.position.x,
-                y: axis === 'y' ? s.position.y + snappedDelta : s.position.y,
-                z: axis === 'z' ? s.position.z + snappedDelta : s.position.z,
+                x: applyToX ? s.position.x + snappedDelta : s.position.x,
+                y: applyToY ? s.position.y + snappedDelta : s.position.y,
+                z: applyToZ ? s.position.z + snappedDelta : s.position.z,
               },
             };
           } else if (type === 'scale') {

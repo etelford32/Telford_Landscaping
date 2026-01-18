@@ -82,7 +82,7 @@ function Scene({
   showMeasurements: boolean;
   showGridPoints: boolean;
   editMode: EditMode;
-  onTransform: (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z', delta: number) => void;
+  onTransform: (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz' | 'xyz', delta: number) => void;
   gridSize: number;
   onGridClick: (position: { x: number; y: number; z: number }) => void;
   gridClickEnabled: boolean;
@@ -345,8 +345,13 @@ export default function IntegratedDesignCanvas() {
   };
 
   // Handle transform operations from gizmo
-  const handleTransform = (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z', delta: number) => {
+  const handleTransform = (type: 'move' | 'scale' | 'rotate', axis: 'x' | 'y' | 'z' | 'xy' | 'xz' | 'yz' | 'xyz', delta: number) => {
     const snappedDelta = snapToGridEnabled ? editModeController.snapToGrid(delta) : delta;
+
+    // Determine which axes to apply the delta to
+    const applyToX = axis.includes('x');
+    const applyToY = axis.includes('y');
+    const applyToZ = axis.includes('z');
 
     if (selectedPlantId) {
       setPlants(plants.map(p => {
@@ -355,9 +360,9 @@ export default function IntegratedDesignCanvas() {
             return {
               ...p,
               position: {
-                x: axis === 'x' ? p.position.x + snappedDelta : p.position.x,
-                y: axis === 'y' ? p.position.y + snappedDelta : p.position.y,
-                z: axis === 'z' ? p.position.z + snappedDelta : p.position.z,
+                x: applyToX ? p.position.x + snappedDelta : p.position.x,
+                y: applyToY ? p.position.y + snappedDelta : p.position.y,
+                z: applyToZ ? p.position.z + snappedDelta : p.position.z,
               },
             };
           } else if (type === 'scale') {
@@ -375,9 +380,9 @@ export default function IntegratedDesignCanvas() {
             return {
               ...s,
               position: {
-                x: axis === 'x' ? s.position.x + snappedDelta : s.position.x,
-                y: axis === 'y' ? s.position.y + snappedDelta : s.position.y,
-                z: axis === 'z' ? s.position.z + snappedDelta : s.position.z,
+                x: applyToX ? s.position.x + snappedDelta : s.position.x,
+                y: applyToY ? s.position.y + snappedDelta : s.position.y,
+                z: applyToZ ? s.position.z + snappedDelta : s.position.z,
               },
             };
           } else if (type === 'scale') {
@@ -469,13 +474,12 @@ export default function IntegratedDesignCanvas() {
 
   // File operations
   const handleSave = () => {
-    const data = { plants, structures, age, name: `Design ${new Date().toLocaleDateString()}`, version: '1.0', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() };
-    saveToLocalStorage(data);
+    saveToLocalStorage('design-autosave', plants, structures, age);
     alert('Design saved!');
   };
 
   const handleLoad = () => {
-    const data = loadFromLocalStorage();
+    const data = loadFromLocalStorage('design-autosave');
     if (data) {
       setPlants(data.plants);
       setStructures(data.structures || []);
@@ -487,8 +491,8 @@ export default function IntegratedDesignCanvas() {
   };
 
   const handleExport = () => {
-    const data = { plants, structures, age, name: `Design ${new Date().toLocaleDateString()}`, version: '1.0', createdAt: new Date().toISOString(), lastModified: new Date().toISOString() };
-    saveDesign(data, `design-${Date.now()}.landscape.json`);
+    const fileName = `design-${Date.now()}.landscape.json`;
+    saveDesign(fileName, plants, structures, age);
   };
 
   // Camera controls
@@ -556,20 +560,21 @@ export default function IntegratedDesignCanvas() {
   };
 
   // Keyboard shortcuts
-  useKeyboardShortcuts({
-    onUndo: undo,
-    onRedo: redo,
-    onSave: handleSave,
-    onDelete: handleDelete,
-    onCopy: handleCopy,
-    onSelectAll: () => console.log('Select all'),
-    onDeselect: () => {
+  useKeyboardShortcuts([
+    { key: 'z', ctrl: true, handler: () => undo(), description: 'Undo' },
+    { key: 'y', ctrl: true, handler: () => redo(), description: 'Redo' },
+    { key: 's', ctrl: true, handler: (e) => { e.preventDefault(); handleSave(); }, description: 'Save' },
+    { key: 'Delete', handler: () => handleDelete(), description: 'Delete' },
+    { key: 'Backspace', handler: () => handleDelete(), description: 'Delete' },
+    { key: 'c', ctrl: true, handler: () => handleCopy(), description: 'Copy' },
+    { key: 'a', ctrl: true, handler: (e) => { e.preventDefault(); console.log('Select all'); }, description: 'Select All' },
+    { key: 'Escape', handler: () => {
       setSelectedPlantId(null);
       setSelectedStructureId(null);
       setSelectedHouseId(null);
       selectionManager.clearSelection();
-    },
-  });
+    }, description: 'Deselect' },
+  ]);
 
   // Selection count
   const selectedCount = (selectedPlantId ? 1 : 0) + (selectedStructureId ? 1 : 0) + (selectedHouseId ? 1 : 0);
@@ -618,23 +623,17 @@ export default function IntegratedDesignCanvas() {
 
       {/* Property Panel */}
       {showPropertyPanel && (selectedPlantId || selectedStructureId) && (
-        <div className="absolute right-4 top-4 z-30">
-          <PropertyPanel
-            selectedObject={
-              selectedPlantId
-                ? plants.find(p => p.id === selectedPlantId)
-                : structures.find(s => s.id === selectedStructureId)
-            }
-            onUpdate={(updates) => {
-              if (selectedPlantId) {
-                setPlants(plants.map(p => p.id === selectedPlantId ? { ...p, ...updates } : p));
-              } else if (selectedStructureId) {
-                setStructures(structures.map(s => s.id === selectedStructureId ? { ...s, ...updates } : s));
-              }
-            }}
-            onClose={() => setShowPropertyPanel(false)}
-          />
-        </div>
+        <PropertyPanel
+          selectedPlant={selectedPlantId ? plants.find(p => p.id === selectedPlantId) : undefined}
+          selectedStructure={selectedStructureId ? structures.find(s => s.id === selectedStructureId) : undefined}
+          onPlantUpdate={(plant) => {
+            setPlants(plants.map(p => p.id === plant.id ? plant : p));
+          }}
+          onStructureUpdate={(structure) => {
+            setStructures(structures.map(s => s.id === structure.id ? structure : s));
+          }}
+          onClose={() => setShowPropertyPanel(false)}
+        />
       )}
 
       {/* 3D Canvas */}
@@ -681,7 +680,7 @@ export default function IntegratedDesignCanvas() {
       {/* Design Hub - Bottom Toolbar */}
       <DesignHub
         selectedCount={selectedCount}
-        editMode={editMode}
+        editMode={editMode === 'vertex' || editMode === 'measure' ? 'select' : editMode}
         onEditModeChange={(mode) => {
           setEditMode(mode);
           if (mode !== 'select') {
@@ -725,14 +724,19 @@ export default function IntegratedDesignCanvas() {
         type="file"
         accept=".landscape.json"
         style={{ display: 'none' }}
-        onChange={(e) => {
+        onChange={async (e) => {
           const file = e.target.files?.[0];
           if (file) {
-            loadDesign(file, (data) => {
+            try {
+              const data = await loadDesign(file);
               setPlants(data.plants);
               setStructures(data.structures || []);
               setAge(data.age || 5);
-            });
+              alert('Design loaded!');
+            } catch (error) {
+              console.error('Failed to load design:', error);
+              alert('Failed to load design');
+            }
           }
         }}
       />
