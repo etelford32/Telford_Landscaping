@@ -14,6 +14,7 @@ import * as THREE from 'three';
 import { BaseSystem, ComponentUpdate, SystemPriority } from '../core/System';
 import { World } from '../core/World';
 import { Entity } from '../core/Entity';
+import { ComponentType } from '../core/Component';
 import {
   TransformComponent
 } from '../components/TransformComponent';
@@ -60,7 +61,7 @@ const DEFAULT_CONFIG: RenderSystemConfig = {
  */
 export class RenderSystem extends BaseSystem {
   readonly name = 'RenderSystem';
-  readonly requiredComponents = ['Transform', 'Geometry', 'Material'];
+  readonly requiredComponents: ComponentType[] = ['Transform', 'Geometry', 'Material'];
   readonly priority = SystemPriority.RENDER;
 
   private config: RenderSystemConfig;

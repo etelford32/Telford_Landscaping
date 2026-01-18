@@ -311,11 +311,11 @@ export function useECSSnapshot() {
  * Hook to get ECS statistics
  */
 export function useECSStats() {
-  const { world, version } = useECSWorld();
+  const { world } = useECSWorld();
 
   const stats = useMemo(() => {
     return world.getStats();
-  }, [world, version]);
+  }, [world]);
 
   return stats;
 }

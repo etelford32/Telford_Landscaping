@@ -372,7 +372,7 @@ export async function exampleWithAssets() {
   // Example: Cleanup (when leaving design tool)
   function cleanup() {
     assetManager.dispose();
-    world.getAllSystems().forEach((system) => {
+    world.getSystems().forEach((system) => {
       if ('dispose' in system && typeof system.dispose === 'function') {
         (system as any).dispose();
       }

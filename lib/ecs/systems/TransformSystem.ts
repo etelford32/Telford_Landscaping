@@ -9,6 +9,7 @@
 
 import { BaseSystem, ComponentUpdate, SystemPriority } from '../core/System';
 import { World } from '../core/World';
+import { ComponentType } from '../core/Component';
 import {
   TransformComponent,
   Vector3Data,
@@ -17,7 +18,7 @@ import {
 
 export class TransformSystem extends BaseSystem {
   readonly name = 'TransformSystem';
-  readonly requiredComponents = ['Transform'];
+  readonly requiredComponents: ComponentType[] = ['Transform'];
   readonly priority = SystemPriority.LOGIC;
 
   /**

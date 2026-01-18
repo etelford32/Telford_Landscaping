@@ -38,5 +38,5 @@ export * from './hooks';
 // Integration Utilities
 export * from './integration';
 
-// Examples (for reference)
-export * from './examples/BasicIntegration';
+// Examples (for reference) - not exported to avoid conflicts
+// export * from './examples/BasicIntegration';

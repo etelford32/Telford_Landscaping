@@ -10,6 +10,7 @@
  */
 
 import { BaseSystem, ComponentUpdate, SystemPriority } from '../core/System';
+import { ComponentType } from '../core/Component';
 import { World } from '../core/World';
 import {
   MaterialComponent,
@@ -51,7 +52,7 @@ const DEFAULT_CONFIG: MaterialSystemConfig = {
 
 export class MaterialSystem extends BaseSystem {
   readonly name = 'MaterialSystem';
-  readonly requiredComponents = ['Material', 'Selection'];
+  readonly requiredComponents: ComponentType[] = ['Material', 'Selection'];
   readonly priority = SystemPriority.RENDER - 10; // Run just before render
 
   private config: MaterialSystemConfig;

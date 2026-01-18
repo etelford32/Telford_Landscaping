@@ -24,6 +24,7 @@ import {
   createSelectionComponent,
   createPlantDataComponent
 } from '../components';
+import { SelectionComponent } from '../components/SelectionComponent';
 
 /**
  * Initialize the ECS world with all systems
@@ -60,9 +61,9 @@ export function initializeWorld(scene: THREE.Scene): World {
 
   // 3. Material system - updates visual appearance based on selection
   const materialSystem = new MaterialSystem({
-    selectionEmissiveColor: '#4ade80', // Green highlight
     selectionEmissiveIntensity: 0.5,
-    hoverBrightnessMultiplier: 1.2
+    selectionBrightnessBoost: 1.2,
+    hoverBrightnessBoost: 1.2
   });
   world.registerSystem(materialSystem);
 
@@ -206,7 +207,7 @@ export function deselectAll(world: World): void {
   const allEntities = world.getAllEntities();
 
   for (const entity of allEntities) {
-    const selection = world.getComponent(entity.id, 'Selection');
+    const selection = world.getComponent(entity.id, 'Selection') as SelectionComponent | undefined;
     if (selection?.selected) {
       world.setComponent(entity.id, {
         ...selection,
@@ -223,13 +224,13 @@ export function moveSelected(
   world: World,
   delta: { x: number; y: number; z: number }
 ): void {
-  const transformSystem = world.getSystem('TransformSystem') as TransformSystem;
+  const transformSystem = world.getSystems().find(s => s.name === 'TransformSystem') as TransformSystem | undefined;
   if (!transformSystem) return;
 
   // Find all selected entities
   const selectedIds: string[] = [];
   for (const entity of world.getAllEntities()) {
-    const selection = world.getComponent(entity.id, 'Selection');
+    const selection = world.getComponent(entity.id, 'Selection') as SelectionComponent | undefined;
     if (selection?.selected) {
       selectedIds.push(entity.id);
     }
@@ -246,7 +247,7 @@ export function moveSelected(
  * Set plant age globally (timeline slider)
  */
 export function setGlobalPlantAge(world: World, age: number): void {
-  const growthSystem = world.getSystem('GrowthSystem') as GrowthSystem;
+  const growthSystem = world.getSystems().find(s => s.name === 'GrowthSystem') as GrowthSystem | undefined;
   if (!growthSystem) return;
 
   const updates = growthSystem.setGlobalAge(world, age);
@@ -263,7 +264,7 @@ export function raycastEntity(
   camera: THREE.Camera,
   mouse: { x: number; y: number }
 ): string | null {
-  const renderSystem = world.getSystem('RenderSystem') as RenderSystem;
+  const renderSystem = world.getSystems().find(s => s.name === 'RenderSystem') as RenderSystem | undefined;
   if (!renderSystem) return null;
 
   // Create raycaster
