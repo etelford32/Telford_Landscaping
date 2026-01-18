@@ -12,6 +12,7 @@
 
 import { BaseSystem, ComponentUpdate, SystemPriority } from '../core/System';
 import { World } from '../core/World';
+import { ComponentType } from '../core/Component';
 import {
   PlantDataComponent,
   updatePlantAge,
@@ -68,7 +69,7 @@ const DEFAULT_CONFIG: GrowthSystemConfig = {
 
 export class GrowthSystem extends BaseSystem {
   readonly name = 'GrowthSystem';
-  readonly requiredComponents = ['PlantData', 'Transform'];
+  readonly requiredComponents: ComponentType[] = ['PlantData', 'Transform'];
   readonly priority = SystemPriority.LOGIC;
 
   private config: GrowthSystemConfig;

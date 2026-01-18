@@ -16,7 +16,8 @@ export type ComponentType =
   | 'PlantData'
   | 'StructureData'
   | 'Growth'
-  | 'Metadata';
+  | 'Metadata'
+  | 'Asset';
 
 /**
  * Base interface for all components

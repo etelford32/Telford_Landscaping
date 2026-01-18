@@ -273,15 +273,15 @@ export class World {
   static deserialize(json: string): World {
     const data = JSON.parse(json);
 
-    const entities = new Map(data.entities);
-    const components = new Map(
+    const entities = new Map<string, Entity>(data.entities);
+    const components = new Map<string, ComponentMap>(
       data.components.map(([entityId, components]: [string, any[]]) => [
         entityId,
         new Map(components)
       ])
     );
 
-    return new World({ entities, components });
+    return new World({ entities, components, systems: [] });
   }
 
   /**

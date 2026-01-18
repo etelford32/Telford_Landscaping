@@ -13,6 +13,7 @@
 
 import * as THREE from 'three';
 import { BaseSystem, ComponentUpdate, SystemPriority } from '../core/System';
+import { ComponentType } from '../core/Component';
 import { World } from '../core/World';
 import { Entity } from '../core/Entity';
 import { TransformComponent } from '../components/TransformComponent';
@@ -50,7 +51,7 @@ const DEFAULT_CONFIG: PlantRenderSystemConfig = {
  */
 export class PlantRenderSystem extends BaseSystem {
   readonly name = 'PlantRenderSystem';
-  readonly requiredComponents = ['Transform', 'PlantData'];
+  readonly requiredComponents: ComponentType[] = ['Transform', 'PlantData'];
   readonly priority = SystemPriority.RENDER;
 
   private config: PlantRenderSystemConfig;

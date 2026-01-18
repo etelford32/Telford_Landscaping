@@ -11,9 +11,9 @@
 import { World } from '../core/World';
 import { GrowthSystem, GrowthCurve } from '../systems/GrowthSystem';
 import { PlantRenderSystem } from '../systems/PlantRenderSystem';
-import { TransformComponent, createTransform } from '../components/TransformComponent';
-import { PlantDataComponent, createPlantData } from '../components/PlantDataComponent';
-import { SelectionComponent, createSelection } from '../components/SelectionComponent';
+import { TransformComponent, createTransformComponent } from '../components/TransformComponent';
+import { PlantDataComponent, createPlantDataComponent } from '../components/PlantDataComponent';
+import { SelectionComponent, createSelectionComponent } from '../components/SelectionComponent';
 import { PLANT_LIBRARY, PlantSpecies, PlacedPlant } from '@/lib/plantData';
 
 /**
@@ -39,18 +39,18 @@ function createGrowthCurveFromSpecies(species: PlantSpecies): GrowthCurve {
 
   // Sample every 5 years for performance
   const interval = 5;
-  for (let i = 0; i < species.growthData.height.length; i += interval) {
+  for (let i = 0; i < species.growthData.baseHeightGrowth.length; i += interval) {
     agePoints.push(i);
-    heightPoints.push(species.growthData.height[i]);
-    widthPoints.push(species.growthData.width[i]);
+    heightPoints.push(species.growthData.baseHeightGrowth[i]);
+    widthPoints.push(species.growthData.baseWidthGrowth[i]);
   }
 
   // Always include the final year
-  if (agePoints[agePoints.length - 1] !== species.growthData.height.length - 1) {
-    const lastIndex = species.growthData.height.length - 1;
+  if (agePoints[agePoints.length - 1] !== species.growthData.baseHeightGrowth.length - 1) {
+    const lastIndex = species.growthData.baseHeightGrowth.length - 1;
     agePoints.push(lastIndex);
-    heightPoints.push(species.growthData.height[lastIndex]);
-    widthPoints.push(species.growthData.width[lastIndex]);
+    heightPoints.push(species.growthData.baseHeightGrowth[lastIndex]);
+    widthPoints.push(species.growthData.baseWidthGrowth[lastIndex]);
   }
 
   return {
@@ -71,27 +71,24 @@ export function createPlantEntity(
   const entity = world.createEntity('plant', plant.id);
 
   // Add Transform component
-  const transform = createTransform({
-    position: plant.position,
-    rotation: { x: 0, y: plant.rotation, z: 0 },
-    scale: { x: plant.scale, y: plant.scale, z: plant.scale }
-  });
+  const transform = createTransformComponent(
+    plant.position,
+    { x: 0, y: plant.rotation, z: 0 },
+    { x: plant.scale, y: plant.scale, z: plant.scale }
+  );
   world.setComponent(entity.id, transform);
 
   // Add PlantData component
-  const plantData = createPlantData({
-    speciesId: plant.speciesId,
-    age: plant.age,
-    scale: plant.scale,
-    variant: plant.variant
-  });
+  const plantData = createPlantDataComponent(
+    plant.speciesId,
+    plant.age
+  );
   world.setComponent(entity.id, plantData);
 
   // Add Selection component
-  const selection = createSelection({
-    selected: plant.selected ?? false,
-    visible: true
-  });
+  const selection = createSelectionComponent(
+    plant.selected ?? false
+  );
   world.setComponent(entity.id, selection);
 
   return entity.id;
