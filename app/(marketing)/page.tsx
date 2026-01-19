@@ -73,7 +73,7 @@ export default function Home() {
             </div>
 
             {/* Trust Indicators */}
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto" style={{ transform: 'translateY(60px)' }}>
               <div className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-xl p-4 shadow-lg">
                 <CheckCircle2 className="w-10 h-10 text-white mb-2" />
                 <h3 className="font-semibold text-base">Licensed Business</h3>
