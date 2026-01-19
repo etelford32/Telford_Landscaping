@@ -26,9 +26,9 @@ export type ContextMenuType = 'canvas' | 'object' | 'multi-object';
 
 interface ContextMenuItem {
   icon?: React.ReactNode;
-  label: string;
+  label?: string;
   shortcut?: string;
-  action: () => void;
+  action?: () => void;
   divider?: boolean;
   disabled?: boolean;
 }
@@ -93,11 +93,15 @@ export default function ContextMenu({ type, position, onClose, items }: ContextM
       return <div key={index} className="h-px bg-gray-700 my-1" />;
     }
 
+    if (!item.label || !item.action) {
+      return null;
+    }
+
     return (
       <button
         key={index}
         onClick={() => {
-          if (!item.disabled) {
+          if (!item.disabled && item.action) {
             item.action();
             onClose();
           }

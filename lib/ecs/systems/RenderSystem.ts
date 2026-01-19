@@ -170,7 +170,7 @@ export class RenderSystem extends BaseSystem {
    * Create Three.js geometry from ECS geometry component
    */
   private createThreeGeometry(geometry: GeometryComponent): THREE.BufferGeometry {
-    const params = geometry.parameters;
+    const params = geometry.parameters as any; // Type assertion for geometry parameters
 
     switch (geometry.geometryType) {
       case 'sphere':

@@ -9,7 +9,7 @@
  */
 
 import { World } from '../core/World';
-import { SelectionComponent, createSelection } from '../components/SelectionComponent';
+import { SelectionComponent, createSelectionComponent } from '../components/SelectionComponent';
 import { SelectionManager, Selectable, SelectionEvent } from '@/lib/editor/SelectionManager';
 import { Object3D, Camera, Vector2, Raycaster } from 'three';
 
@@ -41,7 +41,7 @@ export class ECSSelectionManager extends SelectionManager {
 
     // Ensure entity has SelectionComponent
     if (!this.world.hasComponent(entityId, 'Selection')) {
-      const selection = createSelection({ selected: false, visible: true });
+      const selection = createSelectionComponent({ selected: false, visible: true });
       this.world.setComponent(entityId, selection);
     }
   }

@@ -103,7 +103,7 @@ export class PlantRenderSystem extends BaseSystem {
     const species = getPlantSpecies(plantData.speciesId);
     if (!species) return;
 
-    const size = calculatePlantSize(plantData.speciesId, plantData.age, plantData.scale);
+    const size = calculatePlantSize(plantData.speciesId, plantData.age, transform.scale.x);
     const group = new THREE.Group();
 
     // Set transform
@@ -159,7 +159,7 @@ export class PlantRenderSystem extends BaseSystem {
     // Check if plant needs recreation (age/scale changed significantly)
     const species = getPlantSpecies(plantData.speciesId);
     if (species) {
-      const newSize = calculatePlantSize(plantData.speciesId, plantData.age, plantData.scale);
+      const newSize = calculatePlantSize(plantData.speciesId, plantData.age, transform.scale.x);
       const currentSize = group.userData.plantSize;
 
       // Recreate if size changed significantly
