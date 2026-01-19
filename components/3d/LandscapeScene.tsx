@@ -3,9 +3,9 @@
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Sky } from "@react-three/drei";
 import { Suspense, useState, useRef, useImperativeHandle, forwardRef } from "react";
+import { ZoomIn, ZoomOut } from "lucide-react";
 import House3D from "./House3D";
 import { Tree, Bush, FlowerBed, Rock } from "./Landscaping";
-import CameraControls from "./CameraControls";
 
 function Ground() {
   return (
@@ -215,7 +215,7 @@ export default function LandscapeScene() {
         <OrbitControls
           ref={controlsRef}
           enablePan={true}
-          enableZoom={true}
+          enableZoom={false}
           minDistance={8}
           maxDistance={25}
           maxPolarAngle={Math.PI / 2.2}
@@ -230,15 +230,25 @@ export default function LandscapeScene() {
         </Suspense>
       </Canvas>
 
-      <CameraControls
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onRotateLeft={handleRotateLeft}
-        onRotateRight={handleRotateRight}
-        onPanLeft={handlePanLeft}
-        onPanRight={handlePanRight}
-        onReset={handleReset}
-      />
+      {/* Simple Zoom Controls - Upper Left */}
+      <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+        <button
+          onClick={handleZoomIn}
+          className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-800 p-3 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-95"
+          title="Zoom In"
+          aria-label="Zoom In"
+        >
+          <ZoomIn className="w-6 h-6" />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          className="bg-white/90 backdrop-blur-sm hover:bg-white text-gray-800 p-3 rounded-lg shadow-lg hover:shadow-xl transition-all active:scale-95"
+          title="Zoom Out"
+          aria-label="Zoom Out"
+        >
+          <ZoomOut className="w-6 h-6" />
+        </button>
+      </div>
     </>
   );
 }

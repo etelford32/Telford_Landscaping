@@ -21,9 +21,9 @@ export default function Home() {
         <HeroCanvas />
 
         {/* Content Overlay */}
-        <div className="relative h-full flex flex-col justify-end pb-32 z-10 pointer-events-none">
+        <div className="relative h-full flex flex-col justify-end pb-20 z-10 pointer-events-none">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="text-center mb-8">
+            <div className="text-center mb-8" style={{ transform: 'translateY(100px)' }}>
               <h1
                 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8"
                 style={{

@@ -11,10 +11,6 @@ const LandscapeScene = dynamic(() => import("./3d/LandscapeScene"), {
   ),
 });
 
-const DemoOverlay = dynamic(() => import("./3d/DemoOverlay"), {
-  ssr: false,
-});
-
 export default function HeroCanvas() {
   return (
     <div className="absolute inset-0 w-full h-full">
@@ -24,7 +20,6 @@ export default function HeroCanvas() {
         }
       >
         <LandscapeScene />
-        <DemoOverlay />
       </Suspense>
     </div>
   );
