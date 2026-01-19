@@ -8,6 +8,7 @@
  * - Converts PlacedPlant to ECS entities
  */
 
+import * as THREE from 'three';
 import { World } from '../core/World';
 import { GrowthSystem, GrowthCurve } from '../systems/GrowthSystem';
 import { PlantRenderSystem } from '../systems/PlantRenderSystem';
@@ -86,9 +87,9 @@ export function createPlantEntity(
   world.setComponent(entity.id, plantData);
 
   // Add Selection component
-  const selection = createSelectionComponent(
-    plant.selected ?? false
-  );
+  const selection = createSelectionComponent({
+    selected: plant.selected ?? false
+  });
   world.setComponent(entity.id, selection);
 
   return entity.id;
@@ -115,7 +116,7 @@ export function entityToPlacedPlant(
     rotation: transform.rotation.y,
     scale: transform.scale.x,
     age: plantData.age,
-    variant: plantData.variant,
+    variant: 0, // Default variant
     selected: selection?.selected ?? false
   };
 }

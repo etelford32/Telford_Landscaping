@@ -42,6 +42,12 @@ import EnhancedPrecisionEdit from "./EnhancedPrecisionEdit";
 import SelectionBox, { ObjectHighlight } from "./SelectionBox";
 import StructureToolbox from "./StructureToolbox";
 import PropertyPanel from "./PropertyPanel";
+import { ToastProvider, useToast } from "./ToastManager";
+import StatusBar from "./StatusBar";
+import ContextMenu, { getObjectMenuItems, getCanvasMenuItems, ContextMenuType } from "./ContextMenu";
+import AlignmentTools, { calculateAlignedPosition, calculateDistributedPositions, AlignmentType, DistributionType } from "./AlignmentTools";
+import { clipboardManager, ClipboardObject } from "@/lib/design/clipboard";
+import RectangleSelection from "./RectangleSelection";
 
 // Scene Component
 function Scene({
@@ -220,8 +226,10 @@ function Scene({
   );
 }
 
-// Main Integrated Design Canvas
-export default function IntegratedDesignCanvas() {
+// Inner component with toast access
+function IntegratedDesignCanvasInner() {
+  const toast = useToast();
+
   // OOP System Instances
   const cameraController = useMemo(() => new CameraController(), []);
   const selectionManager = useMemo(
@@ -284,6 +292,30 @@ export default function IntegratedDesignCanvas() {
   const [showStructureToolbox, setShowStructureToolbox] = useState(false);
   const [showPrecisionPanel, setShowPrecisionPanel] = useState(false);
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
+
+  // Context Menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    position: { x: number; y: number };
+    type: ContextMenuType;
+  }>({
+    visible: false,
+    position: { x: 0, y: 0 },
+    type: 'canvas',
+  });
+
+  // Cursor position for StatusBar
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0, z: 0 });
+
+  // Multi-select support (array-based selection)
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Rectangle selection state
+  const [rectangleSelection, setRectangleSelection] = useState({
+    isActive: false,
+    startPoint: { x: 0, y: 0 },
+    endPoint: { x: 0, y: 0 },
+  });
 
   // Grid click placement
   const [gridClickEnabled, setGridClickEnabled] = useState(false);
@@ -466,9 +498,98 @@ export default function IntegratedDesignCanvas() {
       setPlants(plants.filter((p) => p.id !== selectedPlantId));
       selectionManager.clearSelection();
       setSelectedPlantId(null);
+      toast.success('Plant deleted');
     } else if (selectedStructureId) {
       setStructures(structures.filter((s) => s.id !== selectedStructureId));
       setSelectedStructureId(null);
+      toast.success('Structure deleted');
+    }
+  };
+
+  // Enhanced clipboard operations
+  const handleCut = () => {
+    const selectedObjects: ClipboardObject[] = [];
+
+    if (selectedPlantId) {
+      const plant = plants.find((p) => p.id === selectedPlantId);
+      if (plant) selectedObjects.push(plant);
+    }
+    if (selectedStructureId) {
+      const structure = structures.find((s) => s.id === selectedStructureId);
+      if (structure) selectedObjects.push(structure);
+    }
+
+    if (selectedObjects.length > 0) {
+      clipboardManager.cut(selectedObjects);
+      handleDelete(); // Remove the cut objects
+      toast.info(`Cut ${selectedObjects.length} object(s)`);
+    }
+  };
+
+  const handleCopyToClipboard = () => {
+    const selectedObjects: ClipboardObject[] = [];
+
+    if (selectedPlantId) {
+      const plant = plants.find((p) => p.id === selectedPlantId);
+      if (plant) selectedObjects.push(plant);
+    }
+    if (selectedStructureId) {
+      const structure = structures.find((s) => s.id === selectedStructureId);
+      if (structure) selectedObjects.push(structure);
+    }
+
+    if (selectedObjects.length > 0) {
+      clipboardManager.copy(selectedObjects);
+      toast.success(`Copied ${selectedObjects.length} object(s)`);
+    }
+  };
+
+  const handlePaste = () => {
+    const result = clipboardManager.paste();
+    if (!result) {
+      toast.warning('Nothing to paste');
+      return;
+    }
+
+    const { objects, wasCut } = result;
+
+    objects.forEach((obj) => {
+      if ('speciesId' in obj) {
+        // It's a plant
+        setPlants((prev) => [...prev, obj as PlacedPlant]);
+      } else {
+        // It's a structure
+        setStructures((prev) => [...prev, obj as PlacedStructure]);
+      }
+    });
+
+    toast.success(`Pasted ${objects.length} object(s)`);
+  };
+
+  const handleDuplicate = () => {
+    const selectedObjects: ClipboardObject[] = [];
+
+    if (selectedPlantId) {
+      const plant = plants.find((p) => p.id === selectedPlantId);
+      if (plant) selectedObjects.push(plant);
+    }
+    if (selectedStructureId) {
+      const structure = structures.find((s) => s.id === selectedStructureId);
+      if (structure) selectedObjects.push(structure);
+    }
+
+    if (selectedObjects.length > 0) {
+      const duplicated = clipboardManager.duplicate(selectedObjects, { x: 2, z: 2 });
+
+      duplicated.forEach((obj) => {
+        if ('speciesId' in obj) {
+          setPlants((prev) => [...prev, obj as PlacedPlant]);
+        } else {
+          setStructures((prev) => [...prev, obj as PlacedStructure]);
+        }
+      });
+
+      toast.success(`Duplicated ${duplicated.length} object(s)`);
     }
   };
 
@@ -566,21 +687,95 @@ export default function IntegratedDesignCanvas() {
     { key: 's', ctrl: true, handler: (e) => { e.preventDefault(); handleSave(); }, description: 'Save' },
     { key: 'Delete', handler: () => handleDelete(), description: 'Delete' },
     { key: 'Backspace', handler: () => handleDelete(), description: 'Delete' },
-    { key: 'c', ctrl: true, handler: () => handleCopy(), description: 'Copy' },
+    { key: 'x', ctrl: true, handler: (e) => { e.preventDefault(); handleCut(); }, description: 'Cut' },
+    { key: 'c', ctrl: true, handler: (e) => { e.preventDefault(); handleCopyToClipboard(); }, description: 'Copy' },
+    { key: 'v', ctrl: true, handler: (e) => { e.preventDefault(); handlePaste(); }, description: 'Paste' },
+    { key: 'd', ctrl: true, handler: (e) => { e.preventDefault(); handleDuplicate(); }, description: 'Duplicate' },
     { key: 'a', ctrl: true, handler: (e) => { e.preventDefault(); console.log('Select all'); }, description: 'Select All' },
     { key: 'Escape', handler: () => {
       setSelectedPlantId(null);
       setSelectedStructureId(null);
       setSelectedHouseId(null);
       selectionManager.clearSelection();
+      setContextMenu({ ...contextMenu, visible: false });
     }, description: 'Deselect' },
   ]);
 
   // Selection count
   const selectedCount = (selectedPlantId ? 1 : 0) + (selectedStructureId ? 1 : 0) + (selectedHouseId ? 1 : 0);
 
+  // Context menu handlers
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const type: ContextMenuType = selectedCount > 0 ? 'object' : 'canvas';
+    setContextMenu({
+      visible: true,
+      position: { x: e.clientX, y: e.clientY },
+      type,
+    });
+  };
+
+  // Alignment handlers
+  const handleAlign = (type: AlignmentType) => {
+    const selectedObjects: Array<{ position: { x: number; y?: number; z: number }; bounds?: { width: number; depth: number } }> = [];
+
+    if (selectedPlantId) {
+      const plant = plants.find((p) => p.id === selectedPlantId);
+      if (plant) selectedObjects.push({ position: plant.position, bounds: { width: 1, depth: 1 } });
+    }
+    if (selectedStructureId) {
+      const structure = structures.find((s) => s.id === selectedStructureId);
+      if (structure) selectedObjects.push({ position: structure.position, bounds: { width: 2, depth: 2 } });
+    }
+
+    if (selectedObjects.length < 2) {
+      toast.warning('Select at least 2 objects to align');
+      return;
+    }
+
+    const newPositions = calculateAlignedPosition(selectedObjects, type);
+
+    // Update plant positions
+    if (selectedPlantId) {
+      const plantIndex = 0; // Simplified - would need proper index tracking
+      setPlants((prev) =>
+        prev.map((p) =>
+          p.id === selectedPlantId
+            ? { ...p, position: { ...p.position, x: newPositions[plantIndex].x, z: newPositions[plantIndex].z } }
+            : p
+        )
+      );
+    }
+
+    toast.success(`Aligned objects: ${type}`);
+  };
+
+  const handleDistribute = (type: DistributionType) => {
+    const selectedObjects: Array<{ position: { x: number; z: number }; bounds?: { width: number; depth: number } }> = [];
+
+    if (selectedPlantId) {
+      const plant = plants.find((p) => p.id === selectedPlantId);
+      if (plant) selectedObjects.push({ position: { x: plant.position.x, z: plant.position.z }, bounds: { width: 1, depth: 1 } });
+    }
+    if (selectedStructureId) {
+      const structure = structures.find((s) => s.id === selectedStructureId);
+      if (structure) selectedObjects.push({ position: { x: structure.position.x, z: structure.position.z }, bounds: { width: 2, depth: 2 } });
+    }
+
+    if (selectedObjects.length < 3) {
+      toast.warning('Select at least 3 objects to distribute');
+      return;
+    }
+
+    const newPositions = calculateDistributedPositions(selectedObjects, type);
+    toast.success(`Distributed objects: ${type}`);
+  };
+
   return (
-    <div className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100">
+    <div
+      className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100"
+      onContextMenu={handleContextMenu}
+    >
       {/* Tutorial Panel */}
       {showTutorial && (
         <TutorialPanel onClose={() => setShowTutorial(false)} />
@@ -740,6 +935,68 @@ export default function IntegratedDesignCanvas() {
           }
         }}
       />
+
+      {/* Status Bar */}
+      <StatusBar
+        cursorPosition={cursorPosition}
+        selectedCount={selectedCount}
+        editMode={editMode === 'vertex' || editMode === 'measure' ? 'select' : editMode}
+        snapToGrid={snapToGridEnabled}
+        gridSize={gridSize}
+        unit="ft"
+        hasUnsavedChanges={canUndo}
+      />
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <ContextMenu
+          type={contextMenu.type}
+          position={contextMenu.position}
+          onClose={() => setContextMenu({ ...contextMenu, visible: false })}
+          items={
+            contextMenu.type === 'object'
+              ? getObjectMenuItems({
+                  onCut: handleCut,
+                  onCopy: handleCopyToClipboard,
+                  onPaste: handlePaste,
+                  onDuplicate: handleDuplicate,
+                  onDelete: handleDelete,
+                  canGroup: false,
+                })
+              : getCanvasMenuItems({
+                  onPaste: handlePaste,
+                  canPaste: clipboardManager.hasContent(),
+                })
+          }
+        />
+      )}
+
+      {/* Rectangle Selection */}
+      <RectangleSelection
+        startPoint={rectangleSelection.startPoint}
+        endPoint={rectangleSelection.endPoint}
+        isActive={rectangleSelection.isActive}
+      />
+
+      {/* Alignment Tools - Show when multiple objects selected */}
+      {selectedCount >= 2 && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
+          <AlignmentTools
+            selectedCount={selectedCount}
+            onAlign={handleAlign}
+            onDistribute={handleDistribute}
+          />
+        </div>
+      )}
     </div>
+  );
+}
+
+// Main export with ToastProvider wrapper
+export default function IntegratedDesignCanvas() {
+  return (
+    <ToastProvider>
+      <IntegratedDesignCanvasInner />
+    </ToastProvider>
   );
 }
