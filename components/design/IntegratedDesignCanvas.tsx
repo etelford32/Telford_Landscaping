@@ -51,6 +51,8 @@ import RectangleSelection from "./RectangleSelection";
 import UnifiedSidebar from "./UnifiedSidebar";
 import CameraPresets, { CameraPreset } from "./CameraPresets";
 import CameraPresetController from "./CameraController";
+import CameraControlPanel from "./camera/CameraControlPanel";
+import WorkspaceLayoutManager from "./ui/WorkspaceLayoutManager";
 
 // Terrain System
 import { TerrainManager, BrushConfig, TerrainTool, TerrainConfig } from "@/lib/terrain/TerrainManager";
@@ -372,6 +374,23 @@ function IntegratedDesignCanvasInner() {
   // Camera preset state
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>('perspective');
   const [enableCameraTransition, setEnableCameraTransition] = useState(false);
+
+  // Camera settings state
+  const [cameraSettings, setCameraSettings] = useState({
+    panSpeed: 1.0,
+    zoomSpeed: 1.0,
+    rotationSpeed: 1.0,
+    fov: 50,
+    lockX: false,
+    lockY: false,
+    lockZ: false,
+    minDistance: 5,
+    maxDistance: 40,
+  });
+
+  // UI panel visibility
+  const [showCameraPanel, setShowCameraPanel] = useState(true);
+  const [showWorkspaceManager, setShowWorkspaceManager] = useState(false);
 
   // Terrain editing state
   const [terrainEnabled, setTerrainEnabled] = useState(false);
@@ -830,6 +849,25 @@ function IntegratedDesignCanvasInner() {
     setTimeout(() => setEnableCameraTransition(false), 1000);
   };
 
+  // Camera settings handler
+  const handleCameraSettingsChange = (updates: Partial<typeof cameraSettings>) => {
+    setCameraSettings((prev) => ({ ...prev, ...updates }));
+  };
+
+  // Camera manual movement handler
+  const handleCameraManualMove = (direction: 'up' | 'down' | 'left' | 'right' | 'forward' | 'backward') => {
+    // This would integrate with OrbitControls or custom camera controller
+    console.log('Manual camera movement:', direction);
+    toast.info(`Camera moving ${direction}`);
+  };
+
+  // Screenshot handler
+  const handleTakeScreenshot = (quality: number) => {
+    // This would use canvas.toDataURL() or similar
+    console.log('Taking screenshot at quality:', quality);
+    toast.success('Screenshot captured!');
+  };
+
   // Hardscape preset handler
   const handlePresetApply = (preset: HardscapePreset) => {
     if (!selectedHouseId) {
@@ -886,13 +924,16 @@ function IntegratedDesignCanvasInner() {
     { key: 'v', ctrl: true, handler: (e) => { e.preventDefault(); handlePaste(); }, description: 'Paste' },
     { key: 'd', ctrl: true, handler: (e) => { e.preventDefault(); handleDuplicate(); }, description: 'Duplicate' },
     { key: 'a', ctrl: true, handler: (e) => { e.preventDefault(); console.log('Select all'); }, description: 'Select All' },
+    { key: 'l', ctrl: true, handler: (e) => { e.preventDefault(); setShowWorkspaceManager(!showWorkspaceManager); }, description: 'Toggle Workspace Layouts' },
+    { key: 'k', ctrl: true, handler: (e) => { e.preventDefault(); setShowCameraPanel(!showCameraPanel); }, description: 'Toggle Camera Panel' },
     { key: 'Escape', handler: () => {
       setSelectedPlantId(null);
       setSelectedStructureId(null);
       setSelectedHouseId(null);
       selectionManager.clearSelection();
       setContextMenu({ ...contextMenu, visible: false });
-    }, description: 'Deselect' },
+      setShowWorkspaceManager(false);
+    }, description: 'Deselect / Close Dialogs' },
   ]);
 
   // Selection count
@@ -970,6 +1011,18 @@ function IntegratedDesignCanvasInner() {
       className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100"
       onContextMenu={handleContextMenu}
     >
+      {/* Workspace Layout Button - Top Left */}
+      <button
+        onClick={() => setShowWorkspaceManager(true)}
+        className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg hover:shadow-xl transition-all border border-gray-200"
+        title="Workspace Layouts (Ctrl+L)"
+      >
+        <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+        </svg>
+        <span className="text-sm font-semibold text-gray-700">Workspace Layouts</span>
+      </button>
+
       {/* Tutorial Panel */}
       {showTutorial && (
         <TutorialPanel onClose={() => setShowTutorial(false)} />
@@ -1078,15 +1131,23 @@ function IntegratedDesignCanvasInner() {
         />
       )}
 
-      {/* Camera Presets */}
-      <div className="absolute top-4 right-4 z-30 space-y-2">
-        <CameraPresets
+      {/* Camera Control Panel */}
+      {showCameraPanel && (
+        <CameraControlPanel
           currentPreset={cameraPreset}
           onPresetChange={handleCameraPresetChange}
-          compact={false}
-          vertical={false}
+          cameraSettings={cameraSettings}
+          onCameraSettingsChange={handleCameraSettingsChange}
+          currentPosition={cursorPosition}
+          currentTarget={{ x: 0, y: 0, z: 0 }}
+          onManualMove={handleCameraManualMove}
+          onResetCamera={handleResetCamera}
+          onTakeScreenshot={handleTakeScreenshot}
         />
-        {/* Terrain Mode Toggle */}
+      )}
+
+      {/* Terrain Mode Toggle Button - Top Right */}
+      <div className="absolute top-4 right-4 z-30">
         <button
           onClick={() => {
             setTerrainEnabled(!terrainEnabled);
@@ -1097,7 +1158,7 @@ function IntegratedDesignCanvasInner() {
               setTerrainTool('none');
             }
           }}
-          className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
+          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all shadow-lg ${
             terrainEnabled
               ? 'bg-green-600 text-white shadow-md'
               : 'bg-white/90 text-gray-700 hover:bg-white'
@@ -1112,6 +1173,14 @@ function IntegratedDesignCanvasInner() {
           </span>
         </button>
       </div>
+
+      {/* Workspace Layout Manager */}
+      {showWorkspaceManager && (
+        <WorkspaceLayoutManager
+          visible={showWorkspaceManager}
+          onClose={() => setShowWorkspaceManager(false)}
+        />
+      )}
 
       {/* Terrain Tools */}
       {terrainEnabled && (
