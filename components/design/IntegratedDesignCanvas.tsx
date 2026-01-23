@@ -52,6 +52,13 @@ import UnifiedSidebar from "./UnifiedSidebar";
 import CameraPresets, { CameraPreset } from "./CameraPresets";
 import CameraPresetController from "./CameraController";
 
+// Terrain System
+import { TerrainManager, BrushConfig, TerrainTool, TerrainConfig } from "@/lib/terrain/TerrainManager";
+import EditableTerrain from "./terrain/EditableTerrain";
+import TerrainBrushPreview from "./terrain/TerrainBrushPreview";
+import TerrainToolbar from "./terrain/TerrainToolbar";
+import BrushSettings from "./terrain/BrushSettings";
+
 // Scene Component
 function Scene({
   plants,
@@ -76,6 +83,12 @@ function Scene({
   gridClickEnabled,
   cameraPreset,
   enableCameraTransition,
+  terrainManager,
+  terrainEnabled,
+  terrainTool,
+  brush,
+  brushPosition,
+  onTerrainClick,
 }: {
   plants: PlacedPlant[];
   structures: PlacedStructure[];
@@ -99,6 +112,12 @@ function Scene({
   gridClickEnabled: boolean;
   cameraPreset: CameraPreset;
   enableCameraTransition: boolean;
+  terrainManager: TerrainManager;
+  terrainEnabled: boolean;
+  terrainTool: TerrainTool;
+  brush: BrushConfig;
+  brushPosition: Vector3 | null;
+  onTerrainClick: (position: { x: number; y: number; z: number }) => void;
 }) {
   const houses = sceneManager.getHouses();
   const ground = sceneManager.getGround();
@@ -172,8 +191,30 @@ function Scene({
       )}
 
       {/* Grassy Ground */}
-      {!showGrid && <GrassyGround ground={ground} />}
-      {!showGrid && <DecorativeRocks size={ground.size} count={20} />}
+      {/* Terrain or Ground */}
+      {terrainEnabled && terrainManager ? (
+        <>
+          <EditableTerrain
+            terrainManager={terrainManager}
+            grassColor={ground.grassColor}
+            showWireframe={false}
+            onTerrainClick={onTerrainClick}
+          />
+          {brushPosition && brush && (
+            <TerrainBrushPreview
+              position={brushPosition}
+              brush={brush}
+              terrainManager={terrainManager}
+              visible={terrainTool !== 'none'}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {!showGrid && <GrassyGround ground={ground} />}
+          {!showGrid && <DecorativeRocks size={ground.size} count={20} />}
+        </>
+      )}
 
       {/* Selection Box - Enhanced visualization */}
       {selectedObjects.length > 0 && (
@@ -264,6 +305,20 @@ function IntegratedDesignCanvasInner() {
     return sm;
   }, []);
 
+  // Terrain system with ref for state updates
+  const [terrainUpdateCounter, setTerrainUpdateCounter] = useState(0);
+  const terrainManager = useMemo(() => {
+    return new TerrainManager(
+      {
+        size: 30,
+        resolution: 64,
+        maxHeight: 10,
+        minHeight: -2,
+      },
+      () => setTerrainUpdateCounter((c) => c + 1)
+    );
+  }, []);
+
   // State with undo/redo support
   interface DesignState {
     plants: PlacedPlant[];
@@ -310,6 +365,17 @@ function IntegratedDesignCanvasInner() {
   // Camera preset state
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>('perspective');
   const [enableCameraTransition, setEnableCameraTransition] = useState(false);
+
+  // Terrain editing state
+  const [terrainEnabled, setTerrainEnabled] = useState(false);
+  const [terrainTool, setTerrainTool] = useState<TerrainTool>('none');
+  const [brush, setBrush] = useState<BrushConfig>({
+    size: 2,
+    strength: 0.5,
+    falloff: 0.5,
+  });
+  const [brushPosition, setBrushPosition] = useState<Vector3 | null>(null);
+  const [isMouseDown, setIsMouseDown] = useState(false);
 
   // Context Menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -757,6 +823,32 @@ function IntegratedDesignCanvasInner() {
     setTimeout(() => setEnableCameraTransition(false), 1000);
   };
 
+  // Terrain handlers
+  const handleTerrainClick = (position: { x: number; y: number; z: number }) => {
+    if (terrainTool === 'none' || !terrainEnabled) return;
+
+    // Apply brush at click position
+    terrainManager.applyBrush(position.x, position.z, terrainTool, brush);
+    toast.info(`Applied ${terrainTool} tool`);
+  };
+
+  const handleTerrainConfigChange = (updates: Partial<TerrainConfig>) => {
+    if (updates) {
+      terrainManager.updateConfig(updates);
+      setTerrainUpdateCounter((c) => c + 1);
+    }
+  };
+
+  const handleTerrainReset = () => {
+    terrainManager.reset();
+    toast.success('Terrain reset to flat');
+  };
+
+  const handleTerrainGenerate = () => {
+    terrainManager.generateRandomTerrain(3);
+    toast.success('Generated random terrain');
+  };
+
   // Keyboard shortcuts
   useKeyboardShortcuts([
     { key: 'z', ctrl: true, handler: () => undo(), description: 'Undo' },
@@ -876,6 +968,9 @@ function IntegratedDesignCanvasInner() {
         onDuplicateStructure={handleDuplicateStructure}
         ground={ground}
         onGroundChange={handleGroundChange}
+        terrainConfig={terrainManager.getConfig()}
+        terrainStats={terrainManager.getStats()}
+        onTerrainConfigChange={handleTerrainConfigChange}
         visible={showSidebar}
         onClose={() => setShowSidebar(false)}
       />
@@ -931,14 +1026,56 @@ function IntegratedDesignCanvasInner() {
       )}
 
       {/* Camera Presets */}
-      <div className="absolute top-4 right-4 z-30">
+      <div className="absolute top-4 right-4 z-30 space-y-2">
         <CameraPresets
           currentPreset={cameraPreset}
           onPresetChange={handleCameraPresetChange}
           compact={false}
           vertical={false}
         />
+        {/* Terrain Mode Toggle */}
+        <button
+          onClick={() => {
+            setTerrainEnabled(!terrainEnabled);
+            if (!terrainEnabled) {
+              toast.success('Terrain editing enabled');
+            } else {
+              toast.info('Terrain editing disabled');
+              setTerrainTool('none');
+            }
+          }}
+          className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            terrainEnabled
+              ? 'bg-green-600 text-white shadow-md'
+              : 'bg-white/90 text-gray-700 hover:bg-white'
+          }`}
+          title={terrainEnabled ? 'Disable terrain editing' : 'Enable terrain editing'}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+          <span className="text-sm font-medium">
+            {terrainEnabled ? 'Terrain ON' : 'Terrain OFF'}
+          </span>
+        </button>
       </div>
+
+      {/* Terrain Tools */}
+      {terrainEnabled && (
+        <>
+          <div className="absolute left-4 bottom-24 z-30">
+            <TerrainToolbar
+              activeTool={terrainTool}
+              onToolChange={setTerrainTool}
+              onReset={handleTerrainReset}
+              onGenerateRandom={handleTerrainGenerate}
+            />
+          </div>
+          <div className="absolute left-4 bottom-[420px] z-30">
+            <BrushSettings brush={brush} onBrushChange={setBrush} />
+          </div>
+        </>
+      )}
 
       {/* 3D Canvas */}
       <div ref={canvasRef} className="w-full h-full">
@@ -978,6 +1115,12 @@ function IntegratedDesignCanvasInner() {
               gridClickEnabled={gridClickEnabled}
               cameraPreset={cameraPreset}
               enableCameraTransition={enableCameraTransition}
+              terrainManager={terrainManager}
+              terrainEnabled={terrainEnabled}
+              terrainTool={terrainTool}
+              brush={brush}
+              brushPosition={brushPosition}
+              onTerrainClick={handleTerrainClick}
             />
           </Suspense>
         </Canvas>
