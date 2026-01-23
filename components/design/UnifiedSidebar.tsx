@@ -11,6 +11,7 @@ import {
   Layers,
   Settings,
   Mountain,
+  Building2,
   ChevronLeft,
   ChevronRight,
   X
@@ -19,9 +20,10 @@ import ObjectsTab from './sidebar/ObjectsTab';
 import LayersTab from './sidebar/LayersTab';
 import SettingsTab from './sidebar/SettingsTab';
 import TerrainTab from './sidebar/TerrainTab';
+import HardscapeTab from './sidebar/HardscapeTab';
 import { TerrainConfig } from '@/lib/terrain/TerrainManager';
 
-export type SidebarTab = 'objects' | 'terrain' | 'layers' | 'settings';
+export type SidebarTab = 'objects' | 'hardscape' | 'terrain' | 'layers' | 'settings';
 
 interface UnifiedSidebarProps {
   // Objects tab props
@@ -65,6 +67,10 @@ interface UnifiedSidebarProps {
   };
   onTerrainConfigChange?: (config: Partial<TerrainConfig>) => void;
 
+  // Hardscape tab props
+  onOpenHardscapeToolbox?: () => void;
+  onOpenHardscapePresets?: () => void;
+
   // Layers tab props (future implementation)
   layers?: any[];
   onLayerChange?: (layers: any[]) => void;
@@ -95,6 +101,8 @@ export default function UnifiedSidebar({
   terrainConfig,
   terrainStats,
   onTerrainConfigChange,
+  onOpenHardscapeToolbox,
+  onOpenHardscapePresets,
   layers = [],
   onLayerChange,
   visible = true,
@@ -108,6 +116,7 @@ export default function UnifiedSidebar({
 
   const tabs = [
     { id: 'objects' as SidebarTab, label: 'Objects', icon: List },
+    { id: 'hardscape' as SidebarTab, label: 'Hardscape', icon: Building2 },
     { id: 'terrain' as SidebarTab, label: 'Terrain', icon: Mountain },
     { id: 'layers' as SidebarTab, label: 'Layers', icon: Layers },
     { id: 'settings' as SidebarTab, label: 'Settings', icon: Settings },
@@ -188,6 +197,15 @@ export default function UnifiedSidebar({
                 onDeleteHouse={onDeleteHouse}
                 onDuplicatePlant={onDuplicatePlant}
                 onDuplicateStructure={onDuplicateStructure}
+              />
+            )}
+
+            {activeTab === 'hardscape' && (
+              <HardscapeTab
+                hardscapeCount={structures.length}
+                selectedHouseId={selectedHouseId}
+                onOpenHardscapeToolbox={onOpenHardscapeToolbox || (() => {})}
+                onOpenPresets={onOpenHardscapePresets || (() => {})}
               />
             )}
 
