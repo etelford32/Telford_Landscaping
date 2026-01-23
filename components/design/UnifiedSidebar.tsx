@@ -10,6 +10,7 @@ import {
   List,
   Layers,
   Settings,
+  Mountain,
   ChevronLeft,
   ChevronRight,
   X
@@ -17,8 +18,10 @@ import {
 import ObjectsTab from './sidebar/ObjectsTab';
 import LayersTab from './sidebar/LayersTab';
 import SettingsTab from './sidebar/SettingsTab';
+import TerrainTab from './sidebar/TerrainTab';
+import { TerrainConfig } from '@/lib/terrain/TerrainManager';
 
-export type SidebarTab = 'objects' | 'layers' | 'settings';
+export type SidebarTab = 'objects' | 'terrain' | 'layers' | 'settings';
 
 interface UnifiedSidebarProps {
   // Objects tab props
@@ -53,6 +56,15 @@ interface UnifiedSidebarProps {
     showGrid?: boolean;
   }) => void;
 
+  // Terrain tab props
+  terrainConfig?: TerrainConfig;
+  terrainStats?: {
+    minHeight: number;
+    maxHeight: number;
+    avgHeight: number;
+  };
+  onTerrainConfigChange?: (config: Partial<TerrainConfig>) => void;
+
   // Layers tab props (future implementation)
   layers?: any[];
   onLayerChange?: (layers: any[]) => void;
@@ -80,6 +92,9 @@ export default function UnifiedSidebar({
   onDuplicateStructure,
   ground,
   onGroundChange,
+  terrainConfig,
+  terrainStats,
+  onTerrainConfigChange,
   layers = [],
   onLayerChange,
   visible = true,
@@ -93,6 +108,7 @@ export default function UnifiedSidebar({
 
   const tabs = [
     { id: 'objects' as SidebarTab, label: 'Objects', icon: List },
+    { id: 'terrain' as SidebarTab, label: 'Terrain', icon: Mountain },
     { id: 'layers' as SidebarTab, label: 'Layers', icon: Layers },
     { id: 'settings' as SidebarTab, label: 'Settings', icon: Settings },
   ];
@@ -172,6 +188,14 @@ export default function UnifiedSidebar({
                 onDeleteHouse={onDeleteHouse}
                 onDuplicatePlant={onDuplicatePlant}
                 onDuplicateStructure={onDuplicateStructure}
+              />
+            )}
+
+            {activeTab === 'terrain' && terrainConfig && (
+              <TerrainTab
+                config={terrainConfig}
+                stats={terrainStats}
+                onConfigChange={onTerrainConfigChange}
               />
             )}
 
