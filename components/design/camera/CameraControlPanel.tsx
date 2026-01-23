@@ -151,6 +151,7 @@ export default function CameraControlPanel({
       minHeight={400}
       maxWidth={600}
       maxHeight={900}
+      modeAware={true}
     >
       <div className="p-4 space-y-4">
         {/* Tab Navigation */}

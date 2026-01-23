@@ -53,6 +53,9 @@ import CameraPresets, { CameraPreset } from "./CameraPresets";
 import CameraPresetController from "./CameraController";
 import CameraControlPanel from "./camera/CameraControlPanel";
 import WorkspaceLayoutManager from "./ui/WorkspaceLayoutManager";
+import ModeIndicator from "./ui/ModeIndicator";
+import ModeAwareElement from "./ui/ModeAwareElement";
+import { modeManager, AppMode } from "@/lib/ui/ModeManager";
 
 // Terrain System
 import { TerrainManager, BrushConfig, TerrainTool, TerrainConfig } from "@/lib/terrain/TerrainManager";
@@ -392,6 +395,9 @@ function IntegratedDesignCanvasInner() {
   const [showCameraPanel, setShowCameraPanel] = useState(true);
   const [showWorkspaceManager, setShowWorkspaceManager] = useState(false);
 
+  // Mode system state
+  const [currentMode, setCurrentMode] = useState<AppMode>(modeManager.getCurrentMode());
+
   // Terrain editing state
   const [terrainEnabled, setTerrainEnabled] = useState(false);
   const [terrainTool, setTerrainTool] = useState<TerrainTool>('none');
@@ -460,6 +466,25 @@ function IntegratedDesignCanvasInner() {
     dragController.setSnapToGrid(snapToGridEnabled);
     dragController.setGridSize(gridSize);
   }, [editMode, snapToGridEnabled, gridSize, editModeController, dragController]);
+
+  // Subscribe to mode changes
+  useEffect(() => {
+    const unsubscribe = modeManager.subscribe((mode) => {
+      setCurrentMode(mode);
+
+      // Auto-enable/disable terrain when switching to/from terrain mode
+      if (mode === 'terrain' && !terrainEnabled) {
+        setTerrainEnabled(true);
+        toast.success('Terrain mode activated');
+      } else if (mode !== 'terrain' && terrainEnabled) {
+        setTerrainEnabled(false);
+        setTerrainTool('none');
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [terrainEnabled, toast]);
 
   // Handle grid click placement
   const handleGridClick = (position: { x: number; y: number; z: number }) => {
@@ -926,6 +951,13 @@ function IntegratedDesignCanvasInner() {
     { key: 'a', ctrl: true, handler: (e) => { e.preventDefault(); console.log('Select all'); }, description: 'Select All' },
     { key: 'l', ctrl: true, handler: (e) => { e.preventDefault(); setShowWorkspaceManager(!showWorkspaceManager); }, description: 'Toggle Workspace Layouts' },
     { key: 'k', ctrl: true, handler: (e) => { e.preventDefault(); setShowCameraPanel(!showCameraPanel); }, description: 'Toggle Camera Panel' },
+    // Mode switching shortcuts
+    { key: '1', handler: () => { modeManager.setMode('design'); toast.info('Design Mode'); }, description: 'Switch to Design Mode' },
+    { key: '2', handler: () => { modeManager.setMode('terrain'); toast.info('Terrain Mode'); }, description: 'Switch to Terrain Mode' },
+    { key: '3', handler: () => { modeManager.setMode('hardscape'); toast.info('Hardscape Mode'); }, description: 'Switch to Hardscape Mode' },
+    { key: '4', handler: () => { modeManager.setMode('camera'); toast.info('Camera Mode'); }, description: 'Switch to Camera Mode' },
+    { key: '5', handler: () => { modeManager.setMode('view'); toast.info('View Mode'); }, description: 'Switch to View Mode' },
+    { key: 'Tab', handler: (e) => { e.preventDefault(); modeManager.cycleMode(); }, description: 'Cycle Modes' },
     { key: 'Escape', handler: () => {
       setSelectedPlantId(null);
       setSelectedStructureId(null);
@@ -1364,6 +1396,12 @@ function IntegratedDesignCanvasInner() {
           />
         </div>
       )}
+
+      {/* Mode Indicator - Bottom Center */}
+      <ModeIndicator
+        compact={false}
+        showQuickSwitch={true}
+      />
     </div>
   );
 }
