@@ -48,6 +48,9 @@ import ContextMenu, { getObjectMenuItems, getCanvasMenuItems, ContextMenuType } 
 import AlignmentTools, { calculateAlignedPosition, calculateDistributedPositions, AlignmentType, DistributionType } from "./AlignmentTools";
 import { clipboardManager, ClipboardObject } from "@/lib/design/clipboard";
 import RectangleSelection from "./RectangleSelection";
+import UnifiedSidebar from "./UnifiedSidebar";
+import CameraPresets, { CameraPreset } from "./CameraPresets";
+import CameraPresetController from "./CameraController";
 
 // Scene Component
 function Scene({
@@ -71,6 +74,8 @@ function Scene({
   gridSize,
   onGridClick,
   gridClickEnabled,
+  cameraPreset,
+  enableCameraTransition,
 }: {
   plants: PlacedPlant[];
   structures: PlacedStructure[];
@@ -92,6 +97,8 @@ function Scene({
   gridSize: number;
   onGridClick: (position: { x: number; y: number; z: number }) => void;
   gridClickEnabled: boolean;
+  cameraPreset: CameraPreset;
+  enableCameraTransition: boolean;
 }) {
   const houses = sceneManager.getHouses();
   const ground = sceneManager.getGround();
@@ -114,6 +121,9 @@ function Scene({
     <>
       {/* Sky */}
       <Sky sunPosition={[10, 5, 10]} />
+
+      {/* Camera Controller */}
+      <CameraPresetController preset={cameraPreset} enabled={enableCameraTransition} />
 
       {/* Lighting */}
       <directionalLight
@@ -292,6 +302,14 @@ function IntegratedDesignCanvasInner() {
   const [showStructureToolbox, setShowStructureToolbox] = useState(false);
   const [showPrecisionPanel, setShowPrecisionPanel] = useState(false);
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+
+  // Ground state (synced with SceneManager)
+  const [ground, setGround] = useState(sceneManager.getGround());
+
+  // Camera preset state
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>('perspective');
+  const [enableCameraTransition, setEnableCameraTransition] = useState(false);
 
   // Context Menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -506,6 +524,32 @@ function IntegratedDesignCanvasInner() {
     }
   };
 
+  // Delete handlers by ID (for sidebar)
+  const handleDeletePlant = (id: string) => {
+    setPlants(plants.filter((p) => p.id !== id));
+    if (selectedPlantId === id) {
+      setSelectedPlantId(null);
+      selectionManager.clearSelection();
+    }
+    toast.success('Plant deleted');
+  };
+
+  const handleDeleteStructure = (id: string) => {
+    setStructures(structures.filter((s) => s.id !== id));
+    if (selectedStructureId === id) {
+      setSelectedStructureId(null);
+    }
+    toast.success('Structure deleted');
+  };
+
+  const handleDeleteHouse = (id: string) => {
+    sceneManager.removeHouse(id);
+    if (selectedHouseId === id) {
+      setSelectedHouseId(null);
+    }
+    toast.success('House deleted');
+  };
+
   // Enhanced clipboard operations
   const handleCut = () => {
     const selectedObjects: ClipboardObject[] = [];
@@ -590,6 +634,25 @@ function IntegratedDesignCanvasInner() {
       });
 
       toast.success(`Duplicated ${duplicated.length} object(s)`);
+    }
+  };
+
+  // Duplicate handlers by ID (for sidebar)
+  const handleDuplicatePlant = (id: string) => {
+    const plant = plants.find((p) => p.id === id);
+    if (plant) {
+      const duplicated = clipboardManager.duplicate([plant], { x: 2, z: 2 });
+      setPlants((prev) => [...prev, duplicated[0] as PlacedPlant]);
+      toast.success('Plant duplicated');
+    }
+  };
+
+  const handleDuplicateStructure = (id: string) => {
+    const structure = structures.find((s) => s.id === id);
+    if (structure) {
+      const duplicated = clipboardManager.duplicate([structure], { x: 2, z: 2 });
+      setStructures((prev) => [...prev, duplicated[0] as PlacedStructure]);
+      toast.success('Structure duplicated');
     }
   };
 
@@ -678,6 +741,20 @@ function IntegratedDesignCanvasInner() {
           : s
       ));
     }
+  };
+
+  // Ground change handler
+  const handleGroundChange = (updates: Partial<typeof ground>) => {
+    sceneManager.updateGround(updates);
+    setGround(sceneManager.getGround());
+  };
+
+  // Camera preset handler
+  const handleCameraPresetChange = (preset: CameraPreset) => {
+    setCameraPreset(preset);
+    setEnableCameraTransition(true);
+    // Reset after transition completes
+    setTimeout(() => setEnableCameraTransition(false), 1000);
   };
 
   // Keyboard shortcuts
@@ -781,6 +858,28 @@ function IntegratedDesignCanvasInner() {
         <TutorialPanel onClose={() => setShowTutorial(false)} />
       )}
 
+      {/* Unified Sidebar */}
+      <UnifiedSidebar
+        plants={plants}
+        structures={structures}
+        houses={sceneManager.getHouses()}
+        selectedPlantId={selectedPlantId}
+        selectedStructureId={selectedStructureId}
+        selectedHouseId={selectedHouseId}
+        onSelectPlant={setSelectedPlantId}
+        onSelectStructure={setSelectedStructureId}
+        onSelectHouse={setSelectedHouseId}
+        onDeletePlant={handleDeletePlant}
+        onDeleteStructure={handleDeleteStructure}
+        onDeleteHouse={handleDeleteHouse}
+        onDuplicatePlant={handleDuplicatePlant}
+        onDuplicateStructure={handleDuplicateStructure}
+        ground={ground}
+        onGroundChange={handleGroundChange}
+        visible={showSidebar}
+        onClose={() => setShowSidebar(false)}
+      />
+
       {/* Enhanced Plant Toolbox */}
       {showPlantToolbox && (
         <EnhancedPlantToolbox
@@ -831,6 +930,16 @@ function IntegratedDesignCanvasInner() {
         />
       )}
 
+      {/* Camera Presets */}
+      <div className="absolute top-4 right-4 z-30">
+        <CameraPresets
+          currentPreset={cameraPreset}
+          onPresetChange={handleCameraPresetChange}
+          compact={false}
+          vertical={false}
+        />
+      </div>
+
       {/* 3D Canvas */}
       <div ref={canvasRef} className="w-full h-full">
         <Canvas shadows>
@@ -867,6 +976,8 @@ function IntegratedDesignCanvasInner() {
               gridSize={gridSize}
               onGridClick={handleGridClick}
               gridClickEnabled={gridClickEnabled}
+              cameraPreset={cameraPreset}
+              enableCameraTransition={enableCameraTransition}
             />
           </Suspense>
         </Canvas>
