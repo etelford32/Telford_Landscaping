@@ -17,6 +17,7 @@ import {
   PinOff,
 } from 'lucide-react';
 import { panelManager } from '@/lib/ui/PanelManager';
+import { modeManager, AppMode } from '@/lib/ui/ModeManager';
 
 interface BasePanelProps {
   id: string;
@@ -35,6 +36,7 @@ interface BasePanelProps {
   className?: string;
   headerClassName?: string;
   bodyClassName?: string;
+  modeAware?: boolean; // Enable mode-based dimming
 }
 
 export default function BasePanel({
@@ -54,6 +56,7 @@ export default function BasePanel({
   className = '',
   headerClassName = '',
   bodyClassName = '',
+  modeAware = true,
 }: BasePanelProps) {
   const [panelState, setPanelState] = useState(() => panelManager.getPanel(id));
   const [isDragging, setIsDragging] = useState(false);
@@ -63,6 +66,8 @@ export default function BasePanel({
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isLocked, setIsLocked] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
+  const [isRelevantToMode, setIsRelevantToMode] = useState(true);
+  const [currentMode, setCurrentMode] = useState<AppMode>(modeManager.getCurrentMode());
 
   const panelRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -79,6 +84,23 @@ export default function BasePanel({
       unsubscribe();
     };
   }, [id]);
+
+  // Subscribe to mode changes for mode-aware dimming
+  useEffect(() => {
+    if (!modeAware) {
+      setIsRelevantToMode(true);
+      return;
+    }
+
+    const unsubscribe = modeManager.subscribe((mode) => {
+      setCurrentMode(mode);
+      const relevant = modeManager.isPanelRelevant(id);
+      setIsRelevantToMode(relevant);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [id, modeAware]);
 
   if (!panelState || !panelState.isVisible) {
     return null;
@@ -224,7 +246,10 @@ export default function BasePanel({
     width: size.width,
     height: isMinimized ? 'auto' : size.height,
     zIndex: isPinned ? zIndex + 1000 : zIndex,
-    transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s',
+    opacity: modeAware && !isRelevantToMode ? 0.3 : 1,
+    pointerEvents: modeAware && !isRelevantToMode ? 'none' : 'auto',
+    transition: isDragging || isResizing ? 'none' : 'box-shadow 0.2s, opacity 0.3s ease-in-out',
+    filter: modeAware && !isRelevantToMode ? 'grayscale(0.5)' : 'none',
   };
 
   return (
