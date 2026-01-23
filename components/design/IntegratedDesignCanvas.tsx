@@ -59,6 +59,11 @@ import TerrainBrushPreview from "./terrain/TerrainBrushPreview";
 import TerrainToolbar from "./terrain/TerrainToolbar";
 import BrushSettings from "./terrain/BrushSettings";
 
+// Hardscape System
+import HardscapeToolbox from "./HardscapeToolbox";
+import HardscapePresets from "./HardscapePresets";
+import { applyPresetToHouse, HardscapePreset } from "@/lib/hardscape/presets";
+
 // Scene Component
 function Scene({
   plants,
@@ -355,6 +360,8 @@ function IntegratedDesignCanvasInner() {
   const [showTutorial, setShowTutorial] = useState(true);
   const [showPlantToolbox, setShowPlantToolbox] = useState(true);
   const [showStructureToolbox, setShowStructureToolbox] = useState(false);
+  const [showHardscapeToolbox, setShowHardscapeToolbox] = useState(false);
+  const [showHardscapePresets, setShowHardscapePresets] = useState(false);
   const [showPrecisionPanel, setShowPrecisionPanel] = useState(false);
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
@@ -823,6 +830,24 @@ function IntegratedDesignCanvasInner() {
     setTimeout(() => setEnableCameraTransition(false), 1000);
   };
 
+  // Hardscape preset handler
+  const handlePresetApply = (preset: HardscapePreset) => {
+    if (!selectedHouseId) {
+      toast.error('Please select a house first');
+      return;
+    }
+
+    const selectedHouse = sceneManager.getHouse(selectedHouseId);
+    if (!selectedHouse) {
+      toast.error('House not found');
+      return;
+    }
+
+    const newStructures = applyPresetToHouse(preset, selectedHouse.position, selectedHouse.rotation);
+    setStructures([...structures, ...newStructures]);
+    toast.success(`Applied ${preset.name} preset!`);
+  };
+
   // Terrain handlers
   const handleTerrainClick = (position: { x: number; y: number; z: number }) => {
     if (terrainTool === 'none' || !terrainEnabled) return;
@@ -971,6 +996,8 @@ function IntegratedDesignCanvasInner() {
         terrainConfig={terrainManager.getConfig()}
         terrainStats={terrainManager.getStats()}
         onTerrainConfigChange={handleTerrainConfigChange}
+        onOpenHardscapeToolbox={() => setShowHardscapeToolbox(true)}
+        onOpenHardscapePresets={() => setShowHardscapePresets(true)}
         visible={showSidebar}
         onClose={() => setShowSidebar(false)}
       />
@@ -993,6 +1020,32 @@ function IntegratedDesignCanvasInner() {
               console.log('Structure selected:', structure);
             }}
             selectedStructureId={selectedStructureId || undefined}
+          />
+        </div>
+      )}
+
+      {/* Hardscape Toolbox */}
+      {showHardscapeToolbox && (
+        <div className="absolute right-4 top-24 z-30">
+          <HardscapeToolbox
+            onStructureSelect={(structure) => {
+              console.log('Hardscape selected:', structure);
+              // TODO: Add to structures array on click
+            }}
+            selectedStructureId={selectedStructureId || undefined}
+            visible={showHardscapeToolbox}
+            onClose={() => setShowHardscapeToolbox(false)}
+          />
+        </div>
+      )}
+
+      {/* Hardscape Presets */}
+      {showHardscapePresets && (
+        <div className="absolute right-4 top-24 z-30">
+          <HardscapePresets
+            onPresetSelect={handlePresetApply}
+            selectedHouseId={selectedHouseId}
+            visible={showHardscapePresets}
           />
         </div>
       )}
