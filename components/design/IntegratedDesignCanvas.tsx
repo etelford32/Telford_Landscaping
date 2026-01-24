@@ -55,7 +55,9 @@ import CameraControlPanel from "./camera/CameraControlPanel";
 import WorkspaceLayoutManager from "./ui/WorkspaceLayoutManager";
 import ModeIndicator from "./ui/ModeIndicator";
 import ModeAwareElement from "./ui/ModeAwareElement";
+import KeyboardShortcutOverlay from "./ui/KeyboardShortcutOverlay";
 import { modeManager, AppMode } from "@/lib/ui/ModeManager";
+import { useArrowKeyCamera } from "@/lib/hooks/useArrowKeyCamera";
 
 // Terrain System
 import { TerrainManager, BrushConfig, TerrainTool, TerrainConfig } from "@/lib/terrain/TerrainManager";
@@ -394,9 +396,13 @@ function IntegratedDesignCanvasInner() {
   // UI panel visibility
   const [showCameraPanel, setShowCameraPanel] = useState(true);
   const [showWorkspaceManager, setShowWorkspaceManager] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
   // Mode system state
   const [currentMode, setCurrentMode] = useState<AppMode>(modeManager.getCurrentMode());
+
+  // Arrow key camera navigation state
+  const [arrowKeyCameraEnabled, setArrowKeyCameraEnabled] = useState(true);
 
   // Terrain editing state
   const [terrainEnabled, setTerrainEnabled] = useState(false);
@@ -879,12 +885,27 @@ function IntegratedDesignCanvasInner() {
     setCameraSettings((prev) => ({ ...prev, ...updates }));
   };
 
-  // Camera manual movement handler
+  // Camera manual movement handler (for button clicks)
   const handleCameraManualMove = (direction: 'up' | 'down' | 'left' | 'right' | 'forward' | 'backward') => {
     // This would integrate with OrbitControls or custom camera controller
     console.log('Manual camera movement:', direction);
     toast.info(`Camera moving ${direction}`);
   };
+
+  // Arrow key camera movement handler (receives vector coordinates)
+  const handleArrowKeyMove = (delta: { x: number; y: number; z: number }) => {
+    // This would integrate with OrbitControls to pan the camera
+    // The delta represents the movement vector
+    console.log('Arrow key camera movement:', delta);
+  };
+
+  // Arrow key camera hook
+  useArrowKeyCamera({
+    enabled: arrowKeyCameraEnabled && currentMode === 'camera',
+    speed: cameraSettings.panSpeed * 0.1,
+    smoothing: 0.15,
+    onMove: handleArrowKeyMove,
+  });
 
   // Screenshot handler
   const handleTakeScreenshot = (quality: number) => {
@@ -958,6 +979,8 @@ function IntegratedDesignCanvasInner() {
     { key: '4', handler: () => { modeManager.setMode('camera'); toast.info('Camera Mode'); }, description: 'Switch to Camera Mode' },
     { key: '5', handler: () => { modeManager.setMode('view'); toast.info('View Mode'); }, description: 'Switch to View Mode' },
     { key: 'Tab', handler: (e) => { e.preventDefault(); modeManager.cycleMode(); }, description: 'Cycle Modes' },
+    { key: '?', handler: () => { setShowKeyboardShortcuts(!showKeyboardShortcuts); }, description: 'Toggle Keyboard Shortcuts' },
+    { key: 'F1', handler: (e) => { e.preventDefault(); setShowKeyboardShortcuts(!showKeyboardShortcuts); }, description: 'Toggle Keyboard Shortcuts' },
     { key: 'Escape', handler: () => {
       setSelectedPlantId(null);
       setSelectedStructureId(null);
@@ -965,6 +988,7 @@ function IntegratedDesignCanvasInner() {
       selectionManager.clearSelection();
       setContextMenu({ ...contextMenu, visible: false });
       setShowWorkspaceManager(false);
+      setShowKeyboardShortcuts(false);
     }, description: 'Deselect / Close Dialogs' },
   ]);
 
@@ -1043,6 +1067,11 @@ function IntegratedDesignCanvasInner() {
       className="relative w-full h-screen bg-gradient-to-br from-sky-200 to-sky-100"
       onContextMenu={handleContextMenu}
     >
+      {/* Skip Link for Screen Readers */}
+      <a href="#main-canvas" className="skip-link">
+        Skip to 3D Canvas
+      </a>
+
       {/* Workspace Layout Button - Top Left */}
       <button
         onClick={() => setShowWorkspaceManager(true)}
@@ -1232,7 +1261,13 @@ function IntegratedDesignCanvasInner() {
       )}
 
       {/* 3D Canvas */}
-      <div ref={canvasRef} className="w-full h-full">
+      <div
+        id="main-canvas"
+        ref={canvasRef}
+        className="w-full h-full"
+        role="application"
+        aria-label="3D Landscape Design Canvas. Use arrow keys or WASD to navigate camera. Press ? for keyboard shortcuts."
+      >
         <Canvas shadows>
           <PerspectiveCamera makeDefault position={[15, 12, 15]} fov={50} />
           <OrbitControls
@@ -1401,6 +1436,12 @@ function IntegratedDesignCanvasInner() {
       <ModeIndicator
         compact={false}
         showQuickSwitch={true}
+      />
+
+      {/* Keyboard Shortcuts Overlay */}
+      <KeyboardShortcutOverlay
+        visible={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
       />
     </div>
   );

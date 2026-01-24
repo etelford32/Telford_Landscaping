@@ -64,18 +64,29 @@ export default function ModeIndicator({
   if (compact) {
     return (
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Current mode: ${config.name}. ${config.description}. Press ${config.shortcut} to switch or click to expand mode menu.`}
+        aria-expanded={isExpanded}
         className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full shadow-2xl transition-all cursor-pointer hover:scale-105"
         style={{ backgroundColor: config.color }}
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsExpanded(!isExpanded);
+          }
+        }}
         title={`${config.name} (Press ${config.shortcut} to switch)`}
       >
-        <Icon className="w-5 h-5 text-white" />
+        <Icon className="w-5 h-5 text-white" aria-hidden="true" />
         <span className="text-sm font-bold text-white">{config.name}</span>
         {showQuickSwitch && (
           <ChevronUp
             className={`w-4 h-4 text-white transition-transform ${
               isExpanded ? 'rotate-180' : ''
             }`}
+            aria-hidden="true"
           />
         )}
       </div>
@@ -100,6 +111,8 @@ export default function ModeIndicator({
                 <button
                   key={mode}
                   onClick={() => handleModeSwitch(mode)}
+                  aria-label={`Switch to ${modeConfig.name}. ${modeConfig.description}. Press ${modeConfig.shortcut}.`}
+                  aria-pressed={isActive}
                   className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg transition-all ${
                     isActive
                       ? 'bg-gray-100 scale-105'
@@ -132,9 +145,19 @@ export default function ModeIndicator({
       {/* Main Indicator */}
       <div className="relative">
         <div
+          role="button"
+          tabIndex={0}
+          aria-label={`Current mode: ${config.name}. ${config.description}. Press ${config.shortcut} to switch modes or click to expand mode menu.`}
+          aria-expanded={isExpanded}
           className="flex items-center gap-3 px-6 py-3 rounded-2xl shadow-2xl transition-all cursor-pointer hover:scale-105 border-2 border-white/50"
           style={{ backgroundColor: config.color }}
           onClick={() => setIsExpanded(!isExpanded)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsExpanded(!isExpanded);
+            }
+          }}
         >
           {/* Mode Icon */}
           <div className="flex items-center justify-center w-10 h-10 bg-white/20 rounded-full">
