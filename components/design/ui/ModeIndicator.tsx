@@ -68,7 +68,7 @@ export default function ModeIndicator({
         tabIndex={0}
         aria-label={`Current mode: ${config.name}. ${config.description}. Press ${config.shortcut} to switch or click to expand mode menu.`}
         aria-expanded={isExpanded}
-        className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full shadow-2xl transition-all cursor-pointer hover:scale-105"
+        className="fixed bottom-[130px] left-1/2 transform -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full shadow-2xl transition-all cursor-pointer hover:scale-105"
         style={{ backgroundColor: config.color }}
         onClick={() => setIsExpanded(!isExpanded)}
         onKeyDown={(e) => {
@@ -94,7 +94,7 @@ export default function ModeIndicator({
   }
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+    <div className="fixed bottom-[130px] left-1/2 transform -translate-x-1/2 z-50">
       {/* Quick Switch Panel */}
       {isExpanded && showQuickSwitch && (
         <div className="absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-3 animate-in slide-in-from-bottom-2 duration-200">
