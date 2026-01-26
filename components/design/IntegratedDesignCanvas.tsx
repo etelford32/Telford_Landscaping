@@ -71,6 +71,10 @@ import HardscapeToolbox from "./HardscapeToolbox";
 import HardscapePresets from "./HardscapePresets";
 import { applyPresetToHouse, HardscapePreset } from "@/lib/hardscape/presets";
 
+// Unified Interaction
+import DraggableObject from "./DraggableObject";
+import CanvasInteractionHandler from "./CanvasInteractionHandler";
+
 // Scene Component
 function Scene({
   plants,
@@ -82,6 +86,11 @@ function Scene({
   onPlantClick,
   onStructureClick,
   onHouseClick,
+  onPlantDrag,
+  onStructureDrag,
+  onDragEnd,
+  onDeselect,
+  onCursorPositionChange,
   selectedPlantId,
   selectedStructureId,
   selectedHouseId,
@@ -101,6 +110,7 @@ function Scene({
   brush,
   brushPosition,
   onTerrainClick,
+  snapToGrid,
 }: {
   plants: PlacedPlant[];
   structures: PlacedStructure[];
@@ -111,6 +121,11 @@ function Scene({
   onPlantClick: (id: string) => void;
   onStructureClick: (id: string) => void;
   onHouseClick: (id: string) => void;
+  onPlantDrag: (id: string, newPosition: { x: number; y: number; z: number }) => void;
+  onStructureDrag: (id: string, newPosition: { x: number; y: number; z: number }) => void;
+  onDragEnd: () => void;
+  onDeselect: () => void;
+  onCursorPositionChange: (pos: { x: number; y: number; z: number }) => void;
   selectedPlantId: string | null;
   selectedStructureId: string | null;
   selectedHouseId: string | null;
@@ -130,6 +145,7 @@ function Scene({
   brush: BrushConfig;
   brushPosition: Vector3 | null;
   onTerrainClick: (position: { x: number; y: number; z: number }) => void;
+  snapToGrid: boolean;
 }) {
   const houses = sceneManager.getHouses();
   const ground = sceneManager.getGround();
@@ -249,31 +265,63 @@ function Scene({
         />
       ))}
 
-      {/* Structures */}
+      {/* Canvas Interaction Handler */}
+      <CanvasInteractionHandler
+        onDeselect={onDeselect}
+        onCursorPositionChange={onCursorPositionChange}
+        enabled={!gridClickEnabled}
+      />
+
+      {/* Structures with dragging support */}
       {structures.map((structure) => (
-        <StructureModel
+        <DraggableObject
           key={structure.id}
-          structure={structure}
-          onClick={() => onStructureClick(structure.id)}
-        />
+          id={structure.id}
+          type="structure"
+          position={structure.position}
+          draggable={editMode === 'move'}
+          selected={structure.id === selectedStructureId}
+          onSelect={(id) => onStructureClick(id)}
+          onDrag={onStructureDrag}
+          onDragEnd={() => onDragEnd()}
+          snapToGrid={snapToGrid}
+          gridSize={gridSize}
+        >
+          <StructureModel
+            structure={{ ...structure, position: { x: 0, y: 0, z: 0 } }}
+            onClick={() => {}}
+          />
+        </DraggableObject>
       ))}
 
-      {/* Plants with individual highlights */}
+      {/* Plants with dragging support */}
       {plants.map((plant) => (
-        <group key={plant.id}>
+        <DraggableObject
+          key={plant.id}
+          id={plant.id}
+          type="plant"
+          position={plant.position}
+          draggable={editMode === 'move'}
+          selected={plant.id === selectedPlantId}
+          onSelect={(id) => onPlantClick(id)}
+          onDrag={onPlantDrag}
+          onDragEnd={() => onDragEnd()}
+          snapToGrid={snapToGrid}
+          gridSize={gridSize}
+        >
           <PlantModel
-            plant={{ ...plant, age }}
-            onClick={() => onPlantClick(plant.id)}
+            plant={{ ...plant, age, position: { x: 0, y: 0, z: 0 } }}
+            onClick={() => {}}
           />
           {plant.id === selectedPlantId && (
             <ObjectHighlight
-              position={[plant.position.x, plant.position.y, plant.position.z]}
+              position={[0, 0, 0]}
               size={1.5}
               color="#4ade80"
               isActive={true}
             />
           )}
-        </group>
+        </DraggableObject>
       ))}
 
       {/* Transform Gizmo */}
@@ -597,6 +645,34 @@ function IntegratedDesignCanvasInner() {
     selectionManager.clearSelection();
     setGridClickEnabled(false);
     setPendingPlantSpecies(null);
+  };
+
+  // Handle plant drag (direct movement)
+  const handlePlantDrag = (id: string, newPosition: { x: number; y: number; z: number }) => {
+    setPlants(plants.map(p =>
+      p.id === id ? { ...p, position: newPosition } : p
+    ));
+  };
+
+  // Handle structure drag (direct movement)
+  const handleStructureDrag = (id: string, newPosition: { x: number; y: number; z: number }) => {
+    setStructures(structures.map(s =>
+      s.id === id ? { ...s, position: newPosition } : s
+    ));
+  };
+
+  // Handle drag end (for undo history)
+  const handleDragEnd = () => {
+    // The drag is complete - state has already been updated
+    // This is where we could trigger a state snapshot for undo
+  };
+
+  // Handle deselect (click on empty canvas)
+  const handleDeselect = () => {
+    setSelectedPlantId(null);
+    setSelectedStructureId(null);
+    setSelectedHouseId(null);
+    selectionManager.clearSelection();
   };
 
   // Object actions
@@ -1291,6 +1367,11 @@ function IntegratedDesignCanvasInner() {
               onPlantClick={handlePlantClick}
               onStructureClick={handleStructureClick}
               onHouseClick={handleHouseClick}
+              onPlantDrag={handlePlantDrag}
+              onStructureDrag={handleStructureDrag}
+              onDragEnd={handleDragEnd}
+              onDeselect={handleDeselect}
+              onCursorPositionChange={setCursorPosition}
               selectedPlantId={selectedPlantId}
               selectedStructureId={selectedStructureId}
               selectedHouseId={selectedHouseId}
@@ -1310,6 +1391,7 @@ function IntegratedDesignCanvasInner() {
               brush={brush}
               brushPosition={brushPosition}
               onTerrainClick={handleTerrainClick}
+              snapToGrid={snapToGridEnabled}
             />
           </Suspense>
         </Canvas>

@@ -125,7 +125,7 @@ export default function DesignHub({
   const [activeSection, setActiveSection] = useState<'edit' | 'view' | 'timeline' | null>('edit');
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t-2 border-gray-200 shadow-2xl">
+    <div className="fixed bottom-7 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-t-2 border-gray-200 shadow-2xl">
       {/* Collapse/Expand Button */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
