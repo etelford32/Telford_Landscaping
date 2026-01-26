@@ -19,8 +19,8 @@ import { GrassyGround, DecorativeRocks } from "./GrassyGround";
 
 // OOP Systems
 import { CameraController } from "@/lib/editor/CameraController";
-import { SelectionManager } from "@/lib/editor/SelectionManager";
-import { DragController } from "@/lib/editor/DragController";
+// SelectionManager removed - using React state for selection
+// DragController removed - dragging now handled by DraggableObject component
 import { SceneManager } from "@/lib/editor/SceneManager";
 
 // Hooks and utilities
@@ -80,8 +80,6 @@ function Scene({
   plants,
   structures,
   sceneManager,
-  selectionManager,
-  dragController,
   age,
   onPlantClick,
   onStructureClick,
@@ -115,8 +113,6 @@ function Scene({
   plants: PlacedPlant[];
   structures: PlacedStructure[];
   sceneManager: SceneManager;
-  selectionManager: SelectionManager;
-  dragController: DragController;
   age: number;
   onPlantClick: (id: string) => void;
   onStructureClick: (id: string) => void;
@@ -324,12 +320,12 @@ function Scene({
         </DraggableObject>
       ))}
 
-      {/* Transform Gizmo */}
-      {selectedPosition && (editMode === 'move' || editMode === 'scale' || editMode === 'rotate') && (
+      {/* Transform Gizmo - Only for scale and rotate modes (move is handled by DraggableObject) */}
+      {selectedPosition && (editMode === 'scale' || editMode === 'rotate') && (
         <TransformGizmo
           position={selectedPosition}
           onTransform={onTransform}
-          mode={editMode === 'move' ? 'translate' : editMode === 'scale' ? 'scale' : 'rotate'}
+          mode={editMode === 'scale' ? 'scale' : 'rotate'}
           size={2}
         />
       )}
@@ -342,23 +338,9 @@ function IntegratedDesignCanvasInner() {
   const toast = useToast();
 
   // OOP System Instances
+  // Note: SelectionManager and DragController removed - now using React state for selection
+  // and DraggableObject component for dragging
   const cameraController = useMemo(() => new CameraController(), []);
-  const selectionManager = useMemo(
-    () => new SelectionManager({
-      onSelectionChange: (event) => {
-        console.log("Selection changed:", event.selectedIds);
-      },
-    }),
-    []
-  );
-  const dragController = useMemo(
-    () => new DragController({
-      snapToGrid: true,
-      gridSize: 1,
-      dragPlaneY: 0,
-    }),
-    []
-  );
   const sceneManager = useMemo(() => {
     const sm = new SceneManager();
     sm.createDefaultScene();
@@ -517,9 +499,7 @@ function IntegratedDesignCanvasInner() {
     editModeController.setMode(editMode);
     editModeController.setSnapMode(snapToGridEnabled ? 'grid' : 'none');
     editModeController.setGridSize(gridSize);
-    dragController.setSnapToGrid(snapToGridEnabled);
-    dragController.setGridSize(gridSize);
-  }, [editMode, snapToGridEnabled, gridSize, editModeController, dragController]);
+  }, [editMode, snapToGridEnabled, gridSize, editModeController]);
 
   // Subscribe to mode changes
   useEffect(() => {
@@ -617,9 +597,8 @@ function IntegratedDesignCanvasInner() {
     }
   };
 
-  // Handle plant click
+  // Handle plant click - unified selection via React state
   const handlePlantClick = (plantId: string) => {
-    selectionManager.select(plantId);
     setSelectedPlantId(plantId);
     setSelectedStructureId(null);
     setSelectedHouseId(null);
@@ -632,7 +611,6 @@ function IntegratedDesignCanvasInner() {
     setSelectedStructureId(structureId);
     setSelectedPlantId(null);
     setSelectedHouseId(null);
-    selectionManager.clearSelection();
     setGridClickEnabled(false);
     setPendingPlantSpecies(null);
   };
@@ -642,7 +620,6 @@ function IntegratedDesignCanvasInner() {
     setSelectedHouseId(houseId);
     setSelectedPlantId(null);
     setSelectedStructureId(null);
-    selectionManager.clearSelection();
     setGridClickEnabled(false);
     setPendingPlantSpecies(null);
   };
@@ -672,7 +649,6 @@ function IntegratedDesignCanvasInner() {
     setSelectedPlantId(null);
     setSelectedStructureId(null);
     setSelectedHouseId(null);
-    selectionManager.clearSelection();
   };
 
   // Object actions
@@ -713,7 +689,6 @@ function IntegratedDesignCanvasInner() {
   const handleDelete = () => {
     if (selectedPlantId) {
       setPlants(plants.filter((p) => p.id !== selectedPlantId));
-      selectionManager.clearSelection();
       setSelectedPlantId(null);
       toast.success('Plant deleted');
     } else if (selectedStructureId) {
@@ -728,7 +703,6 @@ function IntegratedDesignCanvasInner() {
     setPlants(plants.filter((p) => p.id !== id));
     if (selectedPlantId === id) {
       setSelectedPlantId(null);
-      selectionManager.clearSelection();
     }
     toast.success('Plant deleted');
   };
@@ -880,13 +854,18 @@ function IntegratedDesignCanvasInner() {
 
   // Camera controls
   const handleResetCamera = () => {
-    // Camera reset logic would go here
-    console.log('Reset camera');
+    setCameraPreset('perspective');
+    setEnableCameraTransition(true);
+    setTimeout(() => setEnableCameraTransition(false), 1000);
+    toast.info('Camera reset to default view');
   };
 
   const handleFocusSelected = () => {
-    // Focus on selected object logic would go here
-    console.log('Focus on selected');
+    if (!selectedPlantId && !selectedStructureId && !selectedHouseId) {
+      toast.warning('No object selected');
+      return;
+    }
+    toast.info('Focus on selected object');
   };
 
   // Precision edit data
@@ -963,16 +942,15 @@ function IntegratedDesignCanvasInner() {
 
   // Camera manual movement handler (for button clicks)
   const handleCameraManualMove = (direction: 'up' | 'down' | 'left' | 'right' | 'forward' | 'backward') => {
-    // This would integrate with OrbitControls or custom camera controller
-    console.log('Manual camera movement:', direction);
+    // Camera movement is handled via OrbitControls pan/zoom
+    // This is a placeholder for custom camera button controls
     toast.info(`Camera moving ${direction}`);
   };
 
   // Arrow key camera movement handler (receives vector coordinates)
-  const handleArrowKeyMove = (delta: { x: number; y: number; z: number }) => {
-    // This would integrate with OrbitControls to pan the camera
-    // The delta represents the movement vector
-    console.log('Arrow key camera movement:', delta);
+  const handleArrowKeyMove = (_delta: { x: number; y: number; z: number }) => {
+    // Camera panning via arrow keys is handled by OrbitControls
+    // Delta values are available for custom camera implementations
   };
 
   // Arrow key camera hook
@@ -984,9 +962,8 @@ function IntegratedDesignCanvasInner() {
   });
 
   // Screenshot handler
-  const handleTakeScreenshot = (quality: number) => {
-    // This would use canvas.toDataURL() or similar
-    console.log('Taking screenshot at quality:', quality);
+  const handleTakeScreenshot = (_quality: number) => {
+    // Screenshot functionality - would use canvas.toDataURL()
     toast.success('Screenshot captured!');
   };
 
@@ -1045,7 +1022,7 @@ function IntegratedDesignCanvasInner() {
     { key: 'c', ctrl: true, handler: (e) => { e.preventDefault(); handleCopyToClipboard(); }, description: 'Copy' },
     { key: 'v', ctrl: true, handler: (e) => { e.preventDefault(); handlePaste(); }, description: 'Paste' },
     { key: 'd', ctrl: true, handler: (e) => { e.preventDefault(); handleDuplicate(); }, description: 'Duplicate' },
-    { key: 'a', ctrl: true, handler: (e) => { e.preventDefault(); console.log('Select all'); }, description: 'Select All' },
+    { key: 'a', ctrl: true, handler: (e) => { e.preventDefault(); toast.info('Select All - multi-select coming soon'); }, description: 'Select All' },
     { key: 'l', ctrl: true, handler: (e) => { e.preventDefault(); setShowWorkspaceManager(!showWorkspaceManager); }, description: 'Toggle Workspace Layouts' },
     { key: 'k', ctrl: true, handler: (e) => { e.preventDefault(); setShowCameraPanel(!showCameraPanel); }, description: 'Toggle Camera Panel' },
     // Mode switching shortcuts
@@ -1061,7 +1038,6 @@ function IntegratedDesignCanvasInner() {
       setSelectedPlantId(null);
       setSelectedStructureId(null);
       setSelectedHouseId(null);
-      selectionManager.clearSelection();
       setContextMenu({ ...contextMenu, visible: false });
       setShowWorkspaceManager(false);
       setShowKeyboardShortcuts(false);
@@ -1207,7 +1183,18 @@ function IntegratedDesignCanvasInner() {
         <div className="absolute left-4 top-4 z-30">
           <StructureToolbox
             onStructureSelect={(structure) => {
-              console.log('Structure selected:', structure);
+              // Add structure to the scene at a default position
+              const newStructure: PlacedStructure = {
+                id: `structure-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                structureId: structure.id,
+                position: { x: 0, y: 0, z: 5 },
+                rotation: 0,
+                scale: 1,
+                selected: false,
+              };
+              setStructures([...structures, newStructure]);
+              setSelectedStructureId(newStructure.id);
+              toast.success(`Added ${structure.commonName}`);
             }}
             selectedStructureId={selectedStructureId || undefined}
           />
@@ -1219,8 +1206,18 @@ function IntegratedDesignCanvasInner() {
         <div className="absolute right-4 top-24 z-30">
           <HardscapeToolbox
             onStructureSelect={(structure) => {
-              console.log('Hardscape selected:', structure);
-              // TODO: Add to structures array on click
+              // Add hardscape structure to the scene at a default position
+              const newStructure: PlacedStructure = {
+                id: `structure-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                structureId: structure.id,
+                position: { x: 0, y: 0, z: 0 },
+                rotation: 0,
+                scale: 1,
+                selected: false,
+              };
+              setStructures([...structures, newStructure]);
+              setSelectedStructureId(newStructure.id);
+              toast.success(`Added ${structure.commonName}`);
             }}
             selectedStructureId={selectedStructureId || undefined}
             visible={showHardscapeToolbox}
@@ -1361,8 +1358,6 @@ function IntegratedDesignCanvasInner() {
               plants={plants}
               structures={structures}
               sceneManager={sceneManager}
-              selectionManager={selectionManager}
-              dragController={dragController}
               age={age}
               onPlantClick={handlePlantClick}
               onStructureClick={handleStructureClick}
