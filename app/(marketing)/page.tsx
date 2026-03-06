@@ -8,94 +8,101 @@ import {
   ArrowRight,
   Star,
   Phone,
-  Mail
+  Mail,
+  Palette,
+  ChevronDown
 } from "lucide-react";
 import HeroCanvas from "@/components/HeroCanvas";
+import ScrollSlider from "@/components/ScrollSlider";
 
 export default function Home() {
   return (
     <>
-      {/* Hero Section with Interactive 3D Demo */}
-      <section className="relative bg-gradient-to-br from-primary-900 via-primary-800 to-earth-800 text-white overflow-hidden h-[calc(100vh-5rem)] min-h-[600px]">
-        {/* Interactive 3D Landscape Scene */}
+      {/* ── HERO — full-viewport 3D landscape portal ── */}
+      <section className="relative text-white overflow-hidden h-[calc(100vh-5rem)] min-h-[600px]">
+        {/* 3D canvas fills the section */}
         <HeroCanvas />
 
-        {/* Content Overlay */}
-        <div className="relative h-full flex flex-col justify-end pb-20 z-10 pointer-events-none">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="text-center mb-8" style={{ transform: 'translateY(100px)' }}>
-              <h1
-                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8"
-                style={{
-                  color: '#87CEEB',
-                  textShadow: `
-                    -2px -2px 0 #FF8C00,
-                    2px -2px 0 #FF8C00,
-                    -2px 2px 0 #FF8C00,
-                    2px 2px 0 #FF8C00,
-                    -3px -3px 0 #FFD700,
-                    3px -3px 0 #FFD700,
-                    -3px 3px 0 #FFD700,
-                    3px 3px 0 #FFD700,
-                    0 0 30px rgba(255,215,0,0.5),
-                    0 0 60px rgba(135,206,235,0.3)
-                  `
-                }}
-              >
-                Where Technology Meets Nature
-              </h1>
-              <p className="text-lg sm:text-xl md:text-2xl text-white mb-10 max-w-3xl mx-auto drop-shadow-lg font-medium">
-                Professional landscaping and handyman services transforming outdoor spaces in Auburn, Roseville, Granite Bay, Lincoln, and Loomis
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pointer-events-auto">
-                <Link
-                  href="/design"
-                  className="bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-10 py-5 rounded-xl font-bold hover:from-yellow-500 hover:to-orange-600 transition-all shadow-2xl hover:shadow-3xl flex items-center gap-3 text-xl border-2 border-yellow-300 hover:scale-105 transform"
-                >
-                  <span>🎨</span>
-                  Design Your Own
-                  <ArrowRight className="w-6 h-6" />
-                </Link>
-                <Link
-                  href="#contact"
-                  className="bg-white text-primary-900 px-8 py-5 rounded-xl font-semibold hover:bg-primary-50 transition-all shadow-xl hover:shadow-2xl flex items-center gap-2 text-lg hover:scale-105 transform"
-                >
-                  Get Free Consultation
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <Link
-                  href="/portfolio"
-                  className="bg-white/10 backdrop-blur-sm border-2 border-white text-white px-8 py-5 rounded-xl font-semibold hover:bg-white/20 transition-all shadow-xl text-lg hover:scale-105 transform"
-                >
-                  View Our Work
-                </Link>
-              </div>
+        {/* Gradient vignette — bottom fade to let content anchor */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none z-10" />
+
+        {/* Content overlay — anchored to bottom-left */}
+        <div className="absolute bottom-0 left-0 right-0 z-20 pb-8 px-4 sm:px-8 lg:px-12 pointer-events-none">
+          <div className="max-w-2xl">
+            {/* Eyebrow */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-px w-8 bg-primary-400" />
+              <span className="text-primary-300 text-xs font-semibold tracking-widest uppercase">
+                Northern California
+              </span>
             </div>
 
-            {/* Trust Indicators */}
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto" style={{ transform: 'translateY(60px)' }}>
-              <div className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                <CheckCircle2 className="w-10 h-10 text-white mb-2" />
-                <h3 className="font-semibold text-base">Licensed Business</h3>
-                <p className="text-white/80 text-sm">Telford Projects LLC</p>
-              </div>
-              <div className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                <Star className="w-10 h-10 text-white mb-2" />
-                <h3 className="font-semibold text-base">Quality Guaranteed</h3>
-                <p className="text-white/80 text-sm">Contractor License Pending</p>
-              </div>
-              <div className="flex flex-col items-center bg-white/10 backdrop-blur-sm rounded-xl p-4 shadow-lg">
-                <MapPin className="w-10 h-10 text-white mb-2" />
-                <h3 className="font-semibold text-base">Local Experts</h3>
-                <p className="text-white/80 text-sm">Greater Sacramento Area</p>
-              </div>
+            {/* Headline */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
+              Where Technology<br />
+              <span className="text-primary-300">Meets Nature</span>
+            </h1>
+
+            <p className="text-white/80 text-base sm:text-lg mb-6 leading-relaxed max-w-xl">
+              Professional landscaping design and installation serving Auburn, Roseville, Granite Bay, Lincoln &amp; Loomis.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-3 pointer-events-auto">
+              <Link
+                href="/app"
+                className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-bold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 text-sm sm:text-base"
+              >
+                <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
+                Open Design Studio
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="#contact"
+                className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/30 hover:bg-white/25 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 text-sm sm:text-base"
+              >
+                Free Consultation
+              </Link>
+              <Link
+                href="/plants"
+                className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white/90 font-medium px-5 py-3 rounded-xl transition-all duration-200 text-sm"
+              >
+                Plant Library
+              </Link>
+            </div>
+
+            {/* Trust pills */}
+            <div className="flex flex-wrap gap-3 mt-5">
+              {[
+                { icon: CheckCircle2, text: "Licensed · Telford Projects LLC" },
+                { icon: MapPin,       text: "Sacramento Area" },
+                { icon: Star,         text: "Quality Guaranteed" },
+              ].map(({ icon: Icon, text }) => (
+                <div key={text} className="flex items-center gap-1.5 text-white/65 text-xs">
+                  <Icon className="w-3.5 h-3.5 text-primary-400 flex-shrink-0" />
+                  {text}
+                </div>
+              ))}
             </div>
           </div>
         </div>
+
+        {/* Scroll indicator — bottom center */}
+        <a
+          href="#services"
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1 text-white/50 hover:text-white/80 transition-colors pointer-events-auto group"
+          aria-label="Scroll to services"
+        >
+          <span className="text-xs tracking-widest uppercase font-medium">Scroll</span>
+          <ChevronDown className="w-5 h-5 animate-bounce" />
+        </a>
       </section>
 
+      {/* Fixed scroll slider */}
+      <ScrollSlider />
+
       {/* Services Section */}
-      <section className="py-20 bg-white">
+      <section id="services" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
