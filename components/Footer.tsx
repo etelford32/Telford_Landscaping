@@ -20,7 +20,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-gray-400 mb-4 max-w-md">
-              Professional landscaping and handyman services transforming outdoor spaces with a perfect blend of technology and nature.
+              Estate-scale landscape design-build for Granite Bay, Loomis, and the Sacramento foothills. Heavy hardscape, mature tree installation, and heritage landscapes. Built by hand, designed by science, meant to outlast us.
             </p>
             <div className="flex flex-col gap-2 text-gray-400">
               <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ export default function Footer() {
             </div>
           </div>
           <p className="text-gray-500 text-xs mt-4 text-center md:text-left">
-            Licensed Business • California State Law Compliant • Contractor License Pending
+            Telford Projects LLC · CA C27 Licensed · Insured
           </p>
         </div>
       </div>
