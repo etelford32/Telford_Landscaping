@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   TreePine,
-  Hammer,
+  Wrench,
   Leaf,
   MapPin,
   CheckCircle2,
@@ -28,23 +28,22 @@ export default function Home() {
 
         {/* Content overlay — anchored to bottom-left */}
         <div className="absolute bottom-0 left-0 right-0 z-20 pb-8 px-4 sm:px-8 lg:px-12 pointer-events-none">
-          <div className="max-w-2xl">
+          <div className="max-w-3xl">
             {/* Eyebrow */}
             <div className="flex items-center gap-2 mb-3">
               <div className="h-px w-8 bg-primary-400" />
               <span className="text-primary-300 text-xs font-semibold tracking-widest uppercase">
-                Northern California
+                Granite Bay · Loomis · Sacramento Foothills
               </span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-4 drop-shadow-lg">
-              Where Technology<br />
-              <span className="text-primary-300">Meets Nature</span>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.15] mb-5 drop-shadow-lg max-w-3xl">
+              Landscapes designed to be more beautiful in thirty years than they are the day we plant them.
             </h1>
 
-            <p className="text-white/80 text-base sm:text-lg mb-6 leading-relaxed max-w-xl">
-              Professional landscaping design and installation serving Auburn, Roseville, Granite Bay, Lincoln &amp; Loomis.
+            <p className="text-white/85 text-base sm:text-lg mb-6 leading-relaxed max-w-2xl">
+              Estate-scale landscape design-build for Granite Bay, Loomis, and the Sacramento foothills. Heavy hardscape, mature tree installation, and heritage landscapes. Built by hand, designed by science, meant to outlast us.
             </p>
 
             {/* CTAs */}
@@ -54,29 +53,29 @@ export default function Home() {
                 className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-bold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 text-sm sm:text-base"
               >
                 <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
-                Open Design Studio
+                See Your Yard in 2055
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="#contact"
                 className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/30 hover:bg-white/25 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 text-sm sm:text-base"
               >
-                Free Consultation
+                Request a Consultation
               </Link>
               <Link
                 href="/plants"
                 className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white/90 font-medium px-5 py-3 rounded-xl transition-all duration-200 text-sm"
               >
-                Plant Library
+                The Palette
               </Link>
             </div>
 
             {/* Trust pills */}
             <div className="flex flex-wrap gap-3 mt-5">
               {[
-                { icon: CheckCircle2, text: "Licensed · Telford Projects LLC" },
-                { icon: MapPin,       text: "Sacramento Area" },
-                { icon: Star,         text: "Quality Guaranteed" },
+                { icon: CheckCircle2, text: "CA C27 Licensed · Telford Projects LLC" },
+                { icon: MapPin,       text: "Granite Bay · Loomis · Auburn · Roseville" },
+                { icon: Star,         text: "Design-Build. One shop." },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-1.5 text-white/65 text-xs">
                   <Icon className="w-3.5 h-3.5 text-primary-400 flex-shrink-0" />
@@ -106,76 +105,76 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Our Services
+              What We Do
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Comprehensive landscaping and handyman solutions tailored to your needs
+              Estate-scale landscape design-build. Designed and built by the same hands.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl border border-primary-100 hover:shadow-xl transition-shadow">
               <TreePine className="w-12 h-12 text-primary-600 mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Landscape Design</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Landscape Design-Build</h3>
               <p className="text-gray-600 mb-4">
-                Transform your yard with custom landscape designs featuring native California plants and drought-tolerant solutions.
+                Designed and built by the same hands. California natives, drought-tolerant palettes, mature trees set at scale. We design the landscape, build it, and stand behind it for the next thirty years.
               </p>
               <ul className="space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Native plant selection</span>
+                  <span>Computational 30-year design simulation</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Drought-tolerant landscaping</span>
+                  <span>Mature tree installation (up to 60&quot; box)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Sustainable design practices</span>
+                  <span>Native and drought-tolerant palettes</span>
                 </li>
               </ul>
             </div>
 
             <div className="bg-gradient-to-br from-earth-50 to-white p-8 rounded-xl border border-earth-100 hover:shadow-xl transition-shadow">
-              <Hammer className="w-12 h-12 text-earth-600 mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Handyman Services</h3>
+              <Wrench className="w-12 h-12 text-earth-600 mb-4" />
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Heavy Hardscape</h3>
               <p className="text-gray-600 mb-4">
-                Expert handyman work for all your outdoor and indoor improvement needs with attention to detail.
+                Retaining walls up to 100 feet. Forged iron gates. Cedar fences milled long and joined tight. Corten steel, Sierra granite, cast concrete. Built once, to last.
               </p>
               <ul className="space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
-                  <span>Fence installation & repair</span>
+                  <span>Engineered retaining walls</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
-                  <span>Deck & patio construction</span>
+                  <span>Custom gates and fencing</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
-                  <span>General repairs & maintenance</span>
+                  <span>Stone, steel, and masonry work</span>
                 </li>
               </ul>
             </div>
 
             <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl border border-primary-100 hover:shadow-xl transition-shadow">
               <Leaf className="w-12 h-12 text-primary-600 mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Landscape Maintenance</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">Landscape Stewardship</h3>
               <p className="text-gray-600 mb-4">
-                Keep your outdoor space looking pristine year-round with our comprehensive maintenance services.
+                A landscape is a living thing. We stay with the ones we build. Pruning on the right schedule, adjusting irrigation as plants mature, keeping soil biology alive. Thirty-year landscapes need thirty-year attention.
               </p>
               <ul className="space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Regular lawn care</span>
+                  <span>Seasonal pruning and care</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Pruning & trimming</span>
+                  <span>Irrigation tuning and soil health</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Seasonal cleanup</span>
+                  <span>Long-term relationship contracts</span>
                 </li>
               </ul>
             </div>
@@ -188,15 +187,15 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Proudly Serving the Greater Sacramento Area
+              Built for the Sacramento Foothills
             </h2>
-            <p className="text-xl text-gray-600">
-              Local expertise for communities we call home
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Estate work in Granite Bay, Loomis, Auburn, Roseville, and Lincoln. Soils, microclimates, and valley oaks we know by hand.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-4xl mx-auto">
-            {['Auburn', 'Roseville', 'Granite Bay', 'Lincoln', 'Loomis'].map((city) => (
+            {['Granite Bay', 'Loomis', 'Auburn', 'Roseville', 'Lincoln'].map((city) => (
               <div
                 key={city}
                 className="bg-white p-6 rounded-lg text-center shadow-md hover:shadow-xl transition-shadow border-2 border-primary-200 hover:border-primary-400"
@@ -209,13 +208,13 @@ export default function Home() {
 
           <div className="mt-12 text-center">
             <p className="text-gray-700 text-lg">
-              California state law compliant • Licensed & Insured • Contractor License Pending
+              Telford Projects LLC · CA C27 Licensed · Insured
             </p>
           </div>
         </div>
       </section>
 
-      {/* World's First Growth Simulation Feature */}
+      {/* See Your Yard in 2055 — design tool section */}
       <section className="py-20 bg-gradient-to-br from-primary-900 to-primary-800 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-10 w-64 h-64 bg-white rounded-full blur-3xl"></div>
@@ -224,35 +223,31 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-12">
-            <div className="inline-block bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 px-6 py-2 rounded-full text-sm font-bold mb-6 animate-pulse">
-              🌟 WORLD'S FIRST
-            </div>
             <h2 className="text-4xl sm:text-5xl font-bold mb-6">
-              Time Travel for Your Landscape
+              See Your Yard in 2055
             </h2>
-            <p className="text-xl text-white/90 mb-4 max-w-3xl mx-auto">
-              See your plants grow from year 1 to year 30 in real-time 3D
-            </p>
-            <p className="text-lg text-white/80 max-w-2xl mx-auto">
-              Our revolutionary growth simulation technology lets you visualize exactly how your landscape will evolve over decades—before you plant a single seed.
-            </p>
+            <div className="max-w-3xl mx-auto space-y-4 text-lg text-white/85 leading-relaxed text-left sm:text-center">
+              <p>
+                We built a design tool because clients kept asking the same question. <em>What will this actually look like when it grows in?</em> A five-gallon valley oak is a promise. We wanted to show the oak at forty feet, in 2055, before we dug the hole.
+              </p>
+              <p>
+                Place plants, rotate and arrange hardscape, then run the simulation. The tool uses real growth models for California natives and estate-scale specimens. It&rsquo;s free to use. If you like what you see, we&rsquo;ll build it.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-5xl mx-auto">
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
-              <div className="text-4xl mb-4">⏱️</div>
-              <h3 className="font-bold text-xl mb-2">30-Year Simulation</h3>
-              <p className="text-white/80">Watch your plants mature from saplings to full-grown specimens with a simple slider</p>
+              <h3 className="font-bold text-xl mb-2">Thirty-year simulation</h3>
+              <p className="text-white/80">Scrub a slider and watch the canopy fill in. A sapling in year one, a forty-foot oak in year thirty.</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
-              <div className="text-4xl mb-4">🎯</div>
-              <h3 className="font-bold text-xl mb-2">Drag & Drop Design</h3>
-              <p className="text-white/80">Place, rotate, and arrange plants in an intuitive 3D workspace with snap-to-grid precision</p>
+              <h3 className="font-bold text-xl mb-2">Place plants and hardscape</h3>
+              <p className="text-white/80">Drag and rotate trees, walls, and gates in a 3D workspace. Snap to grid. Measure as you go.</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
-              <div className="text-4xl mb-4">🌿</div>
-              <h3 className="font-bold text-xl mb-2">Native Plant Library</h3>
-              <p className="text-white/80">Start with premium California natives like Japanese Maple, Sawara Cypress, and Atlas Cedar</p>
+              <h3 className="font-bold text-xl mb-2">Real growth models</h3>
+              <p className="text-white/80">Valley oak, Japanese maple, Atlas cedar, Sawara cypress. Calibrated to foothill climate and soil.</p>
             </div>
           </div>
 
@@ -261,22 +256,22 @@ export default function Home() {
               href="/app"
               className="inline-block bg-white text-primary-900 px-10 py-5 rounded-xl font-bold hover:bg-primary-50 transition-all shadow-2xl hover:shadow-3xl hover:scale-105 text-lg"
             >
-              Try the Design Tool Now →
+              Open the Design Tool
             </Link>
-            <p className="mt-4 text-white/70">Free to explore • PRO features coming soon at $15/month</p>
+            <p className="mt-4 text-white/70">Free to use. If you like what you see, we&rsquo;ll build it.</p>
           </div>
         </div>
       </section>
 
-      {/* Professional Services */}
+      {/* Design to build */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Professional Installation Available
+              Design and Build, Under One Roof
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Design your dream landscape with our 3D tool, then let our expert team bring it to life
+              The same hands that draw the plan set the stone. No subcontractor coordination on you. No phone trees.
             </p>
           </div>
 
@@ -284,22 +279,22 @@ export default function Home() {
             <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl border-2 border-primary-200 hover:shadow-xl transition-shadow">
               <div className="flex items-center gap-4 mb-4">
                 <div className="bg-primary-600 p-3 rounded-full">
-                  <span className="text-2xl">🎨</span>
+                  <Palette className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Design Phase</h3>
+                <h3 className="text-2xl font-bold text-gray-900">Design</h3>
               </div>
               <ul className="space-y-3 text-gray-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Use our free 3D design tool</span>
+                  <span>Site walk and property read</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Visualize growth over 30 years</span>
+                  <span>Thirty-year growth simulation before install</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <span>Save and share your designs</span>
+                  <span>Native and drought-tolerant palette, specified by species and size</span>
                 </li>
               </ul>
             </div>
@@ -307,22 +302,22 @@ export default function Home() {
             <div className="bg-gradient-to-br from-earth-50 to-white p-8 rounded-xl border-2 border-earth-200 hover:shadow-xl transition-shadow">
               <div className="flex items-center gap-4 mb-4">
                 <div className="bg-earth-600 p-3 rounded-full">
-                  <span className="text-2xl">🔨</span>
+                  <Wrench className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Installation Phase</h3>
+                <h3 className="text-2xl font-bold text-gray-900">Build</h3>
               </div>
               <ul className="space-y-3 text-gray-700">
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
-                  <span>Share design for instant quote</span>
+                  <span>Heavy hardscape in Sierra granite, corten, cedar, and iron</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
-                  <span>Professional installation team</span>
+                  <span>Mature tree installation up to 60&quot; box, set by crane</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="w-5 h-5 text-earth-600 mt-0.5 flex-shrink-0" />
-                  <span>Licensed & insured service</span>
+                  <span>Stewardship after install. Thirty-year horizon.</span>
                 </li>
               </ul>
             </div>
@@ -333,7 +328,7 @@ export default function Home() {
               href="#contact"
               className="inline-block bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
             >
-              Request Professional Installation Quote
+              Start a Conversation
             </Link>
           </div>
         </div>
@@ -344,10 +339,10 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Get Your Free Consultation
+              Start a Conversation
             </h2>
-            <p className="text-xl text-gray-600">
-              Ready to transform your outdoor space? Let's discuss your project!
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              If you&rsquo;re planning an estate landscape in Granite Bay, Loomis, or the Sacramento foothills, tell me about the property. I&rsquo;ll be in touch.
             </p>
           </div>
 
@@ -358,8 +353,8 @@ export default function Home() {
                   <Phone className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Call Us</h3>
-                  <p className="text-gray-700">Contact for consultation</p>
+                  <h3 className="font-semibold text-gray-900">Call</h3>
+                  <p className="text-gray-700">Phone number coming soon</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -367,7 +362,7 @@ export default function Home() {
                   <Mail className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Email Us</h3>
+                  <h3 className="font-semibold text-gray-900">Email</h3>
                   <p className="text-gray-700">info@telfordlandscapes.com</p>
                 </div>
               </div>
