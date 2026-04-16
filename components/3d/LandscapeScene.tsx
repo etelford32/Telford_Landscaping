@@ -2,11 +2,17 @@
 
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Sky } from "@react-three/drei";
-import { Suspense, useState, useRef } from "react";
-import { ZoomIn, ZoomOut, Palette, Sprout, TreePine, Layers, ChevronRight } from "lucide-react";
+import { Suspense, useState, useRef, useEffect } from "react";
+import { ZoomIn, ZoomOut, Palette, Sprout, TreePine, Layers, ChevronRight, Play, Pause } from "lucide-react";
 import Link from "next/link";
 import House3D from "./House3D";
-import { Tree, Bush, FlowerBed, Rock } from "./Landscaping";
+import { FlowerBed, Rock } from "./Landscaping";
+import SampleLandscapePlants from "./SampleLandscapePlants";
+
+const MIN_AGE = 1;
+const MAX_AGE = 30;
+const INSTALL_YEAR = 2026;
+const AUTOPLAY_DURATION_MS = 9000; // year 1 → year 30 over ~9s
 
 // ── GROUND ──────────────────────────────────────────────────────────────────
 function Ground() {
@@ -114,7 +120,7 @@ function Lighting() {
 }
 
 // ── SCENE ────────────────────────────────────────────────────────────────────
-function Scene() {
+function Scene({ age }: { age: number }) {
   return (
     <>
       <Sky sunPosition={[18, 4, 10]} turbidity={4} rayleigh={0.8} />
@@ -122,57 +128,17 @@ function Scene() {
       <Ground />
       <House3D />
 
-      {/* ── FRONT YARD ── */}
-      {/* Specimen oak — left front */}
-      <Tree position={[-4.5, 0, 4.5]} scale={1.5} treeType="oak" />
-      {/* Accent pine — right front */}
-      <Tree position={[8.5, 0, 3.5]} scale={1.1} treeType="pine" />
+      {/* Age-driven plantings — drawn from the real plant library growth models */}
+      <SampleLandscapePlants age={age} />
 
-      {/* Foundation planting — left wing */}
-      <Bush position={[-3.8, 0, 2.6]} scale={0.9} color="#3A7A28" />
-      <Bush position={[-5.2, 0, 2.6]} scale={1.0} color="#2E6B20" />
-      <Bush position={[-6.0, 0, 1.5]} scale={0.8} color="#4A8B32" />
-
-      {/* Foundation planting — right wing */}
-      <Bush position={[3.8, 0, 2.6]} scale={0.9} color="#3A7A28" />
-      <Bush position={[5.0, 0, 2.6]} scale={0.85} color="#4A8B32" />
-
-      {/* Accent shrubs — flanking door steps */}
-      <Bush position={[-1.8, 0, 3.2]} scale={0.65} color="#2E7A20" />
-      <Bush position={[1.8, 0, 3.2]} scale={0.65} color="#2E7A20" />
-
-      {/* Front flower beds */}
+      {/* Static decoration — flower beds and rocks don't grow */}
       <FlowerBed position={[-2.5, 0, 3.1]} width={2.0} depth={0.75} />
       <FlowerBed position={[2.5, 0, 3.1]} width={2.0} depth={0.75} />
+      <FlowerBed position={[-6.5, 0, -5.5]} width={2.5} depth={0.8} />
 
-      {/* Rocks along walkway */}
       <Rock position={[-1.0, 0, 2.8]} scale={0.75} />
       <Rock position={[1.0, 0, 2.8]} scale={0.65} />
       <Rock position={[-0.7, 0, 3.5]} scale={0.5} />
-
-      {/* ── BACK / SIDE YARD ── */}
-      {/* Tall screen trees — left rear */}
-      <Tree position={[-8.5, 0, -2]} scale={1.6} treeType="pine" />
-      <Tree position={[-8.5, 0, -5]} scale={1.4} treeType="pine" />
-      {/* Spreading oak — rear right */}
-      <Tree position={[5, 0, -6]} scale={1.3} treeType="oak" />
-      <Tree position={[-2, 0, -8]} scale={1.2} treeType="oak" />
-      {/* Palm near pool */}
-      <Tree position={[-6.5, 0, -2.5]} scale={1.1} treeType="palm" />
-      <Tree position={[-2.8, 0, -5.5]} scale={0.95} treeType="palm" />
-
-      {/* Patio / pool perimeter plantings */}
-      <Bush position={[-7.0, 0, -1.0]} scale={1.1} color="#2E6820" />
-      <Bush position={[-7.0, 0, -2.5]} scale={0.9} color="#3A7A28" />
-      <Bush position={[-7.0, 0, -4.5]} scale={1.0} color="#4A8B32" />
-      <Bush position={[-2.5, 0, -6.0]} scale={0.85} color="#3A7A28" />
-
-      {/* Pool flower bed */}
-      <FlowerBed position={[-6.5, 0, -5.5]} width={2.5} depth={0.8} />
-
-      {/* ── SIDE YARD ── */}
-      <Tree position={[9.5, 0, -3]} scale={1.0} treeType="oak" />
-      <Bush position={[7.5, 0, 1.5]} scale={0.8} color="#2E6820" />
     </>
   );
 }
@@ -180,8 +146,74 @@ function Scene() {
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function LandscapeScene() {
   const [isRotating, setIsRotating] = useState(true);
+  const [age, setAge] = useState<number>(MIN_AGE);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const playStartRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
   const controlsRef = useRef<any>(null);
   const cameraRef = useRef<any>(null);
+
+  // Auto-play: animate age from MIN → MAX over AUTOPLAY_DURATION_MS, then pause at MAX.
+  useEffect(() => {
+    if (!isPlaying) {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      playStartRef.current = null;
+      return;
+    }
+
+    const step = (now: number) => {
+      if (playStartRef.current === null) {
+        // Anchor the clock to the current age so pressing Play resumes smoothly.
+        const progressedMs =
+          ((age - MIN_AGE) / (MAX_AGE - MIN_AGE)) * AUTOPLAY_DURATION_MS;
+        playStartRef.current = now - progressedMs;
+      }
+      const elapsed = now - (playStartRef.current ?? now);
+      const t = Math.min(1, elapsed / AUTOPLAY_DURATION_MS);
+      const nextAge = MIN_AGE + t * (MAX_AGE - MIN_AGE);
+      setAge(nextAge);
+      if (t < 1) {
+        rafRef.current = requestAnimationFrame(step);
+      } else {
+        setIsPlaying(false);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+    // We intentionally only rerun when play state flips; reading age inside step
+    // stays current via the closure over the latest state setter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying]);
+
+  const stopAutoPlay = () => {
+    setIsPlaying(false);
+    playStartRef.current = null;
+  };
+
+  const handleAgeChange = (v: number) => {
+    stopAutoPlay();
+    setAge(v);
+  };
+
+  const handlePlayToggle = () => {
+    // If we're at the end, restart from the beginning.
+    if (!isPlaying && age >= MAX_AGE - 0.01) {
+      playStartRef.current = null;
+      setAge(MIN_AGE);
+    } else {
+      playStartRef.current = null;
+    }
+    setIsPlaying((p) => !p);
+  };
+
+  const displayAge = Math.round(age);
+  const displayYear = INSTALL_YEAR + displayAge - 1;
 
   const handleZoomIn = () => {
     if (controlsRef.current && cameraRef.current) {
@@ -237,9 +269,53 @@ export default function LandscapeScene() {
         />
 
         <Suspense fallback={null}>
-          <Scene />
+          <Scene age={age} />
         </Suspense>
       </Canvas>
+
+      {/* ── GROWTH TIMELINE — top center ── */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-[min(92vw,560px)] pointer-events-auto">
+        <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-3 shadow-xl">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handlePlayToggle}
+              className="flex-shrink-0 bg-primary-600 hover:bg-primary-500 text-white p-2 rounded-lg shadow-md transition-colors active:scale-95"
+              aria-label={isPlaying ? "Pause growth simulation" : "Play growth simulation"}
+              title={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </button>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline justify-between gap-2 mb-1">
+                <span className="text-white text-[10px] sm:text-xs font-semibold tracking-widest uppercase text-primary-200">
+                  See Your Yard in {INSTALL_YEAR + MAX_AGE - 1}
+                </span>
+                <span className="text-white font-bold text-sm sm:text-base tabular-nums">
+                  Year {displayAge}
+                  <span className="text-white/50 font-normal ml-1.5">· {displayYear}</span>
+                </span>
+              </div>
+              <input
+                type="range"
+                min={MIN_AGE}
+                max={MAX_AGE}
+                step={1}
+                value={displayAge}
+                onChange={(e) => handleAgeChange(parseInt(e.target.value, 10))}
+                onPointerDown={stopAutoPlay}
+                className="w-full h-1.5 appearance-none cursor-pointer bg-white/25 rounded-full accent-primary-400"
+                aria-label="Plant age in years"
+              />
+              <div className="flex justify-between text-[10px] text-white/50 mt-0.5 tabular-nums">
+                <span>Year 1</span>
+                <span>Year 15</span>
+                <span>Year 30</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ── ZOOM CONTROLS — bottom left ── */}
       <div className="absolute bottom-6 left-5 z-20 flex flex-col gap-2">
