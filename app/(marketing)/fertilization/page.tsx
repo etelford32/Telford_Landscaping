@@ -82,7 +82,7 @@ export default function FertilizationPage() {
 
             {/* Trust Indicator */}
             <p className="mt-8 text-green-200 text-sm">
-              ✓ Custom-blended for Northern California soils &nbsp;•&nbsp; ✓ Licensed professionals &nbsp;•&nbsp; ✓ Satisfaction guaranteed
+              ✓ Custom-blended for Northern California soils &nbsp;•&nbsp; ✓ Licensed, Bonded &amp; Insured &nbsp;•&nbsp; ✓ Satisfaction guaranteed
             </p>
           </div>
         </div>
@@ -507,7 +507,7 @@ export default function FertilizationPage() {
           </div>
 
           <p className="text-green-200 text-sm">
-            Serving Auburn, Roseville, Granite Bay, Lincoln, and Loomis • Licensed & Insured
+            Serving Auburn, Roseville, Granite Bay, Lincoln, and Loomis • CA C-27 Lic. #1156976 • Bonded &amp; Insured
           </p>
         </div>
       </section>

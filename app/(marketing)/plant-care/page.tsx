@@ -149,8 +149,8 @@ export default function PlantCarePage() {
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center border border-white/20 hover:bg-white/20 transition-all">
               <Shield className="w-10 h-10 text-primary-300 mx-auto mb-3" />
-              <h3 className="text-2xl font-bold text-white mb-2">Licensed & Insured</h3>
-              <p className="text-primary-100">Full liability coverage for your peace of mind</p>
+              <h3 className="text-2xl font-bold text-white mb-2">Licensed, Bonded & Insured</h3>
+              <p className="text-primary-100">CA C-27 Lic. #1156976 · Full liability coverage</p>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 text-center border border-white/20 hover:bg-white/20 transition-all">
               <TreePine className="w-10 h-10 text-primary-300 mx-auto mb-3" />
