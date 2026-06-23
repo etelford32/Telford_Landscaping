@@ -9,22 +9,21 @@ import {
 } from "../treeGen";
 
 const OAK: DecurrentParams = {
-  trunkRadiusNorm: 0.05,
   forkHeight: 0.28,
   scaffolds: 4,
   maxDepth: 5,
   branchMin: 2,
   branchMax: 3,
-  spreadAngle: 0.85,
-  childAngle: 0.6,
-  lengthFalloff: 0.8,
+  spreadAngle: 0.9,
+  childAngle: 0.62,
+  lengthFalloff: 0.82,
   radiusFalloff: 0.72,
   segmentsPerBranch: 4,
-  sinuosity: 0.18,
-  droop: 0.5,
+  sinuosity: 0.22,
+  droop: 0.55,
   crownWidthRatio: 1.1,
-  leafStartDepth: 3,
-  leavesPerTwig: 6,
+  leafStartDepth: 1,
+  leavesPerTwig: 5,
 };
 
 const MAPLE: TreeParams = {
@@ -112,16 +111,20 @@ describe("generateShrubShell", () => {
 });
 
 describe("generateDecurrentTree (oak)", () => {
-  it("normalizes to unit height with a trunk radius set from allometry", () => {
+  it("normalizes to unit height, tags branch orders, and keeps radii as fractions", () => {
     const s = generateDecurrentTree(123, 1, OAK);
     expect(s.height).toBeCloseTo(1, 6);
     expect(s.segments.length).toBeGreaterThan(20);
     expect(s.leaves.length).toBeGreaterThan(20);
-    // dense-crown construction: solid foliage masses plus the leaf-card shell
-    expect(s.masses && s.masses.length).toBeGreaterThan(0);
-    // the base trunk segment should carry the requested normalized radius
+    // base trunk radius is a fraction (~1.0); the renderer applies DBH thickness
     const baseRadius = Math.max(...s.segments.map((seg) => Math.max(seg.r0, seg.r1)));
-    expect(baseRadius).toBeCloseTo(OAK.trunkRadiusNorm, 6);
+    expect(baseRadius).toBeCloseTo(1, 2);
+    // full mature structure with trunk and deepest order both present
+    expect(s.maxOrder).toBe(OAK.maxDepth);
+    expect(s.segments.some((seg) => (seg.order ?? -1) === 0)).toBe(true);
+    expect(s.segments.some((seg) => (seg.order ?? -1) === OAK.maxDepth)).toBe(true);
+    // foliage rides the branches (every leaf carries a branch-order tag >= 1)
+    expect(s.leaves.every((l) => (l.order ?? 0) >= 1)).toBe(true);
   });
 
   it("forks into multiple scaffolds (spreads wider than a single leader)", () => {
@@ -130,12 +133,13 @@ describe("generateDecurrentTree (oak)", () => {
     expect(broad.spread).toBeGreaterThan(narrow.spread);
   });
 
-  it("is deterministic and develops with maturity", () => {
-    const a = generateDecurrentTree(99, 0.8, OAK);
-    const b = generateDecurrentTree(99, 0.8, OAK);
+  it("is deterministic and generates the full structure (reveal happens at render)", () => {
+    const a = generateDecurrentTree(99, 0.2, OAK);
+    const b = generateDecurrentTree(99, 0.2, OAK);
     expect(a.segments.length).toBe(b.segments.length);
-    const young = generateDecurrentTree(99, 0.15, OAK);
-    const mature = generateDecurrentTree(99, 1, OAK);
-    expect(mature.segments.length).toBeGreaterThan(young.segments.length);
+    // the maturity arg is ignored at generation, so young/old calls match
+    const young = generateDecurrentTree(99, 0.1, OAK);
+    const full = generateDecurrentTree(99, 1, OAK);
+    expect(young.segments.length).toBe(full.segments.length);
   });
 });

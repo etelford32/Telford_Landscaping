@@ -15,6 +15,7 @@ export interface BranchSegment {
   p1: Vec;
   r0: number;
   r1: number;
+  order?: number; // branch order (0 = trunk); used to reveal growth over time
 }
 
 export interface LeafPlacement {
@@ -22,20 +23,15 @@ export interface LeafPlacement {
   dir: Vec; // axis the blade extends along (stem -> tip)
   roll: number; // rotation about dir
   scale: number; // relative size multiplier (renderer applies absolute leaf size)
-}
-
-export interface CanopyMass {
-  pos: Vec;
-  radius: number;
-  shade: number; // brightness offset for variation
+  order?: number; // branch order the leaf sits on
 }
 
 export interface PlantSkeleton {
   segments: BranchSegment[];
   leaves: LeafPlacement[];
-  masses?: CanopyMass[]; // solid foliage volume (dense evergreen crowns)
   height: number; // normalized height of the generated skeleton
   spread: number; // normalized horizontal radius
+  maxOrder?: number; // deepest branch order present (for growth reveal)
 }
 
 export interface TreeParams {
@@ -63,7 +59,6 @@ export interface ShellParams {
 }
 
 export interface DecurrentParams {
-  trunkRadiusNorm: number; // base trunk radius when the skeleton is normalized to height 1
   forkHeight: number; // raw height of the clear trunk before the first fork
   scaffolds: number; // primary codominant scaffold limbs (oaks: 3–5)
   maxDepth: number; // branch orders past the scaffolds at full maturity
@@ -254,24 +249,25 @@ export function generateShrubShell(seed: number, maturity: number, p: ShellParam
 // ── decurrent tree (oaks) ──────────────────────────────────────────────────────
 // Coast live oak architecture: a short, stout trunk forks low into several
 // codominant scaffold limbs that spread and arch into a broad crown (often
-// wider than tall). Radii are tracked as fractions of the trunk and positions
-// are normalized to height 1 at the end, so the renderer can set an absolute,
-// allometry-derived trunk thickness independent of crown reach.
+// wider than tall). The FULL mature skeleton is generated here with every
+// segment and leaf tagged by branch order; the renderer reveals orders
+// progressively with age so you watch the same trunk thicken and the same limbs
+// extend and ramify. Radii are fractions of the trunk (renderer applies the
+// allometric, DBH-derived thickness), and positions are normalized to height 1.
 export function generateDecurrentTree(
   seed: number,
-  maturity: number,
+  _maturity: number,
   p: DecurrentParams
 ): PlantSkeleton {
   const rng = mulberry32(seed);
   const segments: BranchSegment[] = [];
   const leaves: LeafPlacement[] = [];
-
-  const m = Math.max(0, Math.min(1, maturity));
-  const effectiveDepth = Math.max(1, Math.round(1.5 + smoothstep(m) * (p.maxDepth - 1.5)));
   const outwardBias = 0.06 * p.crownWidthRatio;
+  let maxOrder = 1;
 
   const grow = (start: Vec, dir: Vec, length: number, radius: number, depth: number) => {
     if (segments.length >= MAX_SEGMENTS) return;
+    maxOrder = Math.max(maxOrder, depth);
 
     let pos = start;
     let d = norm(dir);
@@ -293,12 +289,20 @@ export function generateDecurrentTree(
       d = norm(add(add(d, wander), scale(radial, outwardBias)));
       const next = add(pos, scale(d, segLen));
       const r1 = r * taper;
-      segments.push({ p0: pos, p1: next, r0: r, r1: r1 });
+      segments.push({ p0: pos, p1: next, r0: r, r1: r1, order: depth });
       pos = next;
       r = r1;
     }
 
-    if (depth < effectiveDepth) {
+    // Foliage clusters ride the branch tips (every order), tagged by order so
+    // the renderer can keep leaves on the current growth front.
+    if (depth >= p.leafStartDepth && leaves.length < MAX_LEAVES) {
+      for (let k = 0; k < p.leavesPerTwig && leaves.length < MAX_LEAVES; k++) {
+        leaves.push({ ...makeLeaf(pos, d, rng), order: depth });
+      }
+    }
+
+    if (depth < p.maxDepth) {
       const count = p.branchMin + Math.floor(rng() * (p.branchMax - p.branchMin + 1));
       const [u, v] = perpBasis(d);
       for (let c = 0; c < count; c++) {
@@ -318,17 +322,17 @@ export function generateDecurrentTree(
   let r = 1.0;
   const trunkSegs = Math.max(2, Math.round(p.segmentsPerBranch * 0.8));
   const trunkSegLen = p.forkHeight / trunkSegs;
-  const trunkTaper = Math.pow(0.9, 1 / trunkSegs);
+  const trunkTaper = Math.pow(0.92, 1 / trunkSegs);
   for (let i = 0; i < trunkSegs; i++) {
     d = norm(add(d, [(rng() - 0.5) * 0.05, 0, (rng() - 0.5) * 0.05]));
     const next = add(pos, scale(d, trunkSegLen));
     const r1 = r * trunkTaper;
-    segments.push({ p0: pos, p1: next, r0: r, r1: r1 });
+    segments.push({ p0: pos, p1: next, r0: r, r1: r1, order: 0 });
     pos = next;
     r = r1;
   }
 
-  // Fork into codominant scaffold limbs.
+  // Fork into codominant scaffold limbs (order 1).
   const [u, v] = perpBasis(d);
   const scaffolds = Math.max(2, p.scaffolds);
   for (let s = 0; s < scaffolds; s++) {
@@ -340,7 +344,7 @@ export function generateDecurrentTree(
     grow(pos, limbDir, limbLen, r * 0.92, 1);
   }
 
-  // Normalize positions to height 1; set absolute trunk radius from allometry.
+  // Normalize positions to height 1 (radii stay as fractions of the trunk).
   let rawMaxY = 1e-3;
   for (const seg of segments) rawMaxY = Math.max(rawMaxY, seg.p0[1], seg.p1[1]);
   const inv = 1 / rawMaxY;
@@ -348,54 +352,9 @@ export function generateDecurrentTree(
   for (const seg of segments) {
     seg.p0 = scale(seg.p0, inv);
     seg.p1 = scale(seg.p1, inv);
-    seg.r0 *= p.trunkRadiusNorm;
-    seg.r1 *= p.trunkRadiusNorm;
     maxR = Math.max(maxR, Math.hypot(seg.p1[0], seg.p1[2]));
   }
-  // Build a dense, billowing crown that fills the envelope the limbs created —
-  // a solid evergreen mass (overlapping foliage blobs) skinned with a leaf-card
-  // shell. This is deliberately a different construction from the open,
-  // leaf-card-on-twigs maple: a coast live oak reads as a single solid canopy.
-  const yFork = p.forkHeight * inv;
-  const centerY = (yFork + 1) / 2;
-  const radiusX = maxR;
-  const radiusY = ((1 - yFork) / 2) * 1.12;
+  for (const lf of leaves) lf.pos = scale(lf.pos, inv);
 
-  const masses: CanopyMass[] = [];
-  const massCount = Math.round(8 + 18 * smoothstep(m));
-  for (let i = 0; i < massCount; i++) {
-    const rr = Math.pow(rng(), 0.55); // bias toward the interior for a solid core
-    const theta = rng() * Math.PI * 2;
-    const phi = Math.acos(1 - 2 * rng());
-    masses.push({
-      pos: [
-        Math.sin(phi) * Math.cos(theta) * rr * radiusX,
-        centerY + Math.cos(phi) * rr * radiusY,
-        Math.sin(phi) * Math.sin(theta) * rr * radiusX,
-      ],
-      radius: (0.46 - 0.18 * rr) * radiusX + 0.04,
-      shade: -18 + rng() * 30,
-    });
-  }
-
-  // Dense outer leaf-card shell over the crown surface for foliage detail.
-  const leafCount = Math.round((0.3 + 0.7 * smoothstep(m)) * 1500);
-  for (let i = 0; i < leafCount && leaves.length < MAX_LEAVES; i++) {
-    const phi = Math.acos(1 - (2 * (i + 0.5)) / leafCount);
-    const theta = i * GOLDEN_ANGLE;
-    const nx = Math.sin(phi) * Math.cos(theta);
-    const ny = Math.cos(phi);
-    const nz = Math.sin(phi) * Math.sin(theta);
-    const wob = 0.9 + rng() * 0.16;
-    const py = centerY + ny * radiusY * wob;
-    if (py < yFork) continue;
-    leaves.push({
-      pos: [nx * radiusX * wob, py, nz * radiusX * wob],
-      dir: norm([nx, Math.max(0.1, ny) + 0.25, nz]),
-      roll: rng() * Math.PI * 2,
-      scale: 0.7 + rng() * 0.6,
-    });
-  }
-
-  return { segments, leaves, masses, height: 1, spread: maxR };
+  return { segments, leaves, height: 1, spread: maxR, maxOrder };
 }

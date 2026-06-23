@@ -8,7 +8,6 @@ import {
   generateShrubShell,
   generateTree,
   type BranchSegment,
-  type CanopyMass,
   type LeafPlacement,
   type PlantSkeleton,
 } from "@/lib/procedural/treeGen";
@@ -27,9 +26,7 @@ export const PROCEDURAL_SPECIES = new Set<string>([
 // Shape ratios handed to the decurrent (oak) generator, derived per-age from
 // the allometric growth model so form tracks real dimensions.
 interface OakShape {
-  crownWidthRatio: number; // crown spread / height
-  clearRatio: number; // clear-trunk (first fork) / height
-  trunkRadiusNorm: number; // trunk radius when the skeleton is normalized to height 1
+  crownWidthRatio: number; // crown spread / height — biases branch spread
 }
 
 interface Preset {
@@ -99,29 +96,28 @@ const PRESETS: Record<string, Preset> = {
   "quercus-agrifolia": {
     leafKind: "oak",
     formMaturityAge: 25,
-    leafSize: 0.035, // small holly-like leaves, kept stylized so the crown reads dense
+    leafSize: 0.022, // small foliage tufts that ride the branch tips
     leafPalette: OAK_PALETTE,
     barkThin: "#6E6258", // gray-brown; darkens and furrows with age
     barkThick: "#463D36",
     oak: COAST_LIVE_OAK,
-    generate: (seed, m, shape) =>
-      generateDecurrentTree(seed, m, {
-        trunkRadiusNorm: shape?.trunkRadiusNorm ?? 0.04,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
         forkHeight: 0.28,
         scaffolds: 4,
         maxDepth: 5,
         branchMin: 2,
         branchMax: 3,
-        spreadAngle: 0.85,
-        childAngle: 0.6,
-        lengthFalloff: 0.8,
+        spreadAngle: 0.9,
+        childAngle: 0.62,
+        lengthFalloff: 0.82,
         radiusFalloff: 0.72,
         segmentsPerBranch: 4,
-        sinuosity: 0.18,
-        droop: 0.5,
+        sinuosity: 0.22,
+        droop: 0.55,
         crownWidthRatio: shape?.crownWidthRatio ?? 1.1,
-        leafStartDepth: 3,
-        leavesPerTwig: 6,
+        leafStartDepth: 1,
+        leavesPerTwig: 5,
       }),
   },
 };
@@ -177,24 +173,41 @@ export default function ProceduralPlant({
   const seed = seedFor(plant);
   const maturity = Math.min(1, year / preset.formMaturityAge);
 
-  const skeleton = useMemo(
-    () => {
-      if (preset.oak) {
-        const d = oakDimensions(preset.oak, year, plant.scale);
-        const shape: OakShape = {
-          crownWidthRatio: d.crownWidth / Math.max(1, d.height),
-          clearRatio: preset.oak.clearRatio,
-          // trunk radius (ft) / height (ft); skeleton is normalized to height 1
-          trunkRadiusNorm: d.dbh / 24 / Math.max(1, d.height),
-        };
-        return preset.generate(seed, maturity, shape);
-      }
-      return preset.generate(seed, maturity);
-    },
-    // maturity/shape are derived from year, so year is the real key
+  // Oak: generate the full mature skeleton ONCE; the renderer reveals branch
+  // orders with age so the same trunk and limbs persist and extend. Other
+  // species regenerate per integer year.
+  const oakFull = useMemo(() => {
+    if (!preset.oak) return null;
+    const mature = oakDimensions(preset.oak, preset.formMaturityAge, plant.scale);
+    const shape: OakShape = { crownWidthRatio: mature.crownWidth / Math.max(1, mature.height) };
+    return preset.generate(seed, 1, shape);
+  }, [preset, seed, plant.scale]);
+
+  const otherSkeleton = useMemo(
+    () => (preset.oak ? null : preset.generate(seed, maturity)),
+    // maturity is derived from year
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [seed, year, plant.speciesId, plant.scale]
+    [preset, seed, year]
   );
+
+  // Resolve what to draw this frame: revealed branches + their foliage, and the
+  // trunk thickness (oak: from the current year's DBH).
+  const draw = useMemo(() => {
+    if (preset.oak && oakFull) {
+      const maxOrder = oakFull.maxOrder ?? 1;
+      const rev = Math.max(1, Math.round(1 + smoothstep(maturity) * (maxOrder - 1)));
+      const segments = oakFull.segments.filter((s) => (s.order ?? 0) <= rev);
+      const leaves = oakFull.leaves.filter((l) => {
+        const o = l.order ?? 0;
+        return o <= rev && o >= rev - 1; // foliage rides the current growth front
+      });
+      const d = oakDimensions(preset.oak, plant.age, plant.scale);
+      const radiusScale = d.dbh / 24 / Math.max(1, d.height); // DBH -> normalized trunk radius
+      return { segments, leaves, height: oakFull.height, radiusScale };
+    }
+    const sk = otherSkeleton!;
+    return { segments: sk.segments, leaves: sk.leaves, height: sk.height, radiusScale: 1 };
+  }, [preset, oakFull, otherSkeleton, maturity, plant.age, plant.scale]);
 
   const leafTex = useMemo(() => getLeafTexture(preset.leafKind), [preset.leafKind]);
 
@@ -205,17 +218,6 @@ export default function ProceduralPlant({
     g.translate(0, 0.6, 0); // pivot at the stem base so leaves splay from the twig
     return g;
   }, []);
-  const massGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 1), []);
-  const massMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        roughness: 0.9,
-        metalness: 0,
-        flatShading: true,
-        envMapIntensity: 0.4,
-      }),
-    []
-  );
   const branchMat = useMemo(() => {
     const bump = getBarkBumpTexture();
     return new THREE.MeshStandardMaterial({
@@ -239,7 +241,7 @@ export default function ProceduralPlant({
     [leafTex]
   );
 
-  const worldScale = (size.height / 5) / skeleton.height;
+  const worldScale = (size.height / 5) / draw.height;
   const selR = Math.max(0.4, (size.width / 5) * 0.6);
 
   return (
@@ -250,22 +252,15 @@ export default function ProceduralPlant({
     >
       <group scale={worldScale}>
         <BranchInstances
-          segments={skeleton.segments}
+          segments={draw.segments}
           geom={branchGeo}
           material={branchMat}
           barkThin={preset.barkThin}
           barkThick={preset.barkThick}
+          radiusScale={draw.radiusScale}
         />
-        {skeleton.masses && skeleton.masses.length > 0 && (
-          <CanopyMasses
-            masses={skeleton.masses}
-            geom={massGeo}
-            material={massMat}
-            palette={preset.leafPalette}
-          />
-        )}
         <LeafInstances
-          leaves={skeleton.leaves}
+          leaves={draw.leaves}
           geom={leafGeo}
           material={leafMat}
           leafSize={preset.leafSize}
@@ -290,12 +285,14 @@ function BranchInstances({
   material,
   barkThin,
   barkThick,
+  radiusScale = 1,
 }: {
   segments: BranchSegment[];
   geom: THREE.CylinderGeometry;
   material: THREE.Material;
   barkThin: string;
   barkThick: string;
+  radiusScale?: number; // multiplies segment radii (oak: DBH-derived trunk thickness)
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const maxR = useMemo(
@@ -328,70 +325,23 @@ function BranchInstances({
       q.setFromUnitVectors(up, dir);
       mid.addVectors(v0, v1).multiplyScalar(0.5);
       const r = (s.r0 + s.r1) * 0.5;
-      scl.set(r, L, r);
+      const rw = r * radiusScale;
+      scl.set(rw, L, rw);
       m.compose(mid, q, scl);
       mesh.setMatrixAt(i, m);
-      // thin twigs -> coral, thick trunk -> brown
+      // thin twigs -> lighter bark, thick trunk -> dark bark
       col.copy(thin).lerp(thick, Math.min(1, r / maxR));
       mesh.setColorAt(i, col);
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [segments, maxR, barkThin, barkThick]);
+  }, [segments, maxR, barkThin, barkThick, radiusScale]);
 
   if (segments.length === 0) return null;
   return (
     <instancedMesh
       ref={ref}
       args={[geom, material, segments.length]}
-      castShadow
-      receiveShadow
-      frustumCulled={false}
-    />
-  );
-}
-
-// ── Canopy masses (solid evergreen crown volume) ──────────────────────────────
-function CanopyMasses({
-  masses,
-  geom,
-  material,
-  palette,
-}: {
-  masses: CanopyMass[];
-  geom: THREE.IcosahedronGeometry;
-  material: THREE.Material;
-  palette: string[];
-}) {
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const colors = useMemo(() => palette.map((c) => new THREE.Color(c)), [palette]);
-
-  useLayoutEffect(() => {
-    const mesh = ref.current;
-    if (!mesh) return;
-    const m = new THREE.Matrix4();
-    const pos = new THREE.Vector3();
-    const scl = new THREE.Vector3();
-    const quat = new THREE.Quaternion();
-    const col = new THREE.Color();
-    for (let i = 0; i < masses.length; i++) {
-      const ms = masses[i];
-      pos.set(ms.pos[0], ms.pos[1], ms.pos[2]);
-      scl.setScalar(ms.radius);
-      m.compose(pos, quat, scl);
-      mesh.setMatrixAt(i, m);
-      col.copy(colors[i % colors.length]).multiplyScalar(1 + ms.shade / 100);
-      mesh.setColorAt(i, col);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [masses, colors]);
-
-  if (masses.length === 0) return null;
-  return (
-    <instancedMesh
-      ref={ref}
-      args={[geom, material, masses.length]}
       castShadow
       receiveShadow
       frustumCulled={false}
@@ -462,6 +412,11 @@ function LeafInstances({
 
 function frac(x: number): number {
   return x - Math.floor(x);
+}
+
+function smoothstep(t: number): number {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
 }
 
 function seedFor(plant: PlacedPlant): number {
