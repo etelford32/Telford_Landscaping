@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { PlacedPlant, calculatePlantSize } from "@/lib/plantData";
 import {
+  generateDecurrentTree,
   generateShrubShell,
   generateTree,
   type BranchSegment,
@@ -11,6 +12,7 @@ import {
   type PlantSkeleton,
 } from "@/lib/procedural/treeGen";
 import { getBarkBumpTexture, getLeafTexture, type LeafKind } from "@/lib/procedural/leafTexture";
+import { COAST_LIVE_OAK, oakDimensions, type OakAllometry } from "@/lib/growth/oakGrowth";
 
 // Species that opt into the procedural branches-and-leaves renderer. Everything
 // else stays on the clustered models in PlantModels.tsx — this is the phased
@@ -18,16 +20,28 @@ import { getBarkBumpTexture, getLeafTexture, type LeafKind } from "@/lib/procedu
 export const PROCEDURAL_SPECIES = new Set<string>([
   "acer-palmatum-sango-kaku",
   "buxus-sempervirens-suffruticosa",
+  "quercus-agrifolia",
 ]);
 
+// Shape ratios handed to the decurrent (oak) generator, derived per-age from
+// the allometric growth model so form tracks real dimensions.
+interface OakShape {
+  crownWidthRatio: number; // crown spread / height
+  clearRatio: number; // clear-trunk (first fork) / height
+  trunkRadiusNorm: number; // trunk radius when the skeleton is normalized to height 1
+}
+
 interface Preset {
-  generate: (seed: number, maturity: number) => PlantSkeleton;
+  generate: (seed: number, maturity: number, shape?: OakShape) => PlantSkeleton;
   leafKind: LeafKind;
   formMaturityAge: number; // age at which branch structure is fully developed
   leafSize: number; // leaf size in normalized skeleton space
   leafPalette: string[]; // per-leaf colors sampled across the canopy
   barkThin: string; // color of fine twigs
   barkThick: string; // color of the trunk
+  // When set, dimensions come from this scientific allometric model instead of
+  // the hand-authored size arrays, and the decurrent generator is used.
+  oak?: OakAllometry;
 }
 
 // Maple leans green with a scatter of amber/copper for the Sango-kaku turn;
@@ -37,6 +51,8 @@ const MAPLE_PALETTE = [
   "#4F7E2A", "#6CA63E", "#C8922E", "#D98E3A", "#B5642F",
 ];
 const BOXWOOD_PALETTE = ["#2E5A2E", "#356731", "#274E28", "#3C6E36", "#2A572B"];
+// Coast live oak: dark, glossy, evergreen greens.
+const OAK_PALETTE = ["#2F4A22", "#365A28", "#3E6B2E", "#2A4420", "#436F30", "#314E24"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -79,6 +95,34 @@ const PRESETS: Record<string, Preset> = {
         clip: 0.42,
       }),
   },
+  "quercus-agrifolia": {
+    leafKind: "oak",
+    formMaturityAge: 25,
+    leafSize: 0.035, // small holly-like leaves, kept stylized so the crown reads dense
+    leafPalette: OAK_PALETTE,
+    barkThin: "#6E6258", // gray-brown; darkens and furrows with age
+    barkThick: "#463D36",
+    oak: COAST_LIVE_OAK,
+    generate: (seed, m, shape) =>
+      generateDecurrentTree(seed, m, {
+        trunkRadiusNorm: shape?.trunkRadiusNorm ?? 0.04,
+        forkHeight: 0.28,
+        scaffolds: 4,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.85,
+        childAngle: 0.6,
+        lengthFalloff: 0.8,
+        radiusFalloff: 0.72,
+        segmentsPerBranch: 4,
+        sinuosity: 0.18,
+        droop: 0.5,
+        crownWidthRatio: shape?.crownWidthRatio ?? 1.1,
+        leafStartDepth: 3,
+        leavesPerTwig: 6,
+      }),
+  },
 };
 
 const DEFAULT_PRESET: Preset = {
@@ -114,7 +158,16 @@ export default function ProceduralPlant({
   onClick?: () => void;
 }) {
   const preset = PRESETS[plant.speciesId] ?? DEFAULT_PRESET;
-  const size = calculatePlantSize(plant.speciesId, plant.age, plant.scale);
+
+  // Oaks size from the scientific allometric model; everything else uses the
+  // hand-authored growth arrays. `size` is in feet (height, crown width).
+  const size = useMemo(() => {
+    if (preset.oak) {
+      const d = oakDimensions(preset.oak, plant.age, plant.scale);
+      return { height: d.height, width: d.crownWidth };
+    }
+    return calculatePlantSize(plant.speciesId, plant.age, plant.scale);
+  }, [preset, plant.speciesId, plant.age, plant.scale]);
 
   // Regenerate the skeleton once per integer year (memoized); the growth slider
   // animates continuously but size/maturity are quantized per year, so this is
@@ -124,10 +177,22 @@ export default function ProceduralPlant({
   const maturity = Math.min(1, year / preset.formMaturityAge);
 
   const skeleton = useMemo(
-    () => preset.generate(seed, maturity),
-    // maturity is derived from year, so year is the real key
+    () => {
+      if (preset.oak) {
+        const d = oakDimensions(preset.oak, year, plant.scale);
+        const shape: OakShape = {
+          crownWidthRatio: d.crownWidth / Math.max(1, d.height),
+          clearRatio: preset.oak.clearRatio,
+          // trunk radius (ft) / height (ft); skeleton is normalized to height 1
+          trunkRadiusNorm: d.dbh / 24 / Math.max(1, d.height),
+        };
+        return preset.generate(seed, maturity, shape);
+      }
+      return preset.generate(seed, maturity);
+    },
+    // maturity/shape are derived from year, so year is the real key
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [seed, year, plant.speciesId]
+    [seed, year, plant.speciesId, plant.scale]
   );
 
   const leafTex = useMemo(() => getLeafTexture(preset.leafKind), [preset.leafKind]);

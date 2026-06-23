@@ -18,7 +18,7 @@ interface SamplePlantDef {
 const PLANT_PLACEMENTS: SamplePlantDef[] = [
   // ── Specimen trees ──
   { speciesId: "quercus-lobata", x: -4.5, z: 4.5, scale: 0.5 },           // Valley Oak — front left specimen
-  { speciesId: "quercus-agrifolia", x: 5, z: -6, scale: 0.5 },            // Coast Live Oak — rear
+  { speciesId: "quercus-agrifolia", x: 6.5, z: -3.5, scale: 0.6 },        // Coast Live Oak — procedural specimen (scientific growth model)
   { speciesId: "quercus-douglasii", x: -2, z: -8, scale: 0.5 },           // Blue Oak — rear
   { speciesId: "acer-palmatum-sango-kaku", x: 8.5, z: 3.5, scale: 0.9 },  // Coral Bark Maple — procedural front accent
 

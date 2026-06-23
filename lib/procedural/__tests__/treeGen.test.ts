@@ -1,5 +1,31 @@
 import { describe, it, expect } from "vitest";
-import { generateTree, generateShrubShell, type PlantSkeleton, type TreeParams } from "../treeGen";
+import {
+  generateTree,
+  generateShrubShell,
+  generateDecurrentTree,
+  type PlantSkeleton,
+  type TreeParams,
+  type DecurrentParams,
+} from "../treeGen";
+
+const OAK: DecurrentParams = {
+  trunkRadiusNorm: 0.05,
+  forkHeight: 0.28,
+  scaffolds: 4,
+  maxDepth: 5,
+  branchMin: 2,
+  branchMax: 3,
+  spreadAngle: 0.85,
+  childAngle: 0.6,
+  lengthFalloff: 0.8,
+  radiusFalloff: 0.72,
+  segmentsPerBranch: 4,
+  sinuosity: 0.18,
+  droop: 0.5,
+  crownWidthRatio: 1.1,
+  leafStartDepth: 3,
+  leavesPerTwig: 6,
+};
 
 const MAPLE: TreeParams = {
   trunkLength: 0.4,
@@ -82,5 +108,32 @@ describe("generateShrubShell", () => {
     const young = generateShrubShell(5, 0.15, params);
     const mature = generateShrubShell(5, 1, params);
     expect(mature.leaves.length).toBeGreaterThan(young.leaves.length);
+  });
+});
+
+describe("generateDecurrentTree (oak)", () => {
+  it("normalizes to unit height with a trunk radius set from allometry", () => {
+    const s = generateDecurrentTree(123, 1, OAK);
+    expect(s.height).toBeCloseTo(1, 6);
+    expect(s.segments.length).toBeGreaterThan(20);
+    expect(s.leaves.length).toBeGreaterThan(20);
+    // the base trunk segment should carry the requested normalized radius
+    const baseRadius = Math.max(...s.segments.map((seg) => Math.max(seg.r0, seg.r1)));
+    expect(baseRadius).toBeCloseTo(OAK.trunkRadiusNorm, 6);
+  });
+
+  it("forks into multiple scaffolds (spreads wider than a single leader)", () => {
+    const narrow = generateDecurrentTree(7, 1, { ...OAK, crownWidthRatio: 0.6 });
+    const broad = generateDecurrentTree(7, 1, { ...OAK, crownWidthRatio: 1.6 });
+    expect(broad.spread).toBeGreaterThan(narrow.spread);
+  });
+
+  it("is deterministic and develops with maturity", () => {
+    const a = generateDecurrentTree(99, 0.8, OAK);
+    const b = generateDecurrentTree(99, 0.8, OAK);
+    expect(a.segments.length).toBe(b.segments.length);
+    const young = generateDecurrentTree(99, 0.15, OAK);
+    const mature = generateDecurrentTree(99, 1, OAK);
+    expect(mature.segments.length).toBeGreaterThan(young.segments.length);
   });
 });

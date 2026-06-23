@@ -55,15 +55,19 @@ export const PLANT_LIBRARY: PlantSpecies[] = [
     droughtTolerant: true,
     color: '#2F4F2F', // Dark green
     growthData: {
+      // 30-year trajectory from the USDA Urban Tree Database allometric
+      // equations (McPherson, van Doorn & Peper 2016, GTR-PSW-253; Q. agrifolia,
+      // NoCalC region). maxHeight/maxWidth are the ultimate (150+ yr) open-grown
+      // size. See lib/growth/oakGrowth.ts.
       baseHeightGrowth: [
-        3, 5, 7, 10, 13, 16, 19, 22, 25, 28,
-        31, 34, 37, 40, 43, 46, 49, 52, 55, 58,
-        61, 64, 67, 70, 72, 74, 75, 75, 75, 75
+        10, 11, 13, 14, 15, 17, 18, 19, 20, 21,
+        23, 24, 25, 26, 27, 27, 28, 29, 30, 31,
+        31, 32, 33, 33, 34, 34, 35, 36, 36, 36
       ],
       baseWidthGrowth: [
-        3, 6, 9, 12, 16, 20, 25, 30, 35, 40,
-        45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-        95, 100, 105, 110, 115, 120, 120, 120, 120, 120
+        4, 5, 6, 8, 9, 10, 12, 13, 14, 15,
+        16, 18, 19, 20, 21, 22, 23, 25, 26, 27,
+        28, 29, 30, 31, 32, 33, 34, 35, 36, 37
       ],
       maxHeight: 75,
       maxWidth: 120,

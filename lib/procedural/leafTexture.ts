@@ -8,7 +8,7 @@
 
 import * as THREE from "three";
 
-export type LeafKind = "maple" | "boxwood";
+export type LeafKind = "maple" | "boxwood" | "oak";
 
 const leafCache = new Map<LeafKind, THREE.Texture>();
 let barkBump: THREE.Texture | null = null;
@@ -16,7 +16,9 @@ let barkBump: THREE.Texture | null = null;
 export function getLeafTexture(kind: LeafKind): THREE.Texture {
   let tex = leafCache.get(kind);
   if (tex) return tex;
-  tex = kind === "boxwood" ? drawBoxwoodLeaf() : drawMapleLeaf();
+  if (kind === "boxwood") tex = drawBoxwoodLeaf();
+  else if (kind === "oak") tex = drawOakLeaf();
+  else tex = drawMapleLeaf();
   leafCache.set(kind, tex);
   return tex;
 }
@@ -126,6 +128,64 @@ function drawBoxwoodLeaf(): THREE.CanvasTexture {
   ctx.beginPath();
   ctx.moveTo(cx, size * 0.12);
   ctx.lineTo(cx, size * 0.9);
+  ctx.stroke();
+
+  return makeTexture(c);
+}
+
+// Small oblong, holly-like coast live oak leaf with a spiny-toothed margin.
+// Neutral mask; color comes from the per-instance palette.
+function drawOakLeaf(): THREE.CanvasTexture {
+  const size = 64;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d")!;
+  ctx.clearRect(0, 0, size, size);
+
+  const cx = size / 2;
+  const maxHalf = size * 0.24;
+  const baseY = 0.95;
+  const tipY = 0.06;
+  const steps = 9;
+
+  const halfWidth = (yy: number, i: number) => {
+    const t = (baseY - yy) / (baseY - tipY); // 0 base → 1 tip
+    const prof = Math.sin(Math.PI * Math.max(0, Math.min(1, t)));
+    const tooth = (i % 2 === 0 ? 0.16 : 0) * maxHalf; // spiny margin
+    return prof * maxHalf + tooth;
+  };
+
+  ctx.beginPath();
+  ctx.moveTo(cx, size * baseY);
+  for (let i = 0; i <= steps; i++) {
+    const yy = baseY - (i / steps) * (baseY - tipY);
+    ctx.lineTo(cx + halfWidth(yy, i), size * yy);
+  }
+  for (let i = steps; i >= 0; i--) {
+    const yy = baseY - (i / steps) * (baseY - tipY);
+    ctx.lineTo(cx - halfWidth(yy, i), size * yy);
+  }
+  ctx.closePath();
+
+  const grad = ctx.createLinearGradient(0, 0, 0, size);
+  grad.addColorStop(0, "#cfcfcf");
+  grad.addColorStop(1, "#8f8f8f");
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Glossy sheen down one side (these leaves are shiny above) + midrib.
+  ctx.strokeStyle = "rgba(255,255,255,0.32)";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(cx - size * 0.08, size * 0.22);
+  ctx.quadraticCurveTo(cx - size * 0.02, size * 0.55, cx - size * 0.05, size * 0.82);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(95,95,95,0.6)";
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(cx, size * 0.92);
+  ctx.lineTo(cx, size * 0.1);
   ctx.stroke();
 
   return makeTexture(c);
