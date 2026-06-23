@@ -7,6 +7,7 @@ import {
   getPlantSpecies,
   calculatePlantSize,
 } from "@/lib/plantData";
+import ProceduralPlant, { PROCEDURAL_SPECIES } from "@/components/3d/plants/ProceduralPlant";
 
 interface PlantModelProps {
   plant: PlacedPlant;
@@ -27,6 +28,11 @@ const BARK = "#5B4636";
 // the growth model (calculatePlantSize) so the design tool and the homepage
 // growth simulation stay in sync.
 export function PlantModel({ plant, onClick }: PlantModelProps) {
+  // Showcase species opt into the procedural branches-and-leaves renderer.
+  if (PROCEDURAL_SPECIES.has(plant.speciesId)) {
+    return <ProceduralPlant plant={plant} onClick={onClick} />;
+  }
+
   const size = calculatePlantSize(plant.speciesId, plant.age, plant.scale);
   const species = getPlantSpecies(plant.speciesId);
 

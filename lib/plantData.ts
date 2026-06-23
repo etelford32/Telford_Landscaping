@@ -55,15 +55,19 @@ export const PLANT_LIBRARY: PlantSpecies[] = [
     droughtTolerant: true,
     color: '#2F4F2F', // Dark green
     growthData: {
+      // 30-year trajectory from the USDA Urban Tree Database allometric
+      // equations (McPherson, van Doorn & Peper 2016, GTR-PSW-253; Q. agrifolia,
+      // NoCalC region). maxHeight/maxWidth are the ultimate (150+ yr) open-grown
+      // size. See lib/growth/oakGrowth.ts.
       baseHeightGrowth: [
-        3, 5, 7, 10, 13, 16, 19, 22, 25, 28,
-        31, 34, 37, 40, 43, 46, 49, 52, 55, 58,
-        61, 64, 67, 70, 72, 74, 75, 75, 75, 75
+        10, 11, 13, 14, 15, 17, 18, 19, 20, 21,
+        23, 24, 25, 26, 27, 27, 28, 29, 30, 31,
+        31, 32, 33, 33, 34, 34, 35, 36, 36, 36
       ],
       baseWidthGrowth: [
-        3, 6, 9, 12, 16, 20, 25, 30, 35, 40,
-        45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-        95, 100, 105, 110, 115, 120, 120, 120, 120, 120
+        4, 5, 6, 8, 9, 10, 12, 13, 14, 15,
+        16, 18, 19, 20, 21, 22, 23, 25, 26, 27,
+        28, 29, 30, 31, 32, 33, 34, 35, 36, 37
       ],
       maxHeight: 75,
       maxWidth: 120,
@@ -1103,6 +1107,74 @@ export const PLANT_LIBRARY: PlantSpecies[] = [
       soilType: 'Well-drained',
       hardiness: 'USDA Zones 8-10',
       maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'acer-palmatum-sango-kaku',
+    commonName: "Coral Bark Maple 'Sango-kaku'",
+    scientificName: "Acer palmatum 'Sango-kaku'",
+    description: "Upright Japanese maple prized for vivid coral-red bark that glows when the delicate palmate leaves drop. Green in summer, gold-apricot in fall, bare coral branches in winter.",
+    category: 'tree',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#E2583E', // Coral bark
+    growthData: {
+      baseHeightGrowth: [
+        2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+        12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+        21, 22, 22, 22, 22, 22, 22, 22, 22, 22
+      ],
+      baseWidthGrowth: [
+        1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5,
+        11.5, 12.5, 13, 14, 15, 15.5, 16, 16.5, 17, 17.5,
+        18, 18, 18, 18, 18, 18, 18, 18, 18, 18
+      ],
+      maxHeight: 22,
+      maxWidth: 18,
+      growthRate: 'slow',
+      lifespan: 80,
+      shapeType: 'vase',
+    },
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Well-drained, slightly acidic',
+      hardiness: 'USDA Zones 5-8',
+      maintenanceLevel: 'moderate',
+    },
+  },
+  {
+    id: 'buxus-sempervirens-suffruticosa',
+    commonName: 'Dwarf English Boxwood',
+    scientificName: "Buxus sempervirens 'Suffruticosa'",
+    description: 'Classic slow-growing evergreen for formal edging and parterres. Dense, fine-textured foliage shears into tight hedges and topiary and holds its form year round.',
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#2E5D34', // Boxwood green
+    growthData: {
+      baseHeightGrowth: [
+        0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.1,
+        2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.0,
+        3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0
+      ],
+      baseWidthGrowth: [
+        0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2,
+        2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.0, 3.0, 3.0,
+        3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0
+      ],
+      maxHeight: 3,
+      maxWidth: 3,
+      growthRate: 'slow',
+      lifespan: 120,
+      shapeType: 'rounded',
+    },
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Well-drained, loamy',
+      hardiness: 'USDA Zones 5-9',
+      maintenanceLevel: 'moderate',
     },
   },
 ];
