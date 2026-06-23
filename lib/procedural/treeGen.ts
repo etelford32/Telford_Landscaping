@@ -24,9 +24,16 @@ export interface LeafPlacement {
   scale: number; // relative size multiplier (renderer applies absolute leaf size)
 }
 
+export interface CanopyMass {
+  pos: Vec;
+  radius: number;
+  shade: number; // brightness offset for variation
+}
+
 export interface PlantSkeleton {
   segments: BranchSegment[];
   leaves: LeafPlacement[];
+  masses?: CanopyMass[]; // solid foliage volume (dense evergreen crowns)
   height: number; // normalized height of the generated skeleton
   spread: number; // normalized horizontal radius
 }
@@ -261,7 +268,6 @@ export function generateDecurrentTree(
 
   const m = Math.max(0, Math.min(1, maturity));
   const effectiveDepth = Math.max(1, Math.round(1.5 + smoothstep(m) * (p.maxDepth - 1.5)));
-  const leafDensity = 0.3 + 0.7 * m;
   const outwardBias = 0.06 * p.crownWidthRatio;
 
   const grow = (start: Vec, dir: Vec, length: number, radius: number, depth: number) => {
@@ -290,13 +296,6 @@ export function generateDecurrentTree(
       segments.push({ p0: pos, p1: next, r0: r, r1: r1 });
       pos = next;
       r = r1;
-
-      if (depth >= p.leafStartDepth && leaves.length < MAX_LEAVES) {
-        const n = Math.round(leafDensity * (depth - p.leafStartDepth + 1));
-        for (let k = 0; k < n && leaves.length < MAX_LEAVES; k++) {
-          leaves.push(makeLeaf(pos, d, rng));
-        }
-      }
     }
 
     if (depth < effectiveDepth) {
@@ -309,10 +308,6 @@ export function generateDecurrentTree(
         const childDir = norm(add(scale(d, Math.cos(ang)), scale(offset, Math.sin(ang))));
         const childLen = length * p.lengthFalloff * (0.8 + rng() * 0.4);
         grow(pos, childDir, childLen, r * p.radiusFalloff, depth + 1);
-      }
-    } else if (leaves.length < MAX_LEAVES) {
-      for (let k = 0; k < p.leavesPerTwig && leaves.length < MAX_LEAVES; k++) {
-        leaves.push(makeLeaf(pos, d, rng));
       }
     }
   };
@@ -357,7 +352,50 @@ export function generateDecurrentTree(
     seg.r1 *= p.trunkRadiusNorm;
     maxR = Math.max(maxR, Math.hypot(seg.p1[0], seg.p1[2]));
   }
-  for (const lf of leaves) lf.pos = scale(lf.pos, inv);
+  // Build a dense, billowing crown that fills the envelope the limbs created —
+  // a solid evergreen mass (overlapping foliage blobs) skinned with a leaf-card
+  // shell. This is deliberately a different construction from the open,
+  // leaf-card-on-twigs maple: a coast live oak reads as a single solid canopy.
+  const yFork = p.forkHeight * inv;
+  const centerY = (yFork + 1) / 2;
+  const radiusX = maxR;
+  const radiusY = ((1 - yFork) / 2) * 1.12;
 
-  return { segments, leaves, height: 1, spread: maxR };
+  const masses: CanopyMass[] = [];
+  const massCount = Math.round(8 + 18 * smoothstep(m));
+  for (let i = 0; i < massCount; i++) {
+    const rr = Math.pow(rng(), 0.55); // bias toward the interior for a solid core
+    const theta = rng() * Math.PI * 2;
+    const phi = Math.acos(1 - 2 * rng());
+    masses.push({
+      pos: [
+        Math.sin(phi) * Math.cos(theta) * rr * radiusX,
+        centerY + Math.cos(phi) * rr * radiusY,
+        Math.sin(phi) * Math.sin(theta) * rr * radiusX,
+      ],
+      radius: (0.46 - 0.18 * rr) * radiusX + 0.04,
+      shade: -18 + rng() * 30,
+    });
+  }
+
+  // Dense outer leaf-card shell over the crown surface for foliage detail.
+  const leafCount = Math.round((0.3 + 0.7 * smoothstep(m)) * 1500);
+  for (let i = 0; i < leafCount && leaves.length < MAX_LEAVES; i++) {
+    const phi = Math.acos(1 - (2 * (i + 0.5)) / leafCount);
+    const theta = i * GOLDEN_ANGLE;
+    const nx = Math.sin(phi) * Math.cos(theta);
+    const ny = Math.cos(phi);
+    const nz = Math.sin(phi) * Math.sin(theta);
+    const wob = 0.9 + rng() * 0.16;
+    const py = centerY + ny * radiusY * wob;
+    if (py < yFork) continue;
+    leaves.push({
+      pos: [nx * radiusX * wob, py, nz * radiusX * wob],
+      dir: norm([nx, Math.max(0.1, ny) + 0.25, nz]),
+      roll: rng() * Math.PI * 2,
+      scale: 0.7 + rng() * 0.6,
+    });
+  }
+
+  return { segments, leaves, masses, height: 1, spread: maxR };
 }

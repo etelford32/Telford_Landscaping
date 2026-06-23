@@ -17,8 +17,8 @@ interface SamplePlantDef {
 // canopy dimensions here are driven by the same growth models as the design tool.
 const PLANT_PLACEMENTS: SamplePlantDef[] = [
   // ── Specimen trees ──
-  { speciesId: "quercus-lobata", x: -4.5, z: 4.5, scale: 0.5 },           // Valley Oak — front left specimen
-  { speciesId: "quercus-agrifolia", x: 6.5, z: -3.5, scale: 0.6 },        // Coast Live Oak — procedural specimen (scientific growth model)
+  { speciesId: "quercus-lobata", x: 6, z: -6.5, scale: 0.5 },             // Valley Oak — rear
+  { speciesId: "quercus-agrifolia", x: -7.5, z: 5.5, scale: 0.6 },        // Coast Live Oak — procedural specimen, front-left (its own dense-crown model)
   { speciesId: "quercus-douglasii", x: -2, z: -8, scale: 0.5 },           // Blue Oak — rear
   { speciesId: "acer-palmatum-sango-kaku", x: 8.5, z: 3.5, scale: 0.9 },  // Coral Bark Maple — procedural front accent
 

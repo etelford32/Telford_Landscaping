@@ -8,6 +8,7 @@ import {
   generateShrubShell,
   generateTree,
   type BranchSegment,
+  type CanopyMass,
   type LeafPlacement,
   type PlantSkeleton,
 } from "@/lib/procedural/treeGen";
@@ -204,6 +205,17 @@ export default function ProceduralPlant({
     g.translate(0, 0.6, 0); // pivot at the stem base so leaves splay from the twig
     return g;
   }, []);
+  const massGeo = useMemo(() => new THREE.IcosahedronGeometry(1, 1), []);
+  const massMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        roughness: 0.9,
+        metalness: 0,
+        flatShading: true,
+        envMapIntensity: 0.4,
+      }),
+    []
+  );
   const branchMat = useMemo(() => {
     const bump = getBarkBumpTexture();
     return new THREE.MeshStandardMaterial({
@@ -244,6 +256,14 @@ export default function ProceduralPlant({
           barkThin={preset.barkThin}
           barkThick={preset.barkThick}
         />
+        {skeleton.masses && skeleton.masses.length > 0 && (
+          <CanopyMasses
+            masses={skeleton.masses}
+            geom={massGeo}
+            material={massMat}
+            palette={preset.leafPalette}
+          />
+        )}
         <LeafInstances
           leaves={skeleton.leaves}
           geom={leafGeo}
@@ -324,6 +344,54 @@ function BranchInstances({
     <instancedMesh
       ref={ref}
       args={[geom, material, segments.length]}
+      castShadow
+      receiveShadow
+      frustumCulled={false}
+    />
+  );
+}
+
+// ── Canopy masses (solid evergreen crown volume) ──────────────────────────────
+function CanopyMasses({
+  masses,
+  geom,
+  material,
+  palette,
+}: {
+  masses: CanopyMass[];
+  geom: THREE.IcosahedronGeometry;
+  material: THREE.Material;
+  palette: string[];
+}) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const colors = useMemo(() => palette.map((c) => new THREE.Color(c)), [palette]);
+
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const m = new THREE.Matrix4();
+    const pos = new THREE.Vector3();
+    const scl = new THREE.Vector3();
+    const quat = new THREE.Quaternion();
+    const col = new THREE.Color();
+    for (let i = 0; i < masses.length; i++) {
+      const ms = masses[i];
+      pos.set(ms.pos[0], ms.pos[1], ms.pos[2]);
+      scl.setScalar(ms.radius);
+      m.compose(pos, quat, scl);
+      mesh.setMatrixAt(i, m);
+      col.copy(colors[i % colors.length]).multiplyScalar(1 + ms.shade / 100);
+      mesh.setColorAt(i, col);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [masses, colors]);
+
+  if (masses.length === 0) return null;
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[geom, material, masses.length]}
       castShadow
       receiveShadow
       frustumCulled={false}

@@ -117,6 +117,8 @@ describe("generateDecurrentTree (oak)", () => {
     expect(s.height).toBeCloseTo(1, 6);
     expect(s.segments.length).toBeGreaterThan(20);
     expect(s.leaves.length).toBeGreaterThan(20);
+    // dense-crown construction: solid foliage masses plus the leaf-card shell
+    expect(s.masses && s.masses.length).toBeGreaterThan(0);
     // the base trunk segment should carry the requested normalized radius
     const baseRadius = Math.max(...s.segments.map((seg) => Math.max(seg.r0, seg.r1)));
     expect(baseRadius).toBeCloseTo(OAK.trunkRadiusNorm, 6);
