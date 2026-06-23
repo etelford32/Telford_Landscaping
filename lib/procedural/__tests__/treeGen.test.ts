@@ -1,0 +1,86 @@
+import { describe, it, expect } from "vitest";
+import { generateTree, generateShrubShell, type PlantSkeleton, type TreeParams } from "../treeGen";
+
+const MAPLE: TreeParams = {
+  trunkLength: 0.4,
+  trunkRadius: 0.03,
+  maxDepth: 5,
+  branchMin: 2,
+  branchMax: 3,
+  branchAngle: 0.6,
+  lengthFalloff: 0.78,
+  radiusFalloff: 0.7,
+  segmentsPerBranch: 4,
+  curve: 0.16,
+  gravitropism: 0.25,
+  leafStartDepth: 3,
+  leavesPerTwig: 6,
+};
+
+function allFinite(s: PlantSkeleton): boolean {
+  for (const seg of s.segments) {
+    for (const v of [...seg.p0, ...seg.p1, seg.r0, seg.r1]) {
+      if (!Number.isFinite(v)) return false;
+    }
+  }
+  for (const lf of s.leaves) {
+    for (const v of [...lf.pos, ...lf.dir, lf.roll, lf.scale]) {
+      if (!Number.isFinite(v)) return false;
+    }
+  }
+  return true;
+}
+
+describe("generateTree", () => {
+  it("produces branches and leaves with finite coordinates", () => {
+    const s = generateTree(12345, 1, MAPLE);
+    expect(s.segments.length).toBeGreaterThan(10);
+    expect(s.leaves.length).toBeGreaterThan(10);
+    expect(s.height).toBeGreaterThan(0);
+    expect(allFinite(s)).toBe(true);
+  });
+
+  it("is deterministic for a given seed + maturity", () => {
+    const a = generateTree(777, 0.8, MAPLE);
+    const b = generateTree(777, 0.8, MAPLE);
+    expect(a.segments.length).toBe(b.segments.length);
+    expect(a.leaves.length).toBe(b.leaves.length);
+    expect(a.segments[a.segments.length - 1].p1).toEqual(b.segments[b.segments.length - 1].p1);
+  });
+
+  it("develops more structure as maturity increases", () => {
+    const young = generateTree(42, 0.1, MAPLE);
+    const mature = generateTree(42, 1, MAPLE);
+    expect(mature.segments.length).toBeGreaterThan(young.segments.length);
+    expect(mature.leaves.length).toBeGreaterThan(young.leaves.length);
+  });
+
+  it("stays within the safety caps", () => {
+    const s = generateTree(9, 1, { ...MAPLE, maxDepth: 9, branchMin: 3, branchMax: 4 });
+    expect(s.segments.length).toBeLessThanOrEqual(2600);
+    expect(s.leaves.length).toBeLessThanOrEqual(3000);
+  });
+});
+
+describe("generateShrubShell", () => {
+  it("produces a dense, finite leaf shell above the ground", () => {
+    const s = generateShrubShell(2024, 1, {
+      height: 1,
+      width: 1.05,
+      trunkRadius: 0.06,
+      leafCount: 1100,
+      clip: 0.42,
+    });
+    expect(s.leaves.length).toBeGreaterThan(300);
+    expect(allFinite(s)).toBe(true);
+    // flat-bottomed: no leaves below the clip line
+    expect(s.leaves.every((l) => l.pos[1] >= 0)).toBe(true);
+  });
+
+  it("scales leaf count with maturity", () => {
+    const params = { height: 1, width: 1, trunkRadius: 0.06, leafCount: 1000, clip: 0.4 };
+    const young = generateShrubShell(5, 0.15, params);
+    const mature = generateShrubShell(5, 1, params);
+    expect(mature.leaves.length).toBeGreaterThan(young.leaves.length);
+  });
+});

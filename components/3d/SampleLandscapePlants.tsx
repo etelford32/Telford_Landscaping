@@ -20,7 +20,7 @@ const PLANT_PLACEMENTS: SamplePlantDef[] = [
   { speciesId: "quercus-lobata", x: -4.5, z: 4.5, scale: 0.5 },           // Valley Oak — front left specimen
   { speciesId: "quercus-agrifolia", x: 5, z: -6, scale: 0.5 },            // Coast Live Oak — rear
   { speciesId: "quercus-douglasii", x: -2, z: -8, scale: 0.5 },           // Blue Oak — rear
-  { speciesId: "acer-palmatum", x: 8.5, z: 3.5, scale: 0.9 },             // Japanese Maple — front accent
+  { speciesId: "acer-palmatum-sango-kaku", x: 8.5, z: 3.5, scale: 0.9 },  // Coral Bark Maple — procedural front accent
 
   // ── Conifer screen (side/rear) ──
   { speciesId: "pinus-radiata", x: -8.5, z: -2, scale: 0.5 },             // Monterey Pine
@@ -43,6 +43,14 @@ const PLANT_PLACEMENTS: SamplePlantDef[] = [
   // ── Entry accents ──
   { speciesId: "carpenteria-californica", x: -1.8, z: 3.2, scale: 0.9 },  // Bush Anemone
   { speciesId: "carpenteria-californica", x: 1.8, z: 3.2, scale: 0.9 },
+
+  // ── Formal boxwood edging along the front walk (procedural) ──
+  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.15, z: 3.4, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.15, z: 4.2, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.15, z: 5.0, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.15, z: 3.4, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.15, z: 4.2, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.15, z: 5.0, scale: 1 },
 
   // ── Pool border shrubs ──
   { speciesId: "rhamnus-californica", x: -7.0, z: -1.0, scale: 1 },       // Coffeeberry
