@@ -10,7 +10,7 @@ import {
   type LeafPlacement,
   type PlantSkeleton,
 } from "@/lib/procedural/treeGen";
-import { getLeafTexture, type LeafKind } from "@/lib/procedural/leafTexture";
+import { getBarkBumpTexture, getLeafTexture, type LeafKind } from "@/lib/procedural/leafTexture";
 
 // Species that opt into the procedural branches-and-leaves renderer. Everything
 // else stays on the clustered models in PlantModels.tsx — this is the phased
@@ -25,15 +25,25 @@ interface Preset {
   leafKind: LeafKind;
   formMaturityAge: number; // age at which branch structure is fully developed
   leafSize: number; // leaf size in normalized skeleton space
+  leafPalette: string[]; // per-leaf colors sampled across the canopy
   barkThin: string; // color of fine twigs
   barkThick: string; // color of the trunk
 }
+
+// Maple leans green with a scatter of amber/copper for the Sango-kaku turn;
+// greens are repeated so they dominate.
+const MAPLE_PALETTE = [
+  "#4F7E2A", "#5E9636", "#6CA63E", "#7DB54A", "#5A8C32",
+  "#4F7E2A", "#6CA63E", "#C8922E", "#D98E3A", "#B5642F",
+];
+const BOXWOOD_PALETTE = ["#2E5A2E", "#356731", "#274E28", "#3C6E36", "#2A572B"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
     leafKind: "maple",
     formMaturityAge: 24,
     leafSize: 0.05,
+    leafPalette: MAPLE_PALETTE,
     barkThin: "#D2604A", // signature coral bark on young wood
     barkThick: "#6B4A33",
     generate: (seed, m) =>
@@ -57,6 +67,7 @@ const PRESETS: Record<string, Preset> = {
     leafKind: "boxwood",
     formMaturityAge: 14,
     leafSize: 0.045,
+    leafPalette: BOXWOOD_PALETTE,
     barkThin: "#5A4636",
     barkThick: "#4A3826",
     generate: (seed, m) =>
@@ -74,6 +85,7 @@ const DEFAULT_PRESET: Preset = {
   leafKind: "maple",
   formMaturityAge: 20,
   leafSize: 0.06,
+  leafPalette: MAPLE_PALETTE,
   barkThin: "#8A6A48",
   barkThick: "#5A3F2C",
   generate: (seed, m) =>
@@ -127,18 +139,25 @@ export default function ProceduralPlant({
     g.translate(0, 0.6, 0); // pivot at the stem base so leaves splay from the twig
     return g;
   }, []);
-  const branchMat = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.9, metalness: 0 }),
-    []
-  );
+  const branchMat = useMemo(() => {
+    const bump = getBarkBumpTexture();
+    return new THREE.MeshStandardMaterial({
+      roughness: 0.85,
+      metalness: 0,
+      bumpMap: bump,
+      bumpScale: 0.015,
+      envMapIntensity: 0.5,
+    });
+  }, []);
   const leafMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
         map: leafTex,
         alphaTest: 0.45,
         side: THREE.DoubleSide,
-        roughness: 0.85,
+        roughness: 0.72,
         metalness: 0,
+        envMapIntensity: 0.7,
       }),
     [leafTex]
   );
@@ -160,7 +179,13 @@ export default function ProceduralPlant({
           barkThin={preset.barkThin}
           barkThick={preset.barkThick}
         />
-        <LeafInstances leaves={skeleton.leaves} geom={leafGeo} material={leafMat} leafSize={preset.leafSize} />
+        <LeafInstances
+          leaves={skeleton.leaves}
+          geom={leafGeo}
+          material={leafMat}
+          leafSize={preset.leafSize}
+          palette={preset.leafPalette}
+        />
       </group>
 
       {plant.selected && (
@@ -247,13 +272,16 @@ function LeafInstances({
   geom,
   material,
   leafSize,
+  palette,
 }: {
   leaves: LeafPlacement[];
   geom: THREE.PlaneGeometry;
   material: THREE.Material;
   leafSize: number;
+  palette: string[];
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
+  const colors = useMemo(() => palette.map((c) => new THREE.Color(c)), [palette]);
 
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -278,14 +306,15 @@ function LeafInstances({
       scl.set(s, s, s);
       m.compose(pos, q, scl);
       mesh.setMatrixAt(i, m);
-      // subtle per-leaf lightness variation (green comes from the texture)
-      const v = 0.8 + 0.34 * frac(Math.sin((i + 1) * 12.9898) * 43758.5453);
-      col.setRGB(v, v, v);
+      // pick a palette color, then vary lightness a touch per leaf
+      const pick = colors[Math.floor(frac(Math.sin((i + 1) * 78.233) * 43758.5453) * colors.length) % colors.length];
+      const v = 0.85 + 0.28 * frac(Math.sin((i + 1) * 12.9898) * 43758.5453);
+      col.copy(pick).multiplyScalar(v);
       mesh.setColorAt(i, col);
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [leaves, leafSize]);
+  }, [leaves, leafSize, colors]);
 
   if (leaves.length === 0) return null;
   return (

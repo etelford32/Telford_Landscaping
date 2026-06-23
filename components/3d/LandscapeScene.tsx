@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, PerspectiveCamera, Sky } from "@react-three/drei";
+import { OrbitControls, PerspectiveCamera, Sky, Environment, Lightformer } from "@react-three/drei";
 import { Suspense, useState, useRef, useEffect } from "react";
 import { ZoomIn, ZoomOut, Palette, Sprout, TreePine, Layers, ChevronRight, Play, Pause } from "lucide-react";
 import Link from "next/link";
@@ -124,6 +124,16 @@ function Scene({ age }: { age: number }) {
   return (
     <>
       <Sky sunPosition={[18, 4, 10]} turbidity={4} rayleigh={0.8} />
+
+      {/* Local image-based lighting — baked once from in-scene light shapes
+          (no CDN/HDRI fetch). Gives leaves, bark, pool, and glass something
+          to reflect. */}
+      <Environment resolution={256} frames={1}>
+        <Lightformer intensity={0.6} position={[0, 6, -4]} scale={[12, 12, 1]} color="#bcd6ee" />
+        <Lightformer intensity={1.1} position={[16, 9, 8]} scale={[5, 5, 1]} color="#fff1dd" />
+        <Lightformer intensity={0.4} position={[-10, 4, -6]} scale={[8, 8, 1]} color="#a9c7e0" />
+      </Environment>
+
       <Lighting />
       <Ground />
       <House3D />
