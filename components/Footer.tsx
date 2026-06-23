@@ -84,7 +84,7 @@ export default function Footer() {
             </div>
           </div>
           <p className="text-gray-500 text-xs mt-4 text-center md:text-left">
-            Telford Projects LLC · CA C27 Licensed · Insured
+            Telford Projects LLC · CA C-27 Lic. #1156976 · Bonded &amp; Insured
           </p>
         </div>
       </div>

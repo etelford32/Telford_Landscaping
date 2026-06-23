@@ -101,7 +101,7 @@ export default function IrrigationPage() {
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
-                <Shield className="w-4 h-4" /> Licensed Professionals
+                <Shield className="w-4 h-4" /> Licensed, Bonded &amp; Insured
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -616,7 +616,7 @@ export default function IrrigationPage() {
           </div>
 
           <p className="text-cyan-200 text-sm">
-            Serving Auburn, Roseville, Granite Bay, Lincoln, and Loomis • Licensed & Insured • Custom Engineering
+            Serving Auburn, Roseville, Granite Bay, Lincoln, and Loomis • CA C-27 Lic. #1156976 · Bonded &amp; Insured • Custom Engineering
           </p>
         </div>
       </section>

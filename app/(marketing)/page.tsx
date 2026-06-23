@@ -73,7 +73,7 @@ export default function Home() {
             {/* Trust pills */}
             <div className="flex flex-wrap gap-3 mt-5">
               {[
-                { icon: CheckCircle2, text: "CA C27 Licensed · Telford Projects LLC" },
+                { icon: CheckCircle2, text: "CA C-27 Lic. #1156976 · Bonded & Insured" },
                 { icon: MapPin,       text: "Granite Bay · Loomis · Auburn · Roseville" },
                 { icon: Star,         text: "Design-Build. One shop." },
               ].map(({ icon: Icon, text }) => (
@@ -208,7 +208,7 @@ export default function Home() {
 
           <div className="mt-12 text-center">
             <p className="text-gray-700 text-lg">
-              Telford Projects LLC · CA C27 Licensed · Insured
+              Telford Projects LLC · CA C-27 Lic. #1156976 · Bonded &amp; Insured
             </p>
           </div>
         </div>
