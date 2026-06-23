@@ -262,7 +262,7 @@ export function generateDecurrentTree(
   const rng = mulberry32(seed);
   const segments: BranchSegment[] = [];
   const leaves: LeafPlacement[] = [];
-  const outwardBias = 0.06 * p.crownWidthRatio;
+  const outwardBias = 0.012 * p.crownWidthRatio;
   let maxOrder = 1;
 
   const grow = (start: Vec, dir: Vec, length: number, radius: number, depth: number) => {
@@ -276,14 +276,16 @@ export function generateDecurrentTree(
     const taper = Math.pow(p.radiusFalloff, 1 / p.segmentsPerBranch);
 
     for (let i = 0; i < p.segmentsPerBranch; i++) {
-      // Sinuous wander, a downward arch that grows toward the tips, and an
-      // outward pull that widens the crown.
+      // Sinuous wander, a gentle arch toward the tips, an outward pull that
+      // widens the crown, and an upward lift on the inner limbs so the crown
+      // gains height instead of sagging to the ground.
       const progress = i / p.segmentsPerBranch;
       const arch = -p.droop * (depth / p.maxDepth) * (0.3 + 0.7 * progress);
+      const lift = 0.05 * (1 - depth / p.maxDepth);
       const radial = norm([pos[0], 0, pos[2]]);
       const wander: Vec = [
         (rng() - 0.5) * p.sinuosity,
-        (rng() - 0.5) * p.sinuosity * 0.5 + arch,
+        (rng() - 0.5) * p.sinuosity * 0.5 + arch + lift,
         (rng() - 0.5) * p.sinuosity,
       ];
       d = norm(add(add(d, wander), scale(radial, outwardBias)));
@@ -340,7 +342,7 @@ export function generateDecurrentTree(
     const ang = p.spreadAngle * (0.8 + rng() * 0.4);
     const offset = add(scale(u, Math.cos(roll)), scale(v, Math.sin(roll)));
     const limbDir = norm(add(scale(d, Math.cos(ang)), scale(offset, Math.sin(ang))));
-    const limbLen = p.forkHeight * 2.4 * (0.85 + rng() * 0.3);
+    const limbLen = p.forkHeight * 2.0 * (0.85 + rng() * 0.3);
     grow(pos, limbDir, limbLen, r * 0.92, 1);
   }
 

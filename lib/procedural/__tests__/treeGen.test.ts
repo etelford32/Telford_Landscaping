@@ -9,18 +9,18 @@ import {
 } from "../treeGen";
 
 const OAK: DecurrentParams = {
-  forkHeight: 0.28,
+  forkHeight: 0.3,
   scaffolds: 4,
   maxDepth: 5,
   branchMin: 2,
   branchMax: 3,
-  spreadAngle: 0.9,
-  childAngle: 0.62,
-  lengthFalloff: 0.82,
+  spreadAngle: 0.52,
+  childAngle: 0.5,
+  lengthFalloff: 0.64,
   radiusFalloff: 0.72,
   segmentsPerBranch: 4,
   sinuosity: 0.22,
-  droop: 0.55,
+  droop: 0.15,
   crownWidthRatio: 1.1,
   leafStartDepth: 1,
   leavesPerTwig: 5,

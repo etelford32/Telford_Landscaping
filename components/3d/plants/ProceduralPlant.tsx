@@ -103,19 +103,19 @@ const PRESETS: Record<string, Preset> = {
     oak: COAST_LIVE_OAK,
     generate: (seed, _m, shape) =>
       generateDecurrentTree(seed, 1, {
-        forkHeight: 0.28,
+        forkHeight: 0.3,
         scaffolds: 4,
         maxDepth: 5,
         branchMin: 2,
         branchMax: 3,
-        spreadAngle: 0.9,
-        childAngle: 0.62,
-        lengthFalloff: 0.82,
+        spreadAngle: 0.52,
+        childAngle: 0.5,
+        lengthFalloff: 0.64,
         radiusFalloff: 0.72,
         segmentsPerBranch: 4,
         sinuosity: 0.22,
-        droop: 0.55,
-        crownWidthRatio: shape?.crownWidthRatio ?? 1.1,
+        droop: 0.15,
+        crownWidthRatio: shape?.crownWidthRatio ?? 1.0,
         leafStartDepth: 1,
         leavesPerTwig: 5,
       }),
@@ -241,7 +241,15 @@ export default function ProceduralPlant({
     [leafTex]
   );
 
-  const worldScale = (size.height / 5) / draw.height;
+  // Height scales uniformly to the allometric height. For the oak we also drive
+  // crown width from the model (the generator's natural spread is broader than
+  // the species' width:height), so both dimensions match the science.
+  const heightScale = (size.height / 5) / draw.height;
+  const widthScale =
+    preset.oak && oakFull
+      ? (size.width / 5 / 2) / Math.max(0.05, oakFull.spread)
+      : heightScale;
+  const scaleVec: [number, number, number] = [widthScale, heightScale, widthScale];
   const selR = Math.max(0.4, (size.width / 5) * 0.6);
 
   return (
@@ -250,7 +258,7 @@ export default function ProceduralPlant({
       rotation={[0, plant.rotation, 0]}
       onClick={onClick}
     >
-      <group scale={worldScale}>
+      <group scale={scaleVec}>
         <BranchInstances
           segments={draw.segments}
           geom={branchGeo}
