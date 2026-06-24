@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import {
   PlacedPlant,
   PlantSpecies,
@@ -27,7 +27,7 @@ const BARK = "#5B4636";
 // Routes a placed plant to a shape-specific model. Overall dimensions come from
 // the growth model (calculatePlantSize) so the design tool and the homepage
 // growth simulation stay in sync.
-export function PlantModel({ plant, onClick }: PlantModelProps) {
+function PlantModelImpl({ plant, onClick }: PlantModelProps) {
   // Showcase species opt into the procedural branches-and-leaves renderer.
   if (PROCEDURAL_SPECIES.has(plant.speciesId)) {
     return <ProceduralPlant plant={plant} onClick={onClick} />;
@@ -475,3 +475,27 @@ function adjustColorBrightness(hex: string, percent: number): string {
 
   return "#" + [newR, newG, newB].map((x) => x.toString(16).padStart(2, "0")).join("");
 }
+
+// Memoized router export. The design canvas re-renders the whole Scene on many
+// interactions (selection, hover, drag, age changes); comparing the meaningful
+// plant fields lets unchanged plants skip their model subtree re-render. Position
+// is compared too so non-canvas callers (e.g. SampleLandscapePlants) stay correct.
+function plantPropsEqual(a: PlantModelProps, b: PlantModelProps): boolean {
+  const p = a.plant;
+  const q = b.plant;
+  return (
+    a.onClick === b.onClick &&
+    p.id === q.id &&
+    p.speciesId === q.speciesId &&
+    p.age === q.age &&
+    p.scale === q.scale &&
+    p.rotation === q.rotation &&
+    p.variant === q.variant &&
+    p.selected === q.selected &&
+    p.position.x === q.position.x &&
+    p.position.y === q.position.y &&
+    p.position.z === q.position.z
+  );
+}
+
+export const PlantModel = memo(PlantModelImpl, plantPropsEqual);

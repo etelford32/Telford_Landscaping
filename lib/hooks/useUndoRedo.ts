@@ -16,17 +16,31 @@ export function useUndoRedo<T>(initialState: T, maxHistory: number = 50) {
   // Track if we're currently applying undo/redo to prevent adding to history
   const isApplying = useRef(false);
 
-  const setState = useCallback((newState: T | ((prev: T) => T)) => {
+  // True while a transient sequence (e.g. an in-progress drag) is recording.
+  // The first transient update opens one history entry; subsequent updates just
+  // replace `present` so the whole gesture collapses into a single undo step.
+  const transientActive = useRef(false);
+
+  const setState = useCallback((
+    newState: T | ((prev: T) => T),
+    options?: { transient?: boolean }
+  ) => {
     if (isApplying.current) return;
+
+    const transient = options?.transient === true;
+    // Open a new history entry on a normal update, or on the FIRST update of a
+    // transient sequence. Continuing a transient sequence just replaces present.
+    const openNewEntry = !transient || !transientActive.current;
+    transientActive.current = transient;
 
     setHistory((currentHistory) => {
       const resolvedState = typeof newState === 'function'
         ? (newState as (prev: T) => T)(currentHistory.present)
         : newState;
 
-      // Don't add to history if state hasn't changed
-      if (JSON.stringify(resolvedState) === JSON.stringify(currentHistory.present)) {
-        return currentHistory;
+      if (!openNewEntry) {
+        // Mid-gesture: update present without growing history.
+        return { ...currentHistory, present: resolvedState };
       }
 
       // Create new history entry
@@ -43,7 +57,14 @@ export function useUndoRedo<T>(initialState: T, maxHistory: number = 50) {
     });
   }, [maxHistory]);
 
+  // End a transient sequence so the next update opens a fresh history entry.
+  // Called when a drag finishes; the gesture is already reflected in `present`.
+  const commit = useCallback(() => {
+    transientActive.current = false;
+  }, []);
+
   const undo = useCallback(() => {
+    transientActive.current = false;
     setHistory((currentHistory) => {
       if (currentHistory.past.length === 0) return currentHistory;
 
@@ -62,6 +83,7 @@ export function useUndoRedo<T>(initialState: T, maxHistory: number = 50) {
   }, []);
 
   const redo = useCallback(() => {
+    transientActive.current = false;
     setHistory((currentHistory) => {
       if (currentHistory.future.length === 0) return currentHistory;
 
@@ -93,6 +115,7 @@ export function useUndoRedo<T>(initialState: T, maxHistory: number = 50) {
   return {
     state: history.present,
     setState,
+    commit,
     undo,
     redo,
     canUndo,

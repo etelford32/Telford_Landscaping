@@ -75,6 +75,10 @@ import { applyPresetToHouse, HardscapePreset } from "@/lib/hardscape/presets";
 import DraggableObject from "./DraggableObject";
 import CanvasInteractionHandler from "./CanvasInteractionHandler";
 
+// Stable no-op handler so memoized child models (PlantModel/StructureModel) don't
+// receive a new onClick prop on every Scene re-render, which would defeat React.memo.
+const noop = () => {};
+
 // Scene Component
 function Scene({
   plants,
@@ -109,6 +113,7 @@ function Scene({
   brushPosition,
   onTerrainClick,
   snapToGrid,
+  terrainVersion,
 }: {
   plants: PlacedPlant[];
   structures: PlacedStructure[];
@@ -142,6 +147,7 @@ function Scene({
   brushPosition: Vector3 | null;
   onTerrainClick: (position: { x: number; y: number; z: number }) => void;
   snapToGrid: boolean;
+  terrainVersion: number;
 }) {
   const houses = sceneManager.getHouses();
   const ground = sceneManager.getGround();
@@ -173,8 +179,8 @@ function Scene({
         position={[10, 15, 10]}
         intensity={1.5}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
         shadow-camera-left={-20}
         shadow-camera-right={20}
         shadow-camera-top={20}
@@ -222,6 +228,7 @@ function Scene({
             terrainManager={terrainManager}
             grassColor={ground.grassColor}
             showWireframe={false}
+            version={terrainVersion}
             onTerrainClick={onTerrainClick}
           />
           {brushPosition && brush && (
@@ -285,7 +292,7 @@ function Scene({
         >
           <StructureModel
             structure={{ ...structure, position: { x: 0, y: 0, z: 0 } }}
-            onClick={() => {}}
+            onClick={noop}
           />
         </DraggableObject>
       ))}
@@ -307,7 +314,7 @@ function Scene({
         >
           <PlantModel
             plant={{ ...plant, age, position: { x: 0, y: 0, z: 0 } }}
-            onClick={() => {}}
+            onClick={noop}
           />
           {plant.id === selectedPlantId && (
             <ObjectHighlight
@@ -370,6 +377,7 @@ function IntegratedDesignCanvasInner() {
   const {
     state: designState,
     setState: setDesignState,
+    commit,
     undo,
     redo,
     canUndo,
@@ -624,24 +632,32 @@ function IntegratedDesignCanvasInner() {
     setPendingPlantSpecies(null);
   };
 
-  // Handle plant drag (direct movement)
+  // Handle plant drag (direct movement). Transient so the whole drag collapses
+  // into a single undo step (committed in handleDragEnd) instead of one per move,
+  // and so no per-move JSON snapshot is taken.
   const handlePlantDrag = (id: string, newPosition: { x: number; y: number; z: number }) => {
-    setPlants(plants.map(p =>
-      p.id === id ? { ...p, position: newPosition } : p
-    ));
+    setDesignState((prev) => ({
+      ...prev,
+      plants: prev.plants.map(p =>
+        p.id === id ? { ...p, position: newPosition } : p
+      ),
+    }), { transient: true });
   };
 
-  // Handle structure drag (direct movement)
+  // Handle structure drag (direct movement). Transient — see handlePlantDrag.
   const handleStructureDrag = (id: string, newPosition: { x: number; y: number; z: number }) => {
-    setStructures(structures.map(s =>
-      s.id === id ? { ...s, position: newPosition } : s
-    ));
+    setDesignState((prev) => ({
+      ...prev,
+      structures: prev.structures.map(s =>
+        s.id === id ? { ...s, position: newPosition } : s
+      ),
+    }), { transient: true });
   };
 
-  // Handle drag end (for undo history)
+  // Handle drag end. Closes the transient drag sequence so the next change opens
+  // a fresh undo entry; the final position is already in state.
   const handleDragEnd = () => {
-    // The drag is complete - state has already been updated
-    // This is where we could trigger a state snapshot for undo
+    commit();
   };
 
   // Handle deselect (click on empty canvas)
@@ -1341,7 +1357,7 @@ function IntegratedDesignCanvasInner() {
         role="application"
         aria-label="3D Landscape Design Canvas. Use arrow keys or WASD to navigate camera. Press ? for keyboard shortcuts."
       >
-        <Canvas shadows>
+        <Canvas shadows frameloop="demand">
           <PerspectiveCamera makeDefault position={[15, 12, 15]} fov={50} />
           <OrbitControls
             enablePan={true}
@@ -1387,6 +1403,7 @@ function IntegratedDesignCanvasInner() {
               brushPosition={brushPosition}
               onTerrainClick={handleTerrainClick}
               snapToGrid={snapToGridEnabled}
+              terrainVersion={terrainUpdateCounter}
             />
           </Suspense>
         </Canvas>

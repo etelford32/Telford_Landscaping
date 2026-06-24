@@ -3,7 +3,7 @@
  * Renders different house styles with proper materials and details
  */
 
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import { Mesh, Group } from 'three';
 import { House } from '@/lib/editor/SceneManager';
 
@@ -13,7 +13,7 @@ interface HouseModelProps {
   isSelected?: boolean;
 }
 
-export function HouseModel({ house, onClick, isSelected = false }: HouseModelProps) {
+function HouseModelImpl({ house, onClick, isSelected = false }: HouseModelProps) {
   const groupRef = useRef<Group>(null);
 
   const { position, rotation, scale, style, color } = house;
@@ -48,6 +48,14 @@ export function HouseModel({ house, onClick, isSelected = false }: HouseModelPro
     </group>
   );
 }
+
+// Memoized export. onClick only ever calls onHouseClick(id) with a stable id, so
+// its identity can be ignored; houses aren't mutated in place after creation.
+function housePropsEqual(a: HouseModelProps, b: HouseModelProps): boolean {
+  return a.house === b.house && a.isSelected === b.isSelected;
+}
+
+export const HouseModel = memo(HouseModelImpl, housePropsEqual);
 
 // Modern House Style
 function ModernHouse({ color, emissive, emissiveIntensity }: { color: string; emissive: string; emissiveIntensity: number }) {
