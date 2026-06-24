@@ -8,7 +8,7 @@
 
 import * as THREE from "three";
 
-export type LeafKind = "maple" | "boxwood" | "oak" | "redwood";
+export type LeafKind = "maple" | "boxwood" | "oak" | "oak-lobed" | "redwood";
 
 const leafCache = new Map<LeafKind, THREE.Texture>();
 let barkBump: THREE.Texture | null = null;
@@ -18,6 +18,7 @@ export function getLeafTexture(kind: LeafKind): THREE.Texture {
   if (tex) return tex;
   if (kind === "boxwood") tex = drawBoxwoodLeaf();
   else if (kind === "oak") tex = drawOakLeaf();
+  else if (kind === "oak-lobed") tex = drawOakLobedLeaf();
   else if (kind === "redwood") tex = drawRedwoodSpray();
   else tex = drawMapleLeaf();
   leafCache.set(kind, tex);
@@ -187,6 +188,69 @@ function drawOakLeaf(): THREE.CanvasTexture {
   ctx.beginPath();
   ctx.moveTo(cx, size * 0.92);
   ctx.lineTo(cx, size * 0.1);
+  ctx.stroke();
+
+  return makeTexture(c);
+}
+
+// Classic lobed deciduous-oak leaf (valley / blue oak): an oblong blade with
+// rounded lobes and sinuses. Neutral mask; color comes from the palette.
+function drawOakLobedLeaf(): THREE.CanvasTexture {
+  const w = 72;
+  const h = 96;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2;
+  const baseY = h * 0.97;
+  const tipY = h * 0.05;
+  const lobes = 5;
+  const maxHW = w * 0.42;
+  const N = 48;
+
+  const right: [number, number][] = [];
+  for (let i = 0; i <= N; i++) {
+    const v = i / N; // 0 base -> 1 tip
+    const y = baseY - v * (baseY - tipY);
+    const prof = Math.pow(Math.sin(Math.PI * Math.min(0.999, Math.max(0.001, v))), 0.55);
+    const lobe = 0.45 + 0.55 * Math.abs(Math.cos(v * lobes * Math.PI));
+    right.push([cx + maxHW * prof * lobe, y]);
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(cx, baseY);
+  for (const [x, y] of right) ctx.lineTo(x, y);
+  for (let i = right.length - 1; i >= 0; i--) {
+    const [x, y] = right[i];
+    ctx.lineTo(cx - (x - cx), y);
+  }
+  ctx.closePath();
+
+  const grad = ctx.createLinearGradient(0, tipY, 0, baseY);
+  grad.addColorStop(0, "#d4d4d4");
+  grad.addColorStop(1, "#9c9c9c");
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // midrib + a few lateral veins toward the lobes
+  ctx.strokeStyle = "rgba(110,110,110,0.55)";
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(cx, baseY);
+  ctx.lineTo(cx, tipY);
+  for (let k = 1; k <= lobes; k++) {
+    const v = (k - 0.5) / lobes;
+    const y = baseY - v * (baseY - tipY);
+    const prof = Math.pow(Math.sin(Math.PI * v), 0.55);
+    const hw = maxHW * prof * 0.85;
+    ctx.moveTo(cx, y);
+    ctx.lineTo(cx + hw, y - hw * 0.3);
+    ctx.moveTo(cx, y);
+    ctx.lineTo(cx - hw, y - hw * 0.3);
+  }
   ctx.stroke();
 
   return makeTexture(c);
