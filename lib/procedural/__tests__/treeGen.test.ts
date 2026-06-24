@@ -3,10 +3,28 @@ import {
   generateTree,
   generateShrubShell,
   generateDecurrentTree,
+  generateExcurrentTree,
   type PlantSkeleton,
   type TreeParams,
   type DecurrentParams,
+  type ExcurrentParams,
 } from "../treeGen";
+
+const REDWOOD: ExcurrentParams = {
+  trunkSegments: 14,
+  crownBase: 0.18,
+  tiers: 12,
+  branchesPerTier: 5,
+  maxBranchLen: 0.1,
+  branchDroop: 0.35,
+  subDepth: 2,
+  branchMin: 2,
+  branchMax: 3,
+  lengthFalloff: 0.6,
+  radiusFalloff: 0.6,
+  segmentsPerBranch: 3,
+  leavesPerTwig: 5,
+};
 
 const OAK: DecurrentParams = {
   forkHeight: 0.3,
@@ -141,5 +159,31 @@ describe("generateDecurrentTree (oak)", () => {
     const young = generateDecurrentTree(99, 0.1, OAK);
     const full = generateDecurrentTree(99, 1, OAK);
     expect(young.segments.length).toBe(full.segments.length);
+  });
+});
+
+describe("generateExcurrentTree (redwood)", () => {
+  it("builds a single-leader narrow cone normalized to unit height", () => {
+    const s = generateExcurrentTree(5, 1, REDWOOD);
+    expect(s.height).toBeCloseTo(1, 6);
+    expect(s.segments.length).toBeGreaterThan(50);
+    expect(s.leaves.length).toBeGreaterThan(50);
+    // tall and narrow — taller than ~1.5x its crown width
+    expect(s.height / (2 * s.spread)).toBeGreaterThan(1.5);
+    // the central leader (order 0) runs from the base to near the top
+    const leaderTop = s.segments
+      .filter((g) => (g.order ?? -1) === 0)
+      .reduce((mx, g) => Math.max(mx, g.p1[1]), 0);
+    expect(leaderTop).toBeGreaterThan(0.9);
+    // trunk base radius is a fraction (~1.0); renderer applies DBH thickness
+    const baseRadius = Math.max(...s.segments.map((g) => Math.max(g.r0, g.r1)));
+    expect(baseRadius).toBeCloseTo(1, 2);
+  });
+
+  it("is deterministic", () => {
+    const a = generateExcurrentTree(9, 1, REDWOOD);
+    const b = generateExcurrentTree(9, 1, REDWOOD);
+    expect(a.segments.length).toBe(b.segments.length);
+    expect(a.leaves.length).toBe(b.leaves.length);
   });
 });

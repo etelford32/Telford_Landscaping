@@ -76,6 +76,22 @@ export interface DecurrentParams {
   leavesPerTwig: number;
 }
 
+export interface ExcurrentParams {
+  trunkSegments: number; // segments up the central leader
+  crownBase: number; // height fraction where the live crown starts (bare trunk below)
+  tiers: number; // branch tiers up the crown
+  branchesPerTier: number; // laterals per tier
+  maxBranchLen: number; // longest lateral (at the crown base), normalized
+  branchDroop: number; // downsweep of the lower laterals (radians)
+  subDepth: number; // sub-branch orders on each lateral
+  branchMin: number;
+  branchMax: number;
+  lengthFalloff: number;
+  radiusFalloff: number;
+  segmentsPerBranch: number;
+  leavesPerTwig: number;
+}
+
 const UP: Vec = [0, 1, 0];
 const GOLDEN_ANGLE = 2.399963229728653; // radians (~137.5°)
 const MAX_SEGMENTS = 2600;
@@ -120,11 +136,19 @@ export function mulberry32(seed: number): () => number {
 }
 
 // A leaf splaying outward/up from a twig at `at`, facing `branchDir` with jitter.
-function makeLeaf(at: Vec, branchDir: Vec, rng: () => number): LeafPlacement {
+// `up` biases the blade upward (>0) or lets it lie flat / droop (<=0); `spread`
+// controls the lateral fan.
+function makeLeaf(
+  at: Vec,
+  branchDir: Vec,
+  rng: () => number,
+  up = 0.35,
+  spread = 1.4
+): LeafPlacement {
   const out: Vec = norm([
-    branchDir[0] + (rng() - 0.5) * 1.4,
-    branchDir[1] + 0.35 + (rng() - 0.5) * 0.6,
-    branchDir[2] + (rng() - 0.5) * 1.4,
+    branchDir[0] + (rng() - 0.5) * spread,
+    branchDir[1] + up + (rng() - 0.5) * 0.6,
+    branchDir[2] + (rng() - 0.5) * spread,
   ]);
   return { pos: at, dir: out, roll: rng() * Math.PI * 2, scale: 0.7 + rng() * 0.6 };
 }
@@ -344,6 +368,106 @@ export function generateDecurrentTree(
     const limbDir = norm(add(scale(d, Math.cos(ang)), scale(offset, Math.sin(ang))));
     const limbLen = p.forkHeight * 2.0 * (0.85 + rng() * 0.3);
     grow(pos, limbDir, limbLen, r * 0.92, 1);
+  }
+
+  // Normalize positions to height 1 (radii stay as fractions of the trunk).
+  let rawMaxY = 1e-3;
+  for (const seg of segments) rawMaxY = Math.max(rawMaxY, seg.p0[1], seg.p1[1]);
+  const inv = 1 / rawMaxY;
+  let maxR = 1e-3;
+  for (const seg of segments) {
+    seg.p0 = scale(seg.p0, inv);
+    seg.p1 = scale(seg.p1, inv);
+    maxR = Math.max(maxR, Math.hypot(seg.p1[0], seg.p1[2]));
+  }
+  for (const lf of leaves) lf.pos = scale(lf.pos, inv);
+
+  return { segments, leaves, height: 1, spread: maxR, maxOrder };
+}
+
+// ── excurrent tree (redwoods, most conifers) ──────────────────────────────────
+// A single straight central leader with tiers of lateral branches that shorten
+// toward the top — a narrow cone. Coast redwood: laterals droop in the lower
+// crown and lift slightly near the apex; foliage hangs in flat sprays. Built
+// full with orders tagged; the renderer reveals orders and applies allometric
+// height / crown width / DBH-derived trunk thickness.
+export function generateExcurrentTree(
+  seed: number,
+  _maturity: number,
+  p: ExcurrentParams
+): PlantSkeleton {
+  const rng = mulberry32(seed);
+  const segments: BranchSegment[] = [];
+  const leaves: LeafPlacement[] = [];
+  let maxOrder = 1;
+
+  const grow = (start: Vec, dir: Vec, length: number, radius: number, depth: number) => {
+    if (segments.length >= MAX_SEGMENTS) return;
+    maxOrder = Math.max(maxOrder, depth);
+    let pos = start;
+    let d = norm(dir);
+    let r = radius;
+    const segLen = length / p.segmentsPerBranch;
+    const taper = Math.pow(p.radiusFalloff, 1 / p.segmentsPerBranch);
+    for (let i = 0; i < p.segmentsPerBranch; i++) {
+      d = norm(add(d, [(rng() - 0.5) * 0.1, -0.05 + (rng() - 0.5) * 0.06, (rng() - 0.5) * 0.1]));
+      const next = add(pos, scale(d, segLen));
+      const r1 = r * taper;
+      segments.push({ p0: pos, p1: next, r0: r, r1: r1, order: depth });
+      pos = next;
+      r = r1;
+    }
+    // flat foliage sprays along the lateral
+    for (let k = 0; k < p.leavesPerTwig && leaves.length < MAX_LEAVES; k++) {
+      leaves.push({ ...makeLeaf(pos, d, rng, -0.05, 0.6), order: depth });
+    }
+    if (depth < p.subDepth + 1) {
+      const count = p.branchMin + Math.floor(rng() * (p.branchMax - p.branchMin + 1));
+      const [u, v] = perpBasis(d);
+      for (let c = 0; c < count; c++) {
+        const roll = c * GOLDEN_ANGLE + rng() * 0.6;
+        const ang = 0.5 + rng() * 0.35;
+        const offset = add(scale(u, Math.cos(roll)), scale(v, Math.sin(roll)));
+        const childDir = norm(add(scale(d, Math.cos(ang)), scale(offset, Math.sin(ang))));
+        const childLen = length * p.lengthFalloff * (0.7 + rng() * 0.5);
+        grow(pos, childDir, childLen, r * p.radiusFalloff, depth + 1);
+      }
+    }
+  };
+
+  // Central leader (order 0): straight up, slight wander, strong taper.
+  let pos: Vec = [0, 0, 0];
+  let d: Vec = [0, 1, 0];
+  let r = 1.0;
+  const segLen = 1.0 / p.trunkSegments;
+  const leaderTaper = Math.pow(0.14, 1 / p.trunkSegments);
+  const leaderPath: { pos: Vec; r: number; h: number }[] = [{ pos: [0, 0, 0], r: 1, h: 0 }];
+  for (let i = 0; i < p.trunkSegments; i++) {
+    d = norm(add(d, [(rng() - 0.5) * 0.025, 0, (rng() - 0.5) * 0.025]));
+    const next = add(pos, scale(d, segLen));
+    const r1 = r * leaderTaper;
+    segments.push({ p0: pos, p1: next, r0: r, r1: r1, order: 0 });
+    pos = next;
+    r = r1;
+    leaderPath.push({ pos, r, h: (i + 1) / p.trunkSegments });
+  }
+
+  // Branch tiers up the crown, shortening toward the apex.
+  for (let t = 0; t < p.tiers; t++) {
+    const hFrac = p.crownBase + (1 - p.crownBase) * (p.tiers === 1 ? 0.4 : t / (p.tiers - 1));
+    const lp = leaderPath.reduce((best, cur) =>
+      Math.abs(cur.h - hFrac) < Math.abs(best.h - hFrac) ? cur : best
+    );
+    const crownPos = (hFrac - p.crownBase) / (1 - p.crownBase); // 0 base .. 1 apex
+    const lenFactor = Math.pow(1 - crownPos * 0.85, 1.1);
+    for (let b = 0; b < p.branchesPerTier; b++) {
+      const roll = (b / p.branchesPerTier) * Math.PI * 2 + t * 1.3 + rng() * 0.5;
+      const horiz: Vec = [Math.cos(roll), 0, Math.sin(roll)];
+      const angFromHoriz = -p.branchDroop * (1 - crownPos) + 0.18 * crownPos;
+      const dir = norm(add(scale(horiz, Math.cos(angFromHoriz)), [0, Math.sin(angFromHoriz), 0]));
+      const length = p.maxBranchLen * lenFactor * (0.8 + rng() * 0.4);
+      grow(lp.pos, dir, length, lp.r * 0.5, 1);
+    }
   }
 
   // Normalize positions to height 1 (radii stay as fractions of the trunk).

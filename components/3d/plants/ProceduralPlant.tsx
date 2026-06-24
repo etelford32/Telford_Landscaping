@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { PlacedPlant, calculatePlantSize } from "@/lib/plantData";
 import {
   generateDecurrentTree,
+  generateExcurrentTree,
   generateShrubShell,
   generateTree,
   type BranchSegment,
@@ -12,7 +13,12 @@ import {
   type PlantSkeleton,
 } from "@/lib/procedural/treeGen";
 import { getBarkBumpTexture, getLeafTexture, type LeafKind } from "@/lib/procedural/leafTexture";
-import { COAST_LIVE_OAK, oakDimensions, type OakAllometry } from "@/lib/growth/oakGrowth";
+import {
+  COAST_LIVE_OAK,
+  COAST_REDWOOD,
+  treeDimensions,
+  type TreeAllometry,
+} from "@/lib/growth/treeAllometry";
 
 // Species that opt into the procedural branches-and-leaves renderer. Everything
 // else stays on the clustered models in PlantModels.tsx — this is the phased
@@ -21,16 +27,18 @@ export const PROCEDURAL_SPECIES = new Set<string>([
   "acer-palmatum-sango-kaku",
   "buxus-sempervirens-suffruticosa",
   "quercus-agrifolia",
+  "sequoia-sempervirens",
 ]);
 
-// Shape ratios handed to the decurrent (oak) generator, derived per-age from
-// the allometric growth model so form tracks real dimensions.
-interface OakShape {
-  crownWidthRatio: number; // crown spread / height — biases branch spread
+// Shape ratios handed to the decurrent/excurrent generators, derived per-age
+// from the allometric growth model so form tracks real dimensions.
+interface TreeShape {
+  crownWidthRatio: number; // crown spread / height (decurrent: biases spread)
+  crownBase: number; // height fraction where the live crown starts (excurrent)
 }
 
 interface Preset {
-  generate: (seed: number, maturity: number, shape?: OakShape) => PlantSkeleton;
+  generate: (seed: number, maturity: number, shape?: TreeShape) => PlantSkeleton;
   leafKind: LeafKind;
   formMaturityAge: number; // age at which branch structure is fully developed
   leafSize: number; // leaf size in normalized skeleton space
@@ -39,7 +47,7 @@ interface Preset {
   barkThick: string; // color of the trunk
   // When set, dimensions come from this scientific allometric model instead of
   // the hand-authored size arrays, and the decurrent generator is used.
-  oak?: OakAllometry;
+  allometry?: TreeAllometry;
 }
 
 // Maple leans green with a scatter of amber/copper for the Sango-kaku turn;
@@ -51,6 +59,8 @@ const MAPLE_PALETTE = [
 const BOXWOOD_PALETTE = ["#2E5A2E", "#356731", "#274E28", "#3C6E36", "#2A572B"];
 // Coast live oak: dark, glossy, evergreen greens.
 const OAK_PALETTE = ["#2F4A22", "#365A28", "#3E6B2E", "#2A4420", "#436F30", "#314E24"];
+// Coast redwood: deep blue-greens.
+const REDWOOD_PALETTE = ["#2E4A38", "#35583F", "#2A4233", "#3C6147", "#314E3A", "#274033"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -100,7 +110,7 @@ const PRESETS: Record<string, Preset> = {
     leafPalette: OAK_PALETTE,
     barkThin: "#6E6258", // gray-brown; darkens and furrows with age
     barkThick: "#463D36",
-    oak: COAST_LIVE_OAK,
+    allometry: COAST_LIVE_OAK,
     generate: (seed, _m, shape) =>
       generateDecurrentTree(seed, 1, {
         forkHeight: 0.3,
@@ -117,6 +127,31 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.15,
         crownWidthRatio: shape?.crownWidthRatio ?? 1.0,
         leafStartDepth: 1,
+        leavesPerTwig: 5,
+      }),
+  },
+  "sequoia-sempervirens": {
+    leafKind: "redwood",
+    formMaturityAge: 30,
+    leafSize: 0.03, // flat needle sprays
+    leafPalette: REDWOOD_PALETTE,
+    barkThin: "#6E5A48", // gray-brown young twigs
+    barkThick: "#7E4A33", // thick reddish-brown fibrous trunk
+    allometry: COAST_REDWOOD,
+    generate: (seed, _m, shape) =>
+      generateExcurrentTree(seed, 1, {
+        trunkSegments: 14,
+        crownBase: shape?.crownBase ?? 0.18,
+        tiers: 12,
+        branchesPerTier: 5,
+        maxBranchLen: 0.1,
+        branchDroop: 0.35,
+        subDepth: 2,
+        branchMin: 2,
+        branchMax: 3,
+        lengthFalloff: 0.6,
+        radiusFalloff: 0.6,
+        segmentsPerBranch: 3,
         leavesPerTwig: 5,
       }),
   },
@@ -159,8 +194,8 @@ export default function ProceduralPlant({
   // Oaks size from the scientific allometric model; everything else uses the
   // hand-authored growth arrays. `size` is in feet (height, crown width).
   const size = useMemo(() => {
-    if (preset.oak) {
-      const d = oakDimensions(preset.oak, plant.age, plant.scale);
+    if (preset.allometry) {
+      const d = treeDimensions(preset.allometry, plant.age, plant.scale);
       return { height: d.height, width: d.crownWidth };
     }
     return calculatePlantSize(plant.speciesId, plant.age, plant.scale);
@@ -177,14 +212,17 @@ export default function ProceduralPlant({
   // orders with age so the same trunk and limbs persist and extend. Other
   // species regenerate per integer year.
   const oakFull = useMemo(() => {
-    if (!preset.oak) return null;
-    const mature = oakDimensions(preset.oak, preset.formMaturityAge, plant.scale);
-    const shape: OakShape = { crownWidthRatio: mature.crownWidth / Math.max(1, mature.height) };
+    if (!preset.allometry) return null;
+    const mature = treeDimensions(preset.allometry, preset.formMaturityAge, plant.scale);
+    const shape: TreeShape = {
+      crownWidthRatio: mature.crownWidth / Math.max(1, mature.height),
+      crownBase: Math.max(0.05, 1 - mature.crownHeight / Math.max(1, mature.height)),
+    };
     return preset.generate(seed, 1, shape);
   }, [preset, seed, plant.scale]);
 
   const otherSkeleton = useMemo(
-    () => (preset.oak ? null : preset.generate(seed, maturity)),
+    () => (preset.allometry ? null : preset.generate(seed, maturity)),
     // maturity is derived from year
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [preset, seed, year]
@@ -193,7 +231,7 @@ export default function ProceduralPlant({
   // Resolve what to draw this frame: revealed branches + their foliage, and the
   // trunk thickness (oak: from the current year's DBH).
   const draw = useMemo(() => {
-    if (preset.oak && oakFull) {
+    if (preset.allometry && oakFull) {
       const maxOrder = oakFull.maxOrder ?? 1;
       const rev = Math.max(1, Math.round(1 + smoothstep(maturity) * (maxOrder - 1)));
       const segments = oakFull.segments.filter((s) => (s.order ?? 0) <= rev);
@@ -201,7 +239,7 @@ export default function ProceduralPlant({
         const o = l.order ?? 0;
         return o <= rev && o >= rev - 1; // foliage rides the current growth front
       });
-      const d = oakDimensions(preset.oak, plant.age, plant.scale);
+      const d = treeDimensions(preset.allometry, plant.age, plant.scale);
       const radiusScale = d.dbh / 24 / Math.max(1, d.height); // DBH -> normalized trunk radius
       return { segments, leaves, height: oakFull.height, radiusScale };
     }
@@ -241,15 +279,19 @@ export default function ProceduralPlant({
     [leafTex]
   );
 
-  // Height scales uniformly to the allometric height. For the oak we also drive
-  // crown width from the model (the generator's natural spread is broader than
-  // the species' width:height), so both dimensions match the science.
+  // Height scales uniformly to the allometric height. For allometric species
+  // (oak, redwood) we also drive crown width from the model, since the
+  // generator's natural spread differs from the species' true width:height —
+  // so both dimensions match the science.
   const heightScale = (size.height / 5) / draw.height;
   const widthScale =
-    preset.oak && oakFull
+    preset.allometry && oakFull
       ? (size.width / 5 / 2) / Math.max(0.05, oakFull.spread)
       : heightScale;
   const scaleVec: [number, number, number] = [widthScale, heightScale, widthScale];
+  // The group scales trunk radius by widthScale (radii live in x/z); correct it
+  // so the DBH-derived thickness is preserved under the non-uniform scale.
+  const branchRadiusScale = (draw.radiusScale * heightScale) / widthScale;
   const selR = Math.max(0.4, (size.width / 5) * 0.6);
 
   return (
@@ -265,7 +307,7 @@ export default function ProceduralPlant({
           material={branchMat}
           barkThin={preset.barkThin}
           barkThick={preset.barkThick}
-          radiusScale={draw.radiusScale}
+          radiusScale={branchRadiusScale}
         />
         <LeafInstances
           leaves={draw.leaves}

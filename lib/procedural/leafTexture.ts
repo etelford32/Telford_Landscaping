@@ -8,7 +8,7 @@
 
 import * as THREE from "three";
 
-export type LeafKind = "maple" | "boxwood" | "oak";
+export type LeafKind = "maple" | "boxwood" | "oak" | "redwood";
 
 const leafCache = new Map<LeafKind, THREE.Texture>();
 let barkBump: THREE.Texture | null = null;
@@ -18,6 +18,7 @@ export function getLeafTexture(kind: LeafKind): THREE.Texture {
   if (tex) return tex;
   if (kind === "boxwood") tex = drawBoxwoodLeaf();
   else if (kind === "oak") tex = drawOakLeaf();
+  else if (kind === "redwood") tex = drawRedwoodSpray();
   else tex = drawMapleLeaf();
   leafCache.set(kind, tex);
   return tex;
@@ -187,6 +188,53 @@ function drawOakLeaf(): THREE.CanvasTexture {
   ctx.moveTo(cx, size * 0.92);
   ctx.lineTo(cx, size * 0.1);
   ctx.stroke();
+
+  return makeTexture(c);
+}
+
+// Flat needle spray (the coast redwood's "green feather"): a central rachis
+// with needles angled toward the tip, longest at the base. Neutral mask; color
+// comes from the per-instance palette. Tall card — its length runs up +Y.
+function drawRedwoodSpray(): THREE.CanvasTexture {
+  const w = 48;
+  const h = 96;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2;
+  const baseY = h * 0.96;
+  const tipY = h * 0.06;
+
+  ctx.lineCap = "round";
+  // rachis
+  ctx.strokeStyle = "#b0b0b0";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(cx, baseY);
+  ctx.lineTo(cx, tipY);
+  ctx.stroke();
+
+  // needles, angled toward the tip, fanning shorter as they climb
+  ctx.strokeStyle = "#9c9c9c";
+  ctx.lineWidth = 2.3;
+  const pairs = 13;
+  for (let i = 0; i < pairs; i++) {
+    const t = i / (pairs - 1);
+    const y = baseY - t * (baseY - tipY);
+    const nlen = w * 0.42 * (1 - t * 0.78);
+    const dy = -nlen * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(cx, y);
+    ctx.lineTo(cx + nlen, y + dy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, y);
+    ctx.lineTo(cx - nlen, y + dy);
+    ctx.stroke();
+  }
 
   return makeTexture(c);
 }
