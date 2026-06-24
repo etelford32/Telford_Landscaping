@@ -8,6 +8,7 @@ import {
   generateExcurrentTree,
   generateShrubShell,
   generateTree,
+  leafCountForLAI,
   type BranchSegment,
   type LeafPlacement,
   type PlantSkeleton,
@@ -120,7 +121,7 @@ const PRESETS: Record<string, Preset> = {
         curve: 0.16,
         gravitropism: 0.25,
         leafStartDepth: 3,
-        leavesPerTwig: 6,
+        leavesPerTwig: leafCountForLAI(6, 3.5), // Japanese maple: LAI ≈ 3.5
         phyllo: { pattern: "opposite", petioleAngle: 0.9, lad: 0.6 }, // Acer: decussate
       }),
   },
@@ -136,7 +137,7 @@ const PRESETS: Record<string, Preset> = {
         height: 1,
         width: 1.05,
         trunkRadius: 0.06,
-        leafCount: 1100,
+        leafCount: 1100, // already a dense, sheared shell — LAI factor N/A here
         clip: 0.42,
       }),
   },
@@ -164,7 +165,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.15,
         crownWidthRatio: shape?.crownWidthRatio ?? 1.0,
         leafStartDepth: 1,
-        leavesPerTwig: 5,
+        leavesPerTwig: leafCountForLAI(5, 5.0), // coast live oak: dense evergreen (LAI ≈ 5)
       }),
   },
   "sequoia-sempervirens": {
@@ -189,7 +190,7 @@ const PRESETS: Record<string, Preset> = {
         lengthFalloff: 0.6,
         radiusFalloff: 0.6,
         segmentsPerBranch: 3,
-        leavesPerTwig: 5,
+        leavesPerTwig: leafCountForLAI(5, 6.5), // coast redwood: very dense conifer (LAI ≈ 6.5)
         phyllo: { pattern: "distichous", petioleAngle: 1.45, lad: 0.85, internode: 0.015 }, // flat 2-ranked sprays
       }),
   },
@@ -217,7 +218,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.28, // pendulous outer branchlets
         crownWidthRatio: shape?.crownWidthRatio ?? 0.85,
         leafStartDepth: 2, // open, airy crown
-        leavesPerTwig: 4,
+        leavesPerTwig: leafCountForLAI(4, 2.5), // valley oak: open deciduous (LAI ≈ 2.5)
       }),
   },
   "quercus-douglasii": {
@@ -244,7 +245,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.14,
         crownWidthRatio: shape?.crownWidthRatio ?? 1.0,
         leafStartDepth: 2,
-        leavesPerTwig: 4,
+        leavesPerTwig: leafCountForLAI(4, 1.5), // blue oak: sparse savanna canopy (LAI ≈ 1.5)
       }),
   },
   "arctostaphylos-densiflora": {
@@ -271,7 +272,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.1,
         crownWidthRatio: shape?.crownWidthRatio ?? 1.3,
         leafStartDepth: 2, // bare crooked lower limbs show the red bark
-        leavesPerTwig: 7,
+        leavesPerTwig: leafCountForLAI(7, 2.0), // manzanita: open chaparral shrub (LAI ≈ 2)
         phyllo: { pattern: "spiral", lad: 0.2, petioleAngle: 0.8 }, // erectophile: leaves held near-vertical
       }),
   },
@@ -299,7 +300,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.12,
         crownWidthRatio: shape?.crownWidthRatio ?? 0.9,
         leafStartDepth: 1, // magenta bloom studs the branches (cauliflory)
-        leavesPerTwig: 8, // dense bloom
+        leavesPerTwig: leafCountForLAI(8, 2.0), // western redbud: open small tree (LAI ≈ 2)
       }),
   },
   "pinus-radiata": {
@@ -325,7 +326,7 @@ const PRESETS: Record<string, Preset> = {
         lengthFalloff: 0.62,
         radiusFalloff: 0.62,
         segmentsPerBranch: 3,
-        leavesPerTwig: 5,
+        leavesPerTwig: leafCountForLAI(5, 3.5), // Monterey pine: moderate conifer (LAI ≈ 3.5)
         phyllo: { pattern: "fascicle", petioleAngle: 1.2, lad: 0.5 }, // Pinus: needle tufts
       }),
   },
@@ -353,7 +354,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.16, // arching habit
         crownWidthRatio: shape?.crownWidthRatio ?? 0.9,
         leafStartDepth: 1, // bloom smothers the whole shrub
-        leavesPerTwig: 8,
+        leavesPerTwig: leafCountForLAI(8, 2.5), // blueblossom ceanothus (LAI ≈ 2.5)
       }),
   },
   "heteromeles-arbutifolia": {
@@ -380,7 +381,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.1,
         crownWidthRatio: shape?.crownWidthRatio ?? 0.76,
         leafStartDepth: 2,
-        leavesPerTwig: 6,
+        leavesPerTwig: leafCountForLAI(6, 3.5), // toyon: dense evergreen (LAI ≈ 3.5)
       }),
   },
   "carpenteria-californica": {
@@ -407,7 +408,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.14,
         crownWidthRatio: shape?.crownWidthRatio ?? 0.92,
         leafStartDepth: 1, // flowers out to the branch tips
-        leavesPerTwig: 8,
+        leavesPerTwig: leafCountForLAI(8, 2.5), // bush anemone (LAI ≈ 2.5)
         phyllo: { pattern: "opposite", lad: 0.6 }, // Carpenteria: opposite-leaved
       }),
   },
@@ -435,7 +436,7 @@ const PRESETS: Record<string, Preset> = {
         droop: 0.12,
         crownWidthRatio: shape?.crownWidthRatio ?? 1.0,
         leafStartDepth: 1, // dense foliage to the interior
-        leavesPerTwig: 9,
+        leavesPerTwig: leafCountForLAI(9, 4.5), // coffeeberry: very dense mound (LAI ≈ 4.5)
       }),
   },
 };

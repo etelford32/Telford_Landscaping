@@ -5,6 +5,8 @@ import {
   generateDecurrentTree,
   generateExcurrentTree,
   phyllotaxisLayout,
+  laiFactor,
+  leafCountForLAI,
   type PlantSkeleton,
   type TreeParams,
   type DecurrentParams,
@@ -242,6 +244,21 @@ describe("phyllotaxisLayout (botanical leaf arrangement)", () => {
 
   it("returns nothing for non-positive counts", () => {
     expect(phyllotaxisLayout({ pattern: "spiral" }, 0).length).toBe(0);
+  });
+});
+
+describe("LAI canopy density", () => {
+  it("laiFactor is monotonic, centered on the reference, and bounded", () => {
+    expect(laiFactor(1.5)).toBeLessThan(laiFactor(6.5));
+    expect(laiFactor(3.5)).toBeCloseTo(1, 6);
+    expect(laiFactor(100)).toBeLessThanOrEqual(1.9);
+    expect(laiFactor(0)).toBeGreaterThanOrEqual(0.45);
+  });
+
+  it("denser canopies (higher LAI) yield more leaves, within clamps", () => {
+    expect(leafCountForLAI(5, 6.5)).toBeGreaterThan(leafCountForLAI(5, 1.5));
+    expect(leafCountForLAI(4, 1.5)).toBeGreaterThanOrEqual(2);
+    expect(leafCountForLAI(12, 8)).toBeLessThanOrEqual(14);
   });
 });
 

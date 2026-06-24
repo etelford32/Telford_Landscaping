@@ -222,6 +222,21 @@ export function phyllotaxisLayout(spec: PhyllotaxisSpec, count: number): LeafNod
   return out;
 }
 
+// Leaf Area Index → a bounded canopy-density multiplier. LAI (one-sided leaf
+// area per unit ground area) is the standard measure of how dense a canopy is:
+// ~1-2 = open woodland / chaparral, ~3-5 = typical broadleaf, ~6-8 = dense
+// conifer. Referenced to ~3.5 so a median-density species is left unchanged;
+// clamped so no species explodes or vanishes.
+export function laiFactor(lai: number, ref = 3.5): number {
+  return Math.max(0.45, Math.min(1.9, lai / ref));
+}
+
+// Per-twig (or per-shell) leaf count scaled for a species' LAI, clamped for
+// sanity and instancing cost.
+export function leafCountForLAI(base: number, lai: number): number {
+  return Math.max(2, Math.min(14, Math.round(base * laiFactor(lai))));
+}
+
 // Emit `count` leaves as a phyllotactic shoot growing from `base` along `axis`.
 // Each leaf gets a petiole-tilted midrib (`dir`) and a light-facing normal
 // (`face`) derived from the species' leaf-angle distribution — so the canopy
