@@ -22,7 +22,7 @@ export function useCameraTransition(
   targetLookAt: [number, number, number] | null,
   options: CameraTransitionOptions = {}
 ) {
-  const { camera } = useThree();
+  const { camera, invalidate } = useThree();
   const { duration = 1.0, easing = defaultEasing } = options;
 
   const transitionRef = useRef<{
@@ -51,8 +51,9 @@ export function useCameraTransition(
         endLookAt: new Vector3(...targetLookAt),
         duration: duration * 1000, // convert to milliseconds
       };
+      invalidate(); // kick off the first frame (canvas runs in on-demand mode)
     }
-  }, [targetPosition, targetLookAt, camera, duration]);
+  }, [targetPosition, targetLookAt, camera, duration, invalidate]);
 
   // Animate camera on each frame
   useFrame(() => {
@@ -78,10 +79,13 @@ export function useCameraTransition(
     );
     camera.lookAt(currentLookAt);
 
-    // End transition
+    // End transition, or keep requesting frames while it's still running
+    // (the canvas is on-demand, so nothing else would drive the animation).
     if (progress >= 1) {
       transitionRef.current.active = false;
       transitionRef.current = null;
+    } else {
+      invalidate();
     }
   });
 

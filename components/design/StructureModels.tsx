@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { memo, useRef } from "react";
 import { Mesh } from "three";
 import { PlacedStructure } from "@/lib/structureData";
 import { calculateStructureSize } from "@/lib/structureData";
@@ -11,7 +11,7 @@ interface StructureModelProps {
 }
 
 // Main component that routes to specific structure models
-export function StructureModel({ structure, onClick }: StructureModelProps) {
+function StructureModelImpl({ structure, onClick }: StructureModelProps) {
   const size = calculateStructureSize(
     structure.structureId,
     structure.scale,
@@ -1189,6 +1189,29 @@ function PathModel({ structure, size, onClick }: any) {
     </group>
   );
 }
+
+// Memoized router export. The design canvas re-renders the whole Scene on many
+// interactions (selection, hover, age changes); comparing the meaningful
+// structure fields lets unchanged structures skip their model subtree re-render.
+function structurePropsEqual(a: StructureModelProps, b: StructureModelProps): boolean {
+  const s = a.structure;
+  const t = b.structure;
+  return (
+    a.onClick === b.onClick &&
+    s.id === t.id &&
+    s.structureId === t.structureId &&
+    s.scale === t.scale &&
+    s.rotation === t.rotation &&
+    s.selected === t.selected &&
+    s.style === t.style &&
+    s.position.x === t.position.x &&
+    s.position.y === t.position.y &&
+    s.position.z === t.position.z &&
+    JSON.stringify(s.customDimensions) === JSON.stringify(t.customDimensions)
+  );
+}
+
+export const StructureModel = memo(StructureModelImpl, structurePropsEqual);
 
 // ===== DEFAULT MODEL =====
 

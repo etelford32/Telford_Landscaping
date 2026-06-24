@@ -24,9 +24,11 @@ Read-only review of the live render path: the canvas + render loop, the four ECS
 
 ---
 
-## Phase 1 — Stop the bleed (idle & re-render storm)
+## Phase 1 — Stop the bleed (idle & re-render storm) ✅ Implemented
 
 _Goal: make an untouched scene cost ~0. These four are interdependent; ship them together._
+
+> **Status:** Implemented on branch `claude/eloquent-brahmagupta-dr6l3e`. All four items landed: `setState` removed from `useFrame` (grid hover is now event-driven; terrain updates are version-driven), `frameloop="demand"` with `invalidate()` wired into camera transitions and terrain edits, `React.memo` + field comparators on `PlantModel`/`StructureModel`/`HouseModel`, and the shadow map reduced 2048→1024. Typecheck clean.
 
 | # | Fix | Files | Effort | Impact |
 |---|-----|-------|--------|--------|

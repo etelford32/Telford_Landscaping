@@ -6,14 +6,16 @@
 "use client";
 
 import { useRef, useEffect, useMemo } from 'react';
-import { Mesh, PlaneGeometry, BufferAttribute } from 'three';
+import { Mesh, PlaneGeometry } from 'three';
 import { TerrainManager } from '@/lib/terrain/TerrainManager';
-import { useFrame } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 
 interface EditableTerrainProps {
   terrainManager: TerrainManager;
   grassColor?: string;
   showWireframe?: boolean;
+  /** Bumped by TerrainManager's change counter; drives heightmap re-application. */
+  version?: number;
   onTerrainClick?: (position: { x: number; y: number; z: number }) => void;
 }
 
@@ -21,10 +23,11 @@ export default function EditableTerrain({
   terrainManager,
   grassColor = '#4a7c2f',
   showWireframe = false,
+  version = 0,
   onTerrainClick,
 }: EditableTerrainProps) {
   const meshRef = useRef<Mesh>(null);
-  const geometryRef = useRef<PlaneGeometry | null>(null);
+  const { invalidate } = useThree();
 
   const config = terrainManager.getConfig();
   const { size, resolution } = config;
@@ -38,51 +41,25 @@ export default function EditableTerrain({
       resolution
     );
     geom.rotateX(-Math.PI / 2); // Make it horizontal
-    geometryRef.current = geom;
     return geom;
   }, [size, resolution]);
 
-  // Update vertex heights from heightmap
+  // Apply the heightmap to the geometry whenever the terrain changes.
+  // Previously this polled every frame in useFrame; it's now driven by the
+  // `version` counter that TerrainManager bumps on every mutation, and by the
+  // `geometry` identity so a rebuilt mesh (size/resolution change) re-applies.
   useEffect(() => {
-    if (!geometryRef.current) return;
-
     const heightmap = terrainManager.getHeightmap();
-    const positions = geometryRef.current.attributes.position;
+    const positions = geometry.attributes.position;
 
-    // Update Y coordinates (height) for each vertex
     for (let i = 0; i < positions.count; i++) {
-      const height = heightmap[i] || 0;
-      positions.setY(i, height);
+      positions.setY(i, heightmap[i] || 0);
     }
 
     positions.needsUpdate = true;
-    geometryRef.current.computeVertexNormals(); // Recalculate normals for proper lighting
-  }, [terrainManager]);
-
-  // Re-render when terrain changes (triggered by TerrainManager)
-  useFrame(() => {
-    if (!geometryRef.current) return;
-
-    const heightmap = terrainManager.getHeightmap();
-    const positions = geometryRef.current.attributes.position as BufferAttribute;
-
-    // Check if heightmap was updated (simple check)
-    let needsUpdate = false;
-    for (let i = 0; i < Math.min(10, positions.count); i++) {
-      if (Math.abs(positions.getY(i) - (heightmap[i] || 0)) > 0.001) {
-        needsUpdate = true;
-        break;
-      }
-    }
-
-    if (needsUpdate) {
-      for (let i = 0; i < positions.count; i++) {
-        positions.setY(i, heightmap[i] || 0);
-      }
-      positions.needsUpdate = true;
-      geometryRef.current.computeVertexNormals();
-    }
-  });
+    geometry.computeVertexNormals(); // Recalculate normals for proper lighting
+    invalidate(); // Request a render (canvas runs in on-demand mode)
+  }, [terrainManager, version, geometry, invalidate]);
 
   // Handle click
   const handleClick = (event: any) => {

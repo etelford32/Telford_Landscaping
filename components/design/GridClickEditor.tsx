@@ -6,8 +6,7 @@
 "use client";
 
 import { useRef, useState } from 'react';
-import { Mesh, Vector3, Raycaster, Camera } from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { Mesh, Vector3 } from 'three';
 import { Html } from '@react-three/drei';
 
 interface GridClickEditorProps {
@@ -30,37 +29,38 @@ export default function GridClickEditor({
   const meshRef = useRef<Mesh>(null);
   const [hoverPosition, setHoverPosition] = useState<Vector3 | null>(null);
   const [showHover, setShowHover] = useState(false);
-  const { camera, raycaster, pointer } = useThree();
+  const lastSnap = useRef<{ x: number; z: number } | null>(null);
 
   // Snap to grid
   const snapToGrid = (value: number): number => {
     return Math.round(value / cellSize) * cellSize;
   };
 
-  // Handle pointer move for hover effect
-  useFrame(() => {
-    if (!enabled || !meshRef.current) return;
+  // Handle pointer move for hover effect.
+  // Event-driven (was a per-frame raycast in useFrame) so it costs nothing while
+  // the pointer is still and works with the canvas's on-demand frameloop. Uses
+  // the intersection point R3F already computed for this mesh.
+  const handlePointerMove = (event: any) => {
+    if (!enabled) return;
+    event.stopPropagation();
 
-    raycaster.setFromCamera(pointer, camera);
-    const intersects = raycaster.intersectObject(meshRef.current);
+    const point = event.point;
+    const snappedX = snapToGrid(point.x);
+    const snappedZ = snapToGrid(point.z);
 
-    if (intersects.length > 0) {
-      const point = intersects[0].point;
-      const snappedX = snapToGrid(point.x);
-      const snappedZ = snapToGrid(point.z);
-
-      // Check if within bounds
-      const halfSize = gridSize / 2;
-      if (Math.abs(snappedX) <= halfSize && Math.abs(snappedZ) <= halfSize) {
+    // Check if within bounds
+    const halfSize = gridSize / 2;
+    if (Math.abs(snappedX) <= halfSize && Math.abs(snappedZ) <= halfSize) {
+      // Only push new state when the snapped cell actually changes
+      if (!lastSnap.current || lastSnap.current.x !== snappedX || lastSnap.current.z !== snappedZ) {
+        lastSnap.current = { x: snappedX, z: snappedZ };
         setHoverPosition(new Vector3(snappedX, 0.05, snappedZ));
-        setShowHover(true);
-      } else {
-        setShowHover(false);
       }
+      setShowHover(true);
     } else {
       setShowHover(false);
     }
-  });
+  };
 
   // Handle click
   const handleClick = (event: any) => {
@@ -82,8 +82,12 @@ export default function GridClickEditor({
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, 0, 0]}
         onClick={handleClick}
+        onPointerMove={handlePointerMove}
         onPointerEnter={() => enabled && setShowHover(true)}
-        onPointerLeave={() => setShowHover(false)}
+        onPointerLeave={() => {
+          setShowHover(false);
+          lastSnap.current = null;
+        }}
       >
         <planeGeometry args={[gridSize, gridSize]} />
         <meshBasicMaterial transparent opacity={0} />
