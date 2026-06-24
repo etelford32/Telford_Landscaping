@@ -38,7 +38,6 @@ const PLANT_PLACEMENTS: SamplePlantDef[] = [
 
   // ── Foundation shrubs — right wing ──
   { speciesId: "arctostaphylos-densiflora", x: 3.8, z: 2.6, scale: 1 },
-  { speciesId: "ceanothus-thyrsiflorus", x: 5.0, z: 2.6, scale: 0.95 },
 
   // ── Entry accents ──
   { speciesId: "carpenteria-californica", x: -1.8, z: 3.2, scale: 0.9 },  // Bush Anemone
