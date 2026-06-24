@@ -232,6 +232,42 @@ Delete the probe before committing.
 
 ---
 
+## 7. Leaf realism — arrangement, density, and light
+
+Foliage is grown from botanical data, not scattered at random. Three layers, all
+unit-tested in `treeGen.test.ts` alongside the growth trajectories.
+
+**Phyllotaxis (arrangement).** `phyllotaxisLayout(spec, count)` is the pure core:
+it returns where `count` leaves sit on a shoot — `(along, azimuth)` — for each
+real pattern:
+
+- `spiral` — alternate, golden-angle (137.5°) divergence; the default.
+- `opposite` — decussate pairs 180° apart, successive pairs at 90° (maple, *Carpenteria*).
+- `whorl` — k leaves per node.
+- `distichous` — 2-ranked flat sprays (redwood).
+- `fascicle` — a needle bundle from one node (pine).
+
+`emitShoot()` turns a layout into `LeafPlacement`s: each leaf gets a
+petiole-tilted midrib (`dir`) and — crucially — a **light-facing normal**
+(`face`) from the species' **leaf-angle distribution** (`lad`: 0 = erectophile /
+vertical, 1 = planophile / horizontal). The renderer rolls each leaf about its
+midrib to present that face to the light, instead of the old random roll that
+left half the cards edge-on (the "confetti" look). Per species: maple opposite,
+oaks and most shrubs spiral, manzanita erectophile (near-vertical leaves),
+redwood distichous, Monterey pine needle fascicles.
+
+**Density (Leaf Area Index).** `leafCountForLAI(base, lai)` scales each species'
+per-twig leaf count by its published LAI (one-sided leaf area per ground area),
+referenced to a median ~3.5 and clamped for instancing cost: redwood ~6.5 and
+coffeeberry ~4.5 read full; blue oak ~1.5 and valley oak ~2.5 stay open and airy.
+`MAX_LEAVES` still bounds the total, so dense species saturate rather than blow up.
+
+**Light.** Leaf cards are folded along the midrib (a ridge in +Z) so they
+self-shade and read 3D. The leaf material adds a dim, species-hued emissive
+(masked by the leaf texture) that fakes subsurface translucency — backlit and
+shadowed leaves keep their colour instead of going black — plus a per-leaf
+sun/shade tint that brightens the top of the canopy and dims the interior.
+
 ## Worked examples
 
 **Coast Live Oak** — decurrent. Low fork, 4 sinuous scaffold limbs, broad
