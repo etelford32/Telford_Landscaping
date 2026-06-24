@@ -144,6 +144,22 @@ export const MANZANITA: TreeAllometry = {
   clearRatio: 0.05, // multi-stem from a low base
 };
 
+// Western Redbud (Cercis occidentalis) — NOT in the UTD; the Eastern Redbud
+// fallback equation extrapolates nonsensically past its range, so these are
+// FITTED to the published field trajectory: moderate growth to a multi-stem
+// small tree ~18 ft tall x ~16 ft wide (≈ as wide as tall) by year 30.
+//   Sources: Calscape, OSU Landscape Plants, UC ANR.
+export const WESTERN_REDBUD: TreeAllometry = {
+  commonName: "Western Redbud",
+  region: "fitted (field trajectory — no UTD entry)",
+  source: "Fitted to Calscape / OSU / UC ANR field sizes",
+  dbhFromAge: { a: 1.18, b: 0.467 },
+  heightFromDbh: { a: -0.146, b: 0.781, c: -0.027 },
+  crownDiaFromDbh: { a: -0.281, b: 0.6655, c: -0.0208 },
+  crownHtFromDbh: { a: -0.2, b: 0.5, c: -0.02 },
+  clearRatio: 0.06, // multi-stem from the base
+};
+
 export interface TreeDimensions {
   dbh: number; // in
   height: number; // ft

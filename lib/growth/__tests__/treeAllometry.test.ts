@@ -5,6 +5,7 @@ import {
   VALLEY_OAK,
   BLUE_OAK,
   MANZANITA,
+  WESTERN_REDBUD,
   treeDbhCm,
   treeDimensions,
 } from "../treeAllometry";
@@ -142,5 +143,21 @@ describe("manzanita growth (fitted shrub)", () => {
   it("starts small and fills in by year 10", () => {
     expect(treeDimensions(MANZANITA, 1).height).toBeLessThan(2.5);
     expect(treeDimensions(MANZANITA, 10).height).toBeGreaterThan(3.5);
+  });
+});
+
+describe("western redbud growth (fitted, multi-stem small tree)", () => {
+  it("follows the field trajectory to ~18 ft tall, ~16 ft wide", () => {
+    const d1 = treeDimensions(WESTERN_REDBUD, 1);
+    const d30 = treeDimensions(WESTERN_REDBUD, 30);
+    expect(d1.height).toBeGreaterThan(2.5);
+    expect(d1.height).toBeLessThan(5);
+    expect(d30.height).toBeGreaterThan(15);
+    expect(d30.height).toBeLessThan(21);
+    expect(d30.crownWidth).toBeGreaterThan(13); // broad, ~as wide as tall
+  });
+
+  it("stays small (well under the oaks/redwood)", () => {
+    expect(treeDimensions(WESTERN_REDBUD, 30).height).toBeLessThan(25);
   });
 });

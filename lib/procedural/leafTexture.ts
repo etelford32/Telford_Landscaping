@@ -14,7 +14,8 @@ export type LeafKind =
   | "oak"
   | "oak-lobed"
   | "redwood"
-  | "manzanita";
+  | "manzanita"
+  | "redbud-flower";
 
 const leafCache = new Map<LeafKind, THREE.Texture>();
 let barkBump: THREE.Texture | null = null;
@@ -27,6 +28,7 @@ export function getLeafTexture(kind: LeafKind): THREE.Texture {
   else if (kind === "oak-lobed") tex = drawOakLobedLeaf();
   else if (kind === "redwood") tex = drawRedwoodSpray();
   else if (kind === "manzanita") tex = drawManzanitaLeaf();
+  else if (kind === "redbud-flower") tex = drawRedbudFlower();
   else tex = drawMapleLeaf();
   leafCache.set(kind, tex);
   return tex;
@@ -349,6 +351,37 @@ function drawRedwoodSpray(): THREE.CanvasTexture {
     ctx.stroke();
   }
 
+  return makeTexture(c);
+}
+
+// A small cluster of redbud blossoms (pea-flowers) for the cauliflorous bloom.
+// Neutral mask; the magenta comes from the palette.
+function drawRedbudFlower(): THREE.CanvasTexture {
+  const size = 48;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d")!;
+  ctx.clearRect(0, 0, size, size);
+
+  const cx = size / 2;
+  const cy = size * 0.55;
+  const blossoms: [number, number, number][] = [
+    [cx, cy, 9],
+    [cx - 9, cy + 3, 7],
+    [cx + 9, cy + 2, 7],
+    [cx - 4, cy - 7, 6.5],
+    [cx + 5, cy - 6, 6.5],
+    [cx, cy + 9, 6],
+  ];
+  for (const [x, y, r] of blossoms) {
+    const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.2, x, y, r);
+    g.addColorStop(0, "#e8e8e8");
+    g.addColorStop(1, "#b4b4b4");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
   return makeTexture(c);
 }
 

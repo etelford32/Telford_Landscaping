@@ -19,6 +19,7 @@ import {
   VALLEY_OAK,
   BLUE_OAK,
   MANZANITA,
+  WESTERN_REDBUD,
   treeDimensions,
   type TreeAllometry,
 } from "@/lib/growth/treeAllometry";
@@ -34,6 +35,7 @@ export const PROCEDURAL_SPECIES = new Set<string>([
   "quercus-douglasii",
   "sequoia-sempervirens",
   "arctostaphylos-densiflora",
+  "cercis-occidentalis",
 ]);
 
 // Shape ratios handed to the decurrent/excurrent generators, derived per-age
@@ -73,6 +75,8 @@ const VALLEY_OAK_PALETTE = ["#4C7A2E", "#5A8C36", "#6B9C40", "#3E6B28", "#588832
 const BLUE_OAK_PALETTE = ["#7A9483", "#86A08C", "#6E8A78", "#90A894", "#7E9888", "#728E7C"];
 // Manzanita 'Howard McMinn': glossy deep greens.
 const MANZANITA_PALETTE = ["#3E6B2E", "#4A7A36", "#557F3D", "#356226", "#48742F", "#5C8540"];
+// Western redbud bloom: vivid magenta / reddish-purple.
+const REDBUD_PALETTE = ["#C71585", "#B81E6F", "#D6308A", "#A8166B", "#C42178", "#CE4D96"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -246,6 +250,33 @@ const PRESETS: Record<string, Preset> = {
         crownWidthRatio: shape?.crownWidthRatio ?? 1.3,
         leafStartDepth: 2, // bare crooked lower limbs show the red bark
         leavesPerTwig: 7,
+      }),
+  },
+  "cercis-occidentalis": {
+    leafKind: "redbud-flower",
+    formMaturityAge: 18,
+    leafSize: 0.04,
+    leafPalette: REDBUD_PALETTE,
+    barkThin: "#8B7860", // young reddish-brown twigs
+    barkThick: "#9A958C", // smooth silver-gray
+    allometry: WESTERN_REDBUD,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
+        forkHeight: 0.12, // multi-stem from the base
+        scaffolds: 5,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.5, // vase: erect-ascending then spreading
+        childAngle: 0.55,
+        lengthFalloff: 0.66,
+        radiusFalloff: 0.7,
+        segmentsPerBranch: 4,
+        sinuosity: 0.25,
+        droop: 0.12,
+        crownWidthRatio: shape?.crownWidthRatio ?? 0.9,
+        leafStartDepth: 1, // magenta bloom studs the branches (cauliflory)
+        leavesPerTwig: 8, // dense bloom
       }),
   },
 };

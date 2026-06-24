@@ -65,6 +65,9 @@ Species currently modeled:
 - `MANZANITA` — *Arctostaphylos densiflora* 'Howard McMinn'. **Fitted** (shrub,
   not in the UTD). A wide multi-stem mound (~6.5 × 8.5 ft) with crooked
   sculptural branches and mahogany-red bark.
+- `WESTERN_REDBUD` — *Cercis occidentalis*. **Fitted** to field data (not in the
+  UTD; the Eastern Redbud fallback equation extrapolates nonsensically). A
+  multi-stem small tree (~18 × 16 ft) rendered in its signature magenta bloom.
 
 > Note: `Sequoia sempervirens` is the **coast redwood**. The "giant sequoia" is
 > a different genus, *Sequoiadendron giganteum*.
