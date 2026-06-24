@@ -4,11 +4,21 @@ import {
   generateShrubShell,
   generateDecurrentTree,
   generateExcurrentTree,
+  phyllotaxisLayout,
   type PlantSkeleton,
   type TreeParams,
   type DecurrentParams,
   type ExcurrentParams,
 } from "../treeGen";
+
+const GOLDEN_ANGLE = 2.399963229728653; // ~137.5°
+
+// Smallest absolute angular separation between two azimuths.
+function angDiff(a: number, b: number): number {
+  let d = Math.abs(a - b) % (2 * Math.PI);
+  if (d > Math.PI) d = 2 * Math.PI - d;
+  return d;
+}
 
 const REDWOOD: ExcurrentParams = {
   trunkSegments: 14,
@@ -185,5 +195,69 @@ describe("generateExcurrentTree (redwood)", () => {
     const b = generateExcurrentTree(9, 1, REDWOOD);
     expect(a.segments.length).toBe(b.segments.length);
     expect(a.leaves.length).toBe(b.leaves.length);
+  });
+});
+
+describe("phyllotaxisLayout (botanical leaf arrangement)", () => {
+  it("spiral diverges by the golden angle and fills the shoot in order", () => {
+    const n = 8;
+    const nodes = phyllotaxisLayout({ pattern: "spiral" }, n);
+    expect(nodes.length).toBe(n);
+    for (let i = 1; i < nodes.length; i++) {
+      expect(nodes[i].azimuth - nodes[i - 1].azimuth).toBeCloseTo(GOLDEN_ANGLE, 6);
+      expect(nodes[i].along).toBeGreaterThan(nodes[i - 1].along);
+    }
+    expect(nodes[0].along).toBeGreaterThan(0);
+    expect(nodes[n - 1].along).toBeLessThan(1);
+  });
+
+  it("opposite places decussate pairs 180° apart, successive pairs at 90°", () => {
+    const nodes = phyllotaxisLayout({ pattern: "opposite" }, 4);
+    expect(nodes.length).toBe(4);
+    expect(angDiff(nodes[0].azimuth, nodes[1].azimuth)).toBeCloseTo(Math.PI, 6);
+    expect(nodes[0].along).toBeCloseTo(nodes[1].along, 6); // a pair shares a node
+    expect(angDiff(nodes[0].azimuth, nodes[2].azimuth)).toBeCloseTo(Math.PI / 2, 6);
+    expect(nodes[2].along).toBeGreaterThan(nodes[0].along);
+  });
+
+  it("whorl puts k evenly-spaced leaves per node", () => {
+    const nodes = phyllotaxisLayout({ pattern: "whorl", perNode: 3 }, 6);
+    expect(nodes.length).toBe(6);
+    expect(nodes[0].along).toBeCloseTo(nodes[2].along, 6); // first three share a node
+    expect(angDiff(nodes[0].azimuth, nodes[1].azimuth)).toBeCloseTo((2 * Math.PI) / 3, 6);
+  });
+
+  it("distichous alternates two ranks 180° apart in one plane", () => {
+    const nodes = phyllotaxisLayout({ pattern: "distichous" }, 5);
+    expect(nodes.length).toBe(5);
+    expect(angDiff(nodes[0].azimuth, nodes[1].azimuth)).toBeCloseTo(Math.PI, 6);
+    expect(angDiff(nodes[0].azimuth, nodes[2].azimuth)).toBeCloseTo(0, 6);
+  });
+
+  it("fascicle bundles every leaf at essentially one node", () => {
+    const nodes = phyllotaxisLayout({ pattern: "fascicle" }, 3);
+    expect(nodes.length).toBe(3);
+    expect(Math.max(...nodes.map((nd) => nd.along))).toBeLessThan(0.1);
+  });
+
+  it("returns nothing for non-positive counts", () => {
+    expect(phyllotaxisLayout({ pattern: "spiral" }, 0).length).toBe(0);
+  });
+});
+
+describe("leaf orientation data", () => {
+  it("attaches a finite light-facing normal to every emitted leaf", () => {
+    for (const s of [
+      generateDecurrentTree(123, 1, OAK),
+      generateExcurrentTree(5, 1, REDWOOD),
+      generateTree(42, 1, MAPLE),
+    ]) {
+      expect(s.leaves.length).toBeGreaterThan(0);
+      expect(
+        s.leaves.every(
+          (l) => l.face !== undefined && l.face.every((c) => Number.isFinite(c))
+        )
+      ).toBe(true);
+    }
   });
 });

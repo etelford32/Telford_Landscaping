@@ -20,10 +20,38 @@ export interface BranchSegment {
 
 export interface LeafPlacement {
   pos: Vec;
-  dir: Vec; // axis the blade extends along (stem -> tip)
-  roll: number; // rotation about dir
+  dir: Vec; // axis the blade extends along (petiole/midrib, stem -> tip)
+  roll: number; // rotation about dir (fallback when `face` is absent)
   scale: number; // relative size multiplier (renderer applies absolute leaf size)
   order?: number; // branch order the leaf sits on
+  face?: Vec; // direction the blade's upper surface points (its normal); when
+  // present the renderer orients the leaf to it instead of using `roll`, so
+  // foliage presents its faces to the light rather than at random angles
+}
+
+// ── phyllotaxis (botanical leaf arrangement) ───────────────────────────────────
+// How leaves attach to a shoot. Real species follow exact patterns; this is the
+// scientific core that replaces random leaf scatter. Kept pure + unit-tested.
+export type PhyllotaxisPattern =
+  | "spiral" // alternate, golden-angle divergence (most broadleaves: oaks, etc.)
+  | "opposite" // decussate pairs, 90° between successive pairs (maple, carpenteria)
+  | "whorl" // k leaves per node
+  | "distichous" // 2-ranked, flat spray (redwood foliage)
+  | "fascicle"; // a tuft/bundle from one node (pine needles)
+
+export interface PhyllotaxisSpec {
+  pattern: PhyllotaxisPattern;
+  divergence?: number; // radians between successive nodes (default golden angle)
+  perNode?: number; // leaves per node for whorls (default 3)
+  petioleAngle?: number; // radians the blade tilts off the shoot axis (default ~1.0)
+  /** Leaf-angle distribution: 0 = erectophile (vertical), 1 = planophile (flat). */
+  lad?: number;
+  internode?: number; // normalized spacing between nodes up the shoot (default 0.02)
+}
+
+export interface LeafNode {
+  along: number; // 0..1 fraction up the shoot
+  azimuth: number; // radians around the shoot axis
 }
 
 export interface PlantSkeleton {
@@ -48,6 +76,7 @@ export interface TreeParams {
   gravitropism: number; // +up / -down bias per segment
   leafStartDepth: number; // branch order at which leaves begin
   leavesPerTwig: number; // leaves clustered at a terminal twig
+  phyllo?: PhyllotaxisSpec; // leaf arrangement (default: spiral)
 }
 
 export interface ShellParams {
@@ -74,6 +103,7 @@ export interface DecurrentParams {
   crownWidthRatio: number; // target spread:height — biases growth outward
   leafStartDepth: number;
   leavesPerTwig: number;
+  phyllo?: PhyllotaxisSpec; // leaf arrangement (default: spiral)
 }
 
 export interface ExcurrentParams {
@@ -90,6 +120,7 @@ export interface ExcurrentParams {
   radiusFalloff: number;
   segmentsPerBranch: number;
   leavesPerTwig: number;
+  phyllo?: PhyllotaxisSpec; // leaf/needle arrangement (default: spiral)
   /** 0 = branches taper to a sharp apex (cone); ~0.5 = fuller, rounder top. */
   apexFullness?: number;
 }
@@ -137,22 +168,117 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-// A leaf splaying outward/up from a twig at `at`, facing `branchDir` with jitter.
-// `up` biases the blade upward (>0) or lets it lie flat / droop (<=0); `spread`
-// controls the lateral fan.
-function makeLeaf(
-  at: Vec,
-  branchDir: Vec,
+const SPIRAL: PhyllotaxisSpec = { pattern: "spiral" };
+
+// Pure phyllotactic layout: where `count` leaves sit on a shoot, expressed as
+// (fraction up the shoot, azimuth around it). This is the botanical heart of the
+// foliage — deterministic and unit-tested, no rendering concerns.
+export function phyllotaxisLayout(spec: PhyllotaxisSpec, count: number): LeafNode[] {
+  const out: LeafNode[] = [];
+  if (count <= 0) return out;
+  const div = spec.divergence ?? GOLDEN_ANGLE;
+
+  if (spec.pattern === "fascicle") {
+    // A bundle from a single node — pine needles fan out together.
+    for (let i = 0; i < count; i++) {
+      const a = count === 1 ? 0 : (i / (count - 1) - 0.5) * 1.2;
+      out.push({ along: 0.02 * i, azimuth: a });
+    }
+    return out;
+  }
+  if (spec.pattern === "opposite") {
+    // Decussate: pairs 180° apart, successive pairs rotated 90°.
+    const nodes = Math.ceil(count / 2);
+    for (let j = 0; j < nodes && out.length < count; j++) {
+      const baseAz = j * (Math.PI / 2);
+      const along = (j + 0.5) / nodes;
+      out.push({ along, azimuth: baseAz });
+      if (out.length < count) out.push({ along, azimuth: baseAz + Math.PI });
+    }
+    return out;
+  }
+  if (spec.pattern === "whorl") {
+    const k = Math.max(2, spec.perNode ?? 3);
+    const nodes = Math.ceil(count / k);
+    for (let j = 0; j < nodes && out.length < count; j++) {
+      const along = (j + 0.5) / nodes;
+      for (let w = 0; w < k && out.length < count; w++) {
+        out.push({ along, azimuth: j * div + w * ((2 * Math.PI) / k) });
+      }
+    }
+    return out;
+  }
+  if (spec.pattern === "distichous") {
+    // 2-ranked: leaves alternate to opposite sides in one plane (flat sprays).
+    for (let i = 0; i < count; i++) {
+      out.push({ along: (i + 0.5) / count, azimuth: (i % 2) * Math.PI });
+    }
+    return out;
+  }
+  // spiral (alternate): the golden-angle default — optimal non-overlap.
+  for (let i = 0; i < count; i++) {
+    out.push({ along: (i + 0.5) / count, azimuth: i * div });
+  }
+  return out;
+}
+
+// Emit `count` leaves as a phyllotactic shoot growing from `base` along `axis`.
+// Each leaf gets a petiole-tilted midrib (`dir`) and a light-facing normal
+// (`face`) derived from the species' leaf-angle distribution — so the canopy
+// presents its surfaces to the light instead of scattering edge-on cards.
+function emitShoot(
+  out: LeafPlacement[],
+  base: Vec,
+  axis: Vec,
+  count: number,
+  scaleMul: number,
+  spec: PhyllotaxisSpec,
   rng: () => number,
-  up = 0.35,
-  spread = 1.4
-): LeafPlacement {
-  const out: Vec = norm([
-    branchDir[0] + (rng() - 0.5) * spread,
-    branchDir[1] + up + (rng() - 0.5) * 0.6,
-    branchDir[2] + (rng() - 0.5) * spread,
-  ]);
-  return { pos: at, dir: out, roll: rng() * Math.PI * 2, scale: 0.7 + rng() * 0.6 };
+  order?: number
+): void {
+  if (count <= 0 || out.length >= MAX_LEAVES) return;
+  const ax = norm(axis);
+  const [u, v] = perpBasis(ax);
+  const pa = spec.petioleAngle ?? 1.0;
+  const lad = spec.lad ?? 0.5;
+  const span = (spec.internode ?? 0.02) * Math.max(1, count);
+
+  for (const nd of phyllotaxisLayout(spec, count)) {
+    if (out.length >= MAX_LEAVES) return;
+    const ca = Math.cos(nd.azimuth);
+    const sa = Math.sin(nd.azimuth);
+    // Outward (radial) direction at this azimuth around the shoot.
+    const radial: Vec = norm([
+      u[0] * ca + v[0] * sa,
+      u[1] * ca + v[1] * sa,
+      u[2] * ca + v[2] * sa,
+    ]);
+    // Midrib: tilt off the shoot axis toward the outward direction, with a touch
+    // of lateral jitter so a shoot isn't mechanically perfect.
+    const jit = (rng() - 0.5) * 0.25;
+    const dir: Vec = norm([
+      ax[0] * Math.cos(pa) + radial[0] * Math.sin(pa) + jit * v[0],
+      ax[1] * Math.cos(pa) + radial[1] * Math.sin(pa),
+      ax[2] * Math.cos(pa) + radial[2] * Math.sin(pa) + jit * v[2],
+    ]);
+    const nodePos = add(base, scale(ax, nd.along * span));
+    const pos = add(nodePos, scale(dir, 0.012)); // short petiole gap off the twig
+    // Blade normal from the leaf-angle distribution: planophile -> up to catch
+    // overhead light; erectophile -> held outward/vertical.
+    const face: Vec = norm([
+      radial[0] * (1 - lad) + (rng() - 0.5) * 0.3,
+      lad + 0.25 + (rng() - 0.5) * 0.2,
+      radial[2] * (1 - lad) + (rng() - 0.5) * 0.3,
+    ]);
+    out.push({
+      pos,
+      dir,
+      face,
+      roll: rng() * Math.PI * 2,
+      scale: (0.7 + rng() * 0.6) * scaleMul,
+      order,
+    });
+  }
 }
 
 // ── branching tree (L-system) ─────────────────────────────────────────────────
@@ -194,12 +320,10 @@ export function generateTree(seed: number, maturity: number, p: TreeParams): Pla
       bounds.maxY = Math.max(bounds.maxY, pos[1]);
       bounds.maxR = Math.max(bounds.maxR, Math.hypot(pos[0], pos[2]));
 
-      // Leaves scattered along higher-order branches.
+      // Leaves arranged along higher-order branches by the species' phyllotaxis.
       if (depth >= p.leafStartDepth && leaves.length < MAX_LEAVES) {
         const n = Math.round(leafDensity * (depth - p.leafStartDepth + 1));
-        for (let k = 0; k < n && leaves.length < MAX_LEAVES; k++) {
-          leaves.push(makeLeaf(pos, d, rng));
-        }
+        emitShoot(leaves, pos, d, n, 1, p.phyllo ?? SPIRAL, rng);
       }
     }
 
@@ -215,10 +339,8 @@ export function generateTree(seed: number, maturity: number, p: TreeParams): Pla
         grow(pos, childDir, childLen, r, depth + 1);
       }
     } else if (leaves.length < MAX_LEAVES) {
-      // Terminal twig — a cluster of leaves.
-      for (let k = 0; k < p.leavesPerTwig && leaves.length < MAX_LEAVES; k++) {
-        leaves.push(makeLeaf(pos, d, rng));
-      }
+      // Terminal twig — a phyllotactic cluster of leaves.
+      emitShoot(leaves, pos, d, p.leavesPerTwig, 1, p.phyllo ?? SPIRAL, rng);
     }
   };
 
@@ -266,7 +388,9 @@ export function generateShrubShell(seed: number, maturity: number, p: ShellParam
     if (py < p.height * 0.08) continue;
 
     const dir: Vec = norm([nx, Math.max(0.15, ny) + 0.25, nz]);
-    leaves.push({ pos: [px, py, pz], dir, roll: rng() * Math.PI * 2, scale: 0.7 + rng() * 0.6 });
+    // Blade faces outward from the shrub surface (the sphere normal), tipped up.
+    const face: Vec = norm([nx, ny + 0.5, nz]);
+    leaves.push({ pos: [px, py, pz], dir, face, roll: rng() * Math.PI * 2, scale: 0.7 + rng() * 0.6 });
   }
 
   return { segments, leaves, height: Math.max(p.height, 1e-3), spread: Math.max(rx, 1e-3) };
@@ -322,12 +446,10 @@ export function generateDecurrentTree(
       r = r1;
     }
 
-    // Foliage clusters ride the branch tips (every order), tagged by order so
-    // the renderer can keep leaves on the current growth front.
+    // Foliage rides the branch tips (every order) as a phyllotactic shoot,
+    // tagged by order so the renderer can keep leaves on the current growth front.
     if (depth >= p.leafStartDepth && leaves.length < MAX_LEAVES) {
-      for (let k = 0; k < p.leavesPerTwig && leaves.length < MAX_LEAVES; k++) {
-        leaves.push({ ...makeLeaf(pos, d, rng), order: depth });
-      }
+      emitShoot(leaves, pos, d, p.leavesPerTwig, 1, p.phyllo ?? SPIRAL, rng, depth);
     }
 
     if (depth < p.maxDepth) {
@@ -419,10 +541,9 @@ export function generateExcurrentTree(
       pos = next;
       r = r1;
     }
-    // flat foliage sprays along the lateral
-    for (let k = 0; k < p.leavesPerTwig && leaves.length < MAX_LEAVES; k++) {
-      leaves.push({ ...makeLeaf(pos, d, rng, -0.05, 0.6), order: depth });
-    }
+    // Foliage sprays/tufts along the lateral, arranged by the species' pattern
+    // (distichous sprays for the redwood, needle fascicles for the pine).
+    emitShoot(leaves, pos, d, p.leavesPerTwig, 1, p.phyllo ?? SPIRAL, rng, depth);
     if (depth < p.subDepth + 1) {
       const count = p.branchMin + Math.floor(rng() * (p.branchMax - p.branchMin + 1));
       const [u, v] = perpBasis(d);

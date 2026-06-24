@@ -121,6 +121,7 @@ const PRESETS: Record<string, Preset> = {
         gravitropism: 0.25,
         leafStartDepth: 3,
         leavesPerTwig: 6,
+        phyllo: { pattern: "opposite", petioleAngle: 0.9, lad: 0.6 }, // Acer: decussate
       }),
   },
   "buxus-sempervirens-suffruticosa": {
@@ -189,6 +190,7 @@ const PRESETS: Record<string, Preset> = {
         radiusFalloff: 0.6,
         segmentsPerBranch: 3,
         leavesPerTwig: 5,
+        phyllo: { pattern: "distichous", petioleAngle: 1.45, lad: 0.85, internode: 0.015 }, // flat 2-ranked sprays
       }),
   },
   "quercus-lobata": {
@@ -270,6 +272,7 @@ const PRESETS: Record<string, Preset> = {
         crownWidthRatio: shape?.crownWidthRatio ?? 1.3,
         leafStartDepth: 2, // bare crooked lower limbs show the red bark
         leavesPerTwig: 7,
+        phyllo: { pattern: "spiral", lad: 0.2, petioleAngle: 0.8 }, // erectophile: leaves held near-vertical
       }),
   },
   "cercis-occidentalis": {
@@ -323,6 +326,7 @@ const PRESETS: Record<string, Preset> = {
         radiusFalloff: 0.62,
         segmentsPerBranch: 3,
         leavesPerTwig: 5,
+        phyllo: { pattern: "fascicle", petioleAngle: 1.2, lad: 0.5 }, // Pinus: needle tufts
       }),
   },
   "ceanothus-thyrsiflorus": {
@@ -404,6 +408,7 @@ const PRESETS: Record<string, Preset> = {
         crownWidthRatio: shape?.crownWidthRatio ?? 0.92,
         leafStartDepth: 1, // flowers out to the branch tips
         leavesPerTwig: 8,
+        phyllo: { pattern: "opposite", lad: 0.6 }, // Carpenteria: opposite-leaved
       }),
   },
   "rhamnus-californica": {
@@ -530,8 +535,19 @@ export default function ProceduralPlant({
   // Shared, stable geometry/material — only instance transforms change.
   const branchGeo = useMemo(() => new THREE.CylinderGeometry(1, 1, 1, 6, 1), []);
   const leafGeo = useMemo(() => {
-    const g = new THREE.PlaneGeometry(1, 1.25);
+    // A leaf card folded along its midrib: the center column (x=0) rides a small
+    // ridge in +Z while the two edges fall away, so the blade catches light and
+    // self-shades like a real leaf instead of reading as a flat sheet.
+    const g = new THREE.PlaneGeometry(1, 1.25, 2, 1);
+    const posAttr = g.attributes.position as THREE.BufferAttribute;
+    const fold = 0.16;
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i);
+      posAttr.setZ(i, fold * (1 - Math.abs(x) / 0.5)); // ridge at the midrib
+    }
+    posAttr.needsUpdate = true;
     g.translate(0, 0.6, 0); // pivot at the stem base so leaves splay from the twig
+    g.computeVertexNormals();
     return g;
   }, []);
   const branchMat = useMemo(() => {
@@ -701,18 +717,38 @@ function LeafInstances({
     const q = new THREE.Quaternion();
     const qRoll = new THREE.Quaternion();
     const yAxis = new THREE.Vector3(0, 1, 0);
+    const zAxis = new THREE.Vector3(0, 0, 1);
     const dir = new THREE.Vector3();
     const pos = new THREE.Vector3();
     const scl = new THREE.Vector3();
     const col = new THREE.Color();
+    const n0 = new THREE.Vector3();
+    const face = new THREE.Vector3();
+    const faceProj = new THREE.Vector3();
+    const crs = new THREE.Vector3();
 
     for (let i = 0; i < leaves.length; i++) {
       const lf = leaves[i];
       pos.set(lf.pos[0], lf.pos[1], lf.pos[2]);
       dir.set(lf.dir[0], lf.dir[1], lf.dir[2]).normalize();
       q.setFromUnitVectors(yAxis, dir);
-      qRoll.setFromAxisAngle(dir, lf.roll);
-      q.premultiply(qRoll);
+      if (lf.face) {
+        // Roll the blade about its midrib so its surface normal points toward the
+        // botanical `face` direction (light-facing), instead of a random angle.
+        n0.copy(zAxis).applyQuaternion(q); // card normal after aligning +Y to dir
+        face.set(lf.face[0], lf.face[1], lf.face[2]);
+        faceProj.copy(face).addScaledVector(dir, -face.dot(dir)); // ⟂ to midrib
+        if (faceProj.lengthSq() > 1e-6) {
+          faceProj.normalize();
+          crs.crossVectors(n0, faceProj);
+          const roll = Math.atan2(crs.dot(dir), THREE.MathUtils.clamp(n0.dot(faceProj), -1, 1));
+          qRoll.setFromAxisAngle(dir, roll);
+          q.premultiply(qRoll);
+        }
+      } else {
+        qRoll.setFromAxisAngle(dir, lf.roll);
+        q.premultiply(qRoll);
+      }
       const s = leafSize * lf.scale;
       scl.set(s, s, s);
       m.compose(pos, q, scl);
