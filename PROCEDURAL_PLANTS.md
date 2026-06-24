@@ -62,6 +62,9 @@ Species currently modeled:
   Small, slow, gnarled, blue-green.
 - `COAST_REDWOOD` — *Sequoia sempervirens* (UTD NoCalC). Tall and narrow
   (H:W ≈ 2.7), excurrent, *fast* — ~13 ft at yr 1 to ~79 ft / 24.7 in DBH by yr 30.
+- `MANZANITA` — *Arctostaphylos densiflora* 'Howard McMinn'. **Fitted** (shrub,
+  not in the UTD). A wide multi-stem mound (~6.5 × 8.5 ft) with crooked
+  sculptural branches and mahogany-red bark.
 
 > Note: `Sequoia sempervirens` is the **coast redwood**. The "giant sequoia" is
 > a different genus, *Sequoiadendron giganteum*.

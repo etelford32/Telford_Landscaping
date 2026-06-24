@@ -128,6 +128,22 @@ export const BLUE_OAK: TreeAllometry = {
   clearRatio: 0.22,
 };
 
+// Manzanita (Arctostaphylos densiflora 'Howard McMinn') — NOT in the UTD (a
+// shrub). Coefficients FITTED to horticultural sizes: moderate ~1-2 ft/yr to a
+// dense mound ~6.5 ft tall x 8.5 ft wide (wider than tall), multi-stemmed and
+// crooked. "DBH" here is the main-stem diameter that drives trunk thickness.
+//   Sources: Calscape, Xera, OSU Landscape Plants, San Marcos Growers.
+export const MANZANITA: TreeAllometry = {
+  commonName: "Manzanita ('Howard McMinn')",
+  region: "fitted (horticultural sizes — no UTD entry)",
+  source: "Fitted to Calscape / Xera / OSU landscape sizes",
+  dbhFromAge: { a: 1.5, b: 0.25 },
+  heightFromDbh: { a: -0.52, b: 0.628, c: -0.0389 },
+  crownDiaFromDbh: { a: -1.046, b: 0.97, c: -0.0628 },
+  crownHtFromDbh: { a: -0.3, b: 0.5, c: -0.03 },
+  clearRatio: 0.05, // multi-stem from a low base
+};
+
 export interface TreeDimensions {
   dbh: number; // in
   height: number; // ft

@@ -8,7 +8,13 @@
 
 import * as THREE from "three";
 
-export type LeafKind = "maple" | "boxwood" | "oak" | "oak-lobed" | "redwood";
+export type LeafKind =
+  | "maple"
+  | "boxwood"
+  | "oak"
+  | "oak-lobed"
+  | "redwood"
+  | "manzanita";
 
 const leafCache = new Map<LeafKind, THREE.Texture>();
 let barkBump: THREE.Texture | null = null;
@@ -20,6 +26,7 @@ export function getLeafTexture(kind: LeafKind): THREE.Texture {
   else if (kind === "oak") tex = drawOakLeaf();
   else if (kind === "oak-lobed") tex = drawOakLobedLeaf();
   else if (kind === "redwood") tex = drawRedwoodSpray();
+  else if (kind === "manzanita") tex = drawManzanitaLeaf();
   else tex = drawMapleLeaf();
   leafCache.set(kind, tex);
   return tex;
@@ -188,6 +195,48 @@ function drawOakLeaf(): THREE.CanvasTexture {
   ctx.beginPath();
   ctx.moveTo(cx, size * 0.92);
   ctx.lineTo(cx, size * 0.1);
+  ctx.stroke();
+
+  return makeTexture(c);
+}
+
+// Small, smooth, leathery ovate manzanita leaf with a pointed tip and a glossy
+// sheen. Neutral mask; color comes from the palette.
+function drawManzanitaLeaf(): THREE.CanvasTexture {
+  const w = 56;
+  const h = 88;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, h * 0.04); // pointed tip
+  ctx.bezierCurveTo(w * 0.96, h * 0.32, w * 0.86, h * 0.92, cx, h * 0.96);
+  ctx.bezierCurveTo(w * 0.14, h * 0.92, w * 0.04, h * 0.32, cx, h * 0.04);
+  ctx.closePath();
+
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, "#cccccc");
+  grad.addColorStop(1, "#9a9a9a");
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // glossy highlight + midrib
+  ctx.strokeStyle = "rgba(255,255,255,0.3)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.1, h * 0.2);
+  ctx.quadraticCurveTo(cx - w * 0.02, h * 0.5, cx - w * 0.05, h * 0.8);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(105,105,105,0.55)";
+  ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(cx, h * 0.1);
+  ctx.lineTo(cx, h * 0.9);
   ctx.stroke();
 
   return makeTexture(c);

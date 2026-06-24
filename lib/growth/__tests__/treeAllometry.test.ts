@@ -4,6 +4,7 @@ import {
   COAST_REDWOOD,
   VALLEY_OAK,
   BLUE_OAK,
+  MANZANITA,
   treeDbhCm,
   treeDimensions,
 } from "../treeAllometry";
@@ -126,5 +127,20 @@ describe("blue oak growth (fitted, slow)", () => {
   it("is slower and smaller than valley oak at 30 years", () => {
     expect(treeDimensions(BLUE_OAK, 30).height).toBeLessThan(treeDimensions(VALLEY_OAK, 30).height);
     expect(treeDbhCm(BLUE_OAK, 30)).toBeLessThan(treeDbhCm(VALLEY_OAK, 30));
+  });
+});
+
+describe("manzanita growth (fitted shrub)", () => {
+  it("mounds to ~6 ft tall x ~8 ft wide, wider than tall", () => {
+    const d30 = treeDimensions(MANZANITA, 30);
+    expect(d30.height).toBeGreaterThan(5.5);
+    expect(d30.height).toBeLessThan(8);
+    expect(d30.crownWidth).toBeGreaterThan(d30.height); // wider than tall
+    expect(d30.crownWidth).toBeGreaterThan(7);
+  });
+
+  it("starts small and fills in by year 10", () => {
+    expect(treeDimensions(MANZANITA, 1).height).toBeLessThan(2.5);
+    expect(treeDimensions(MANZANITA, 10).height).toBeGreaterThan(3.5);
   });
 });

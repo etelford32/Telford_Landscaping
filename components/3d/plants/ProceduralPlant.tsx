@@ -18,6 +18,7 @@ import {
   COAST_REDWOOD,
   VALLEY_OAK,
   BLUE_OAK,
+  MANZANITA,
   treeDimensions,
   type TreeAllometry,
 } from "@/lib/growth/treeAllometry";
@@ -32,6 +33,7 @@ export const PROCEDURAL_SPECIES = new Set<string>([
   "quercus-lobata",
   "quercus-douglasii",
   "sequoia-sempervirens",
+  "arctostaphylos-densiflora",
 ]);
 
 // Shape ratios handed to the decurrent/excurrent generators, derived per-age
@@ -69,6 +71,8 @@ const REDWOOD_PALETTE = ["#2E4A38", "#35583F", "#2A4233", "#3C6147", "#314E3A", 
 const VALLEY_OAK_PALETTE = ["#4C7A2E", "#5A8C36", "#6B9C40", "#3E6B28", "#588832", "#4F8230"];
 // Blue oak: glaucous blue-green / sage (the real foliage cast, not cartoon blue).
 const BLUE_OAK_PALETTE = ["#7A9483", "#86A08C", "#6E8A78", "#90A894", "#7E9888", "#728E7C"];
+// Manzanita 'Howard McMinn': glossy deep greens.
+const MANZANITA_PALETTE = ["#3E6B2E", "#4A7A36", "#557F3D", "#356226", "#48742F", "#5C8540"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -215,6 +219,33 @@ const PRESETS: Record<string, Preset> = {
         crownWidthRatio: shape?.crownWidthRatio ?? 1.0,
         leafStartDepth: 2,
         leavesPerTwig: 4,
+      }),
+  },
+  "arctostaphylos-densiflora": {
+    leafKind: "manzanita",
+    formMaturityAge: 18, // fills in to near-full size by ~18 years
+    leafSize: 0.045,
+    leafPalette: MANZANITA_PALETTE,
+    barkThin: "#A8583E", // fresh peel — lighter red/orange
+    barkThick: "#6E382A", // deep polished mahogany — the signature
+    allometry: MANZANITA,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
+        forkHeight: 0.1, // multi-stem from a low base
+        scaffolds: 5,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.7,
+        childAngle: 0.6,
+        lengthFalloff: 0.66,
+        radiusFalloff: 0.7,
+        segmentsPerBranch: 4,
+        sinuosity: 0.45, // crooked, twisting, sculptural
+        droop: 0.1,
+        crownWidthRatio: shape?.crownWidthRatio ?? 1.3,
+        leafStartDepth: 2, // bare crooked lower limbs show the red bark
+        leavesPerTwig: 7,
       }),
   },
 };
