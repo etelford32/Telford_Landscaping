@@ -22,6 +22,9 @@ export class TerrainManager {
   private config: TerrainConfig;
   private heightmap: Float32Array;
   private onTerrainChange?: () => void;
+  // Bounding box (heightmap index space) of vertices changed since the last
+  // consumeDirtyRegion(); lets the renderer update only the touched region.
+  private dirtyRegion: { minX: number; maxX: number; minZ: number; maxZ: number } | null = null;
 
   constructor(config: Partial<TerrainConfig> = {}, onTerrainChange?: () => void) {
     this.config = {
@@ -37,6 +40,7 @@ export class TerrainManager {
     this.heightmap = new Float32Array(totalVertices).fill(0);
 
     this.onTerrainChange = onTerrainChange;
+    this.markAllDirty();
   }
 
   /**
@@ -62,6 +66,7 @@ export class TerrainManager {
       // For now, just reset to flat
     }
 
+    this.markAllDirty();
     this.notifyChange();
   }
 
@@ -180,6 +185,7 @@ export class TerrainManager {
       }
     }
 
+    this.markDirty(minX, maxX, minZ, maxZ);
     this.notifyChange();
   }
 
@@ -251,6 +257,7 @@ export class TerrainManager {
    */
   public reset(): void {
     this.heightmap.fill(0);
+    this.markAllDirty();
     this.notifyChange();
   }
 
@@ -265,6 +272,7 @@ export class TerrainManager {
     }
 
     this.heightmap.set(data);
+    this.markAllDirty();
     this.notifyChange();
     return true;
   }
@@ -300,6 +308,7 @@ export class TerrainManager {
       }
     }
 
+    this.markAllDirty();
     this.notifyChange();
   }
 
@@ -334,5 +343,42 @@ export class TerrainManager {
    */
   private notifyChange(): void {
     this.onTerrainChange?.();
+  }
+
+  /**
+   * Expand the pending dirty region to include the given index-space box.
+   */
+  private markDirty(minX: number, maxX: number, minZ: number, maxZ: number): void {
+    const { resolution } = this.config;
+    minX = Math.max(0, Math.min(resolution, minX));
+    maxX = Math.max(0, Math.min(resolution, maxX));
+    minZ = Math.max(0, Math.min(resolution, minZ));
+    maxZ = Math.max(0, Math.min(resolution, maxZ));
+
+    if (!this.dirtyRegion) {
+      this.dirtyRegion = { minX, maxX, minZ, maxZ };
+    } else {
+      this.dirtyRegion.minX = Math.min(this.dirtyRegion.minX, minX);
+      this.dirtyRegion.maxX = Math.max(this.dirtyRegion.maxX, maxX);
+      this.dirtyRegion.minZ = Math.min(this.dirtyRegion.minZ, minZ);
+      this.dirtyRegion.maxZ = Math.max(this.dirtyRegion.maxZ, maxZ);
+    }
+  }
+
+  /**
+   * Mark the whole heightmap dirty (reset/generate/import/config change).
+   */
+  private markAllDirty(): void {
+    const { resolution } = this.config;
+    this.markDirty(0, resolution, 0, resolution);
+  }
+
+  /**
+   * Return and clear the pending dirty region (null if nothing changed).
+   */
+  public consumeDirtyRegion(): { minX: number; maxX: number; minZ: number; maxZ: number } | null {
+    const region = this.dirtyRegion;
+    this.dirtyRegion = null;
+    return region;
   }
 }

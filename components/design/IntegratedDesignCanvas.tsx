@@ -377,6 +377,7 @@ function IntegratedDesignCanvasInner() {
   const {
     state: designState,
     setState: setDesignState,
+    commit,
     undo,
     redo,
     canUndo,
@@ -631,24 +632,32 @@ function IntegratedDesignCanvasInner() {
     setPendingPlantSpecies(null);
   };
 
-  // Handle plant drag (direct movement)
+  // Handle plant drag (direct movement). Transient so the whole drag collapses
+  // into a single undo step (committed in handleDragEnd) instead of one per move,
+  // and so no per-move JSON snapshot is taken.
   const handlePlantDrag = (id: string, newPosition: { x: number; y: number; z: number }) => {
-    setPlants(plants.map(p =>
-      p.id === id ? { ...p, position: newPosition } : p
-    ));
+    setDesignState((prev) => ({
+      ...prev,
+      plants: prev.plants.map(p =>
+        p.id === id ? { ...p, position: newPosition } : p
+      ),
+    }), { transient: true });
   };
 
-  // Handle structure drag (direct movement)
+  // Handle structure drag (direct movement). Transient — see handlePlantDrag.
   const handleStructureDrag = (id: string, newPosition: { x: number; y: number; z: number }) => {
-    setStructures(structures.map(s =>
-      s.id === id ? { ...s, position: newPosition } : s
-    ));
+    setDesignState((prev) => ({
+      ...prev,
+      structures: prev.structures.map(s =>
+        s.id === id ? { ...s, position: newPosition } : s
+      ),
+    }), { transient: true });
   };
 
-  // Handle drag end (for undo history)
+  // Handle drag end. Closes the transient drag sequence so the next change opens
+  // a fresh undo entry; the final position is already in state.
   const handleDragEnd = () => {
-    // The drag is complete - state has already been updated
-    // This is where we could trigger a state snapshot for undo
+    commit();
   };
 
   // Handle deselect (click on empty canvas)

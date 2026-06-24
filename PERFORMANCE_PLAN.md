@@ -43,9 +43,11 @@ _Goal: make an untouched scene cost ~0. These four are interdependent; ship them
 
 ---
 
-## Phase 2 — Interaction smoothness
+## Phase 2 — Interaction smoothness ✅ Implemented
 
 _Targets the specific actions that stutter: dragging, terrain brushing, cursor tracking._
+
+> **Status:** Implemented on branch `claude/eloquent-brahmagupta-dr6l3e`. (5) `useUndoRedo` no longer double-`JSON.stringify`s on every change; drags use a transient update that collapses a whole gesture into one undo step (committed on drag end). (6) `TerrainManager` now tracks a dirty region; `EditableTerrain` rewrites only the touched vertices and computes analytic heightfield normals over the dirty region + 1-ring instead of a full `computeVertexNormals()`. (7) `CanvasInteractionHandler` attaches its mousemove listener via `useEffect` with cleanup (fixing a leak/stale-closure), throttled to ~30Hz with reused vectors, and the dead `useFrame` is gone. Note: `terrainUpdateCounter` is kept — it now drives both the terrain `version` and the sidebar stats, so it isn't dead. Typecheck clean.
 
 | # | Fix | Files | Effort | Impact |
 |---|-----|-------|--------|--------|

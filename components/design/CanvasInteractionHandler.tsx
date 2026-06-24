@@ -5,8 +5,8 @@
 
 "use client";
 
-import { useCallback, useRef } from 'react';
-import { useThree, useFrame } from '@react-three/fiber';
+import { useEffect, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
 import { Vector2, Vector3, Raycaster, Plane } from 'three';
 
 interface CanvasInteractionHandlerProps {
@@ -20,59 +20,55 @@ export function CanvasInteractionHandler({
   onCursorPositionChange,
   enabled = true,
 }: CanvasInteractionHandlerProps) {
-  const { camera, gl, scene } = useThree();
+  const { camera, gl } = useThree();
+
+  // Reused across events so a fast-moving pointer doesn't allocate per move.
   const raycaster = useRef(new Raycaster());
   const groundPlane = useRef(new Plane(new Vector3(0, 1, 0), 0));
+  const ndc = useRef(new Vector2());
+  const hit = useRef(new Vector3());
   const lastCursorPos = useRef<{ x: number; y: number; z: number }>({ x: 0, y: 0, z: 0 });
+  const lastEmit = useRef(0);
 
-  // Update cursor position on frame (throttled)
-  const frameCount = useRef(0);
-  useFrame(() => {
-    frameCount.current++;
-    // Only update every 3 frames to reduce overhead
-    if (frameCount.current % 3 !== 0) return;
-
-    // Get cursor position from last known mouse position
-    // This is handled by the mousemove event below
-  });
-
-  // Handle mouse move for cursor tracking
-  const handleMouseMove = useCallback((event: MouseEvent) => {
+  // Track the ground-plane cursor position for the status bar. Attached via
+  // useEffect (with cleanup) rather than in the render body, throttled to ~30Hz,
+  // and only emitting when the position actually changed. The previous version
+  // re-attached a stale-closure listener in render and never removed it.
+  useEffect(() => {
     if (!enabled) return;
+    const dom = gl.domElement;
 
-    const rect = gl.domElement.getBoundingClientRect();
-    const ndc = new Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1
-    );
+    const handleMouseMove = (event: MouseEvent) => {
+      const now = performance.now();
+      if (now - lastEmit.current < 33) return; // ~30Hz cap on the React update
 
-    raycaster.current.setFromCamera(ndc, camera);
+      const rect = dom.getBoundingClientRect();
+      ndc.current.set(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      raycaster.current.setFromCamera(ndc.current, camera);
 
-    const intersection = new Vector3();
-    if (raycaster.current.ray.intersectPlane(groundPlane.current, intersection)) {
-      const pos = {
-        x: Math.round(intersection.x * 100) / 100,
-        y: Math.round(intersection.y * 100) / 100,
-        z: Math.round(intersection.z * 100) / 100,
-      };
+      if (!raycaster.current.ray.intersectPlane(groundPlane.current, hit.current)) return;
+
+      const x = Math.round(hit.current.x * 100) / 100;
+      const y = Math.round(hit.current.y * 100) / 100;
+      const z = Math.round(hit.current.z * 100) / 100;
 
       // Only update if position changed significantly
       if (
-        Math.abs(pos.x - lastCursorPos.current.x) > 0.01 ||
-        Math.abs(pos.z - lastCursorPos.current.z) > 0.01
+        Math.abs(x - lastCursorPos.current.x) > 0.01 ||
+        Math.abs(z - lastCursorPos.current.z) > 0.01
       ) {
-        lastCursorPos.current = pos;
-        onCursorPositionChange(pos);
+        lastCursorPos.current = { x, y, z };
+        lastEmit.current = now;
+        onCursorPositionChange({ x, y, z });
       }
-    }
-  }, [enabled, camera, gl.domElement, onCursorPositionChange]);
+    };
 
-  // Attach event listeners
-  const attachedRef = useRef(false);
-  if (!attachedRef.current && gl.domElement) {
-    gl.domElement.addEventListener('mousemove', handleMouseMove);
-    attachedRef.current = true;
-  }
+    dom.addEventListener('mousemove', handleMouseMove);
+    return () => dom.removeEventListener('mousemove', handleMouseMove);
+  }, [enabled, camera, gl, onCursorPositionChange]);
 
   return null; // This is a logic-only component
 }
