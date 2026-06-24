@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Professional Liquid Fertilization Services | Telford Landscapes - Auburn, CA",
+  title: "Professional Liquid Fertilization Services | Telford Landscaping - Auburn, CA",
   description: "Premium liquid fertilization with custom surfactants, slow-release nitrogen, and pest solutions. Prevent disease, heal injuries, and sustain 30+ years of growth. Serving Auburn, Roseville, Granite Bay.",
   keywords: "liquid fertilizer Auburn CA, professional lawn fertilization, slow release nitrogen, custom surfactants, pest control, lawn disease prevention, Roseville fertilization, Granite Bay lawn care, organic fertilizer Northern California",
   openGraph: {

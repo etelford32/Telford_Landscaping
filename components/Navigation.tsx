@@ -104,7 +104,7 @@ export default function Navigation() {
               <div className="relative rounded-xl overflow-hidden shadow-md ring-1 ring-primary-100 group-hover:shadow-lg transition-all duration-500 group-hover:scale-110 leaf-float">
                 <Image
                   src="/telford-logo.jpg"
-                  alt="Telford Landscapes logo"
+                  alt="Telford Landscaping logo"
                   width={48}
                   height={48}
                   priority
@@ -113,7 +113,7 @@ export default function Navigation() {
               </div>
               <div className="relative">
                 <div className="text-xl font-bold bg-gradient-to-r from-primary-700 to-green-700 bg-clip-text text-transparent">
-                  Telford Landscapes
+                  Telford Landscaping
                 </div>
                 <div className="text-xs text-gray-600 flex items-center gap-1">
                   <span>Telford Projects LLC</span>

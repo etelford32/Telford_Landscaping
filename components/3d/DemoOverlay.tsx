@@ -64,7 +64,7 @@ export default function DemoOverlay({ onClose }: DemoOverlayProps) {
                   Unlock Full 3D Design Tools
                 </h3>
                 <p className="text-gray-600">
-                  This is just a preview! With Telford Landscapes PRO, you can:
+                  This is just a preview! With Telford Landscaping PRO, you can:
                 </p>
               </div>
               <button

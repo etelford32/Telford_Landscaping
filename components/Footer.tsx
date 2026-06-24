@@ -15,14 +15,14 @@ export default function Footer() {
               <div className="rounded-lg overflow-hidden shadow-lg ring-1 ring-white/10">
                 <Image
                   src="/telford-logo.jpg"
-                  alt="Telford Landscapes logo"
+                  alt="Telford Landscaping logo"
                   width={48}
                   height={48}
                   className="w-12 h-12 object-cover"
                 />
               </div>
               <div>
-                <div className="text-xl font-bold">Telford Landscapes</div>
+                <div className="text-xl font-bold">Telford Landscaping</div>
                 <div className="text-sm text-gray-400">Telford Projects LLC</div>
               </div>
             </div>

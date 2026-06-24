@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { MapPin, Calendar, Tag } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Portfolio | Telford Landscapes - Completed Projects in Auburn, Roseville & Beyond",
+  title: "Portfolio | Telford Landscaping - Completed Projects in Auburn, Roseville & Beyond",
   description: "View our portfolio of completed landscaping projects in Auburn, Roseville, Granite Bay, Lincoln, and Loomis. Expert craftsmanship and beautiful outdoor transformations.",
   keywords: "landscaping portfolio, Auburn landscaping projects, Roseville landscape design, before and after landscaping, California landscaping gallery",
 };
