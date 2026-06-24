@@ -1,0 +1,281 @@
+# Procedural Plant Modeling
+
+How the homepage hero (and the `/app` design tool) grow trees and shrubs that
+get *more* detailed over a 30-year simulation, with growth driven by published
+science rather than hand-tuned curves.
+
+The system has three layers, each in its own file:
+
+| Layer | File | Responsibility |
+|---|---|---|
+| **Growth science** | `lib/growth/treeAllometry.ts` | age → real dimensions (height, crown, DBH) |
+| **Skeleton generators** | `lib/procedural/treeGen.ts` | seeded L-systems → branches + leaf placements |
+| **Renderer** | `components/3d/plants/ProceduralPlant.tsx` | reveal growth, instance the geometry, scale to the science |
+| Textures | `lib/procedural/leafTexture.ts` | canvas-drawn leaf/needle cards + bark bump |
+
+A species opts in through `PROCEDURAL_SPECIES` in the renderer; anything not yet
+listed falls back to the older clustered models in
+`components/design/PlantModels.tsx`. The rollout was deliberately phased — prove
+each species before widening — and the homepage hero is now **fully migrated**:
+all 13 of its species are procedural. The fallback remains for any other species
+the design tool can place.
+
+---
+
+## 1. Growth science — `treeAllometry.ts`
+
+Real arborists don't model "height over time" directly. They model **trunk
+diameter (DBH) over age**, then derive everything else from DBH with
+**allometric equations**. We use the published coefficients from the **USDA
+Forest Service Urban Tree Database**:
+
+> McPherson, van Doorn & Peper 2016, *Urban Tree Database and Allometric
+> Equations*, GTR-PSW-253 (dataset RDS-2016-0005, table TS6).
+
+Each species is four fitted polynomials:
+
+```
+age (yr)  →  DBH (cm)            (usually near-linear)
+DBH (cm)  →  tree height (m)     (decelerating)
+DBH (cm)  →  crown diameter (m)
+DBH (cm)  →  live-crown height (m)
+```
+
+`treeDimensions(species, age, scale)` runs the chain and returns feet/inches.
+Because DBH grows ~linearly while the height/crown polynomials have negative
+higher-order terms, mature trees keep thickening while height plateaus — the
+real habit falls out of the math.
+
+Each species is validated by a test that **reproduces the published 30-year
+trajectory** (`lib/growth/__tests__/treeAllometry.test.ts`). If a coefficient is
+wrong, that test fails.
+
+Equations are polynomial (`lin`/`quad`/`cub`) by default; some UTD fits use the
+`loglogw1` form, supported via an `loglog` flag (the `c` field then holds the
+fit's MSE).
+
+Species currently modeled:
+
+- `COAST_LIVE_OAK` — *Quercus agrifolia* (UTD NoCalC). Broad, decurrent;
+  crown ≈ as wide as tall by yr 30.
+- `VALLEY_OAK` — *Quercus lobata* (UTD SacVal; loglog height eqn). CA's largest
+  oak — fast, broad, open, pendulous outer branches.
+- `BLUE_OAK` — *Quercus douglasii*. **Not in the UTD** (wildland species);
+  coefficients **fitted** to published dendrochronology rates (~10 yr/inch DBH).
+  Small, slow, gnarled, blue-green.
+- `COAST_REDWOOD` — *Sequoia sempervirens* (UTD NoCalC). Tall and narrow
+  (H:W ≈ 2.7), excurrent, *fast* — ~13 ft at yr 1 to ~79 ft / 24.7 in DBH by yr 30.
+- `MANZANITA` — *Arctostaphylos densiflora* 'Howard McMinn'. **Fitted** (shrub,
+  not in the UTD). A wide multi-stem mound (~6.5 × 8.5 ft) with crooked
+  sculptural branches and mahogany-red bark.
+- `WESTERN_REDBUD` — *Cercis occidentalis*. **Fitted** to field data (not in the
+  UTD; the Eastern Redbud fallback equation extrapolates nonsensically). A
+  multi-stem small tree (~18 × 16 ft) rendered in its signature magenta bloom.
+- `MONTEREY_PINE` — *Pinus radiata*. **Fitted** (not in the UTD — a park/coastal
+  species, not a sampled street tree). Fast excurrent conifer to ~65 ft × 32 ft
+  by yr 30; long needle tufts, dark furrowed bark, fuller-topped than the redwood.
+
+The understory shrubs (all **fitted** — none are in the UTD — and all sharing the
+decurrent, multi-stem-from-a-low-base form):
+
+- `CEANOTHUS` — *Ceanothus thyrsiflorus* (blueblossom). A large, fast California
+  lilac to ~20 × 18 ft, rendered in its signature blue spring bloom.
+- `TOYON` — *Heteromeles arbutifolia* (California holly / Christmas berry). A
+  dense upright evergreen to ~16 × 12 ft (taller than wide), glossy holly leaves.
+- `BUSH_ANEMONE` — *Carpenteria californica*. A rounded evergreen to ~8 ft,
+  rendered in its showy white anemone bloom.
+- `COFFEEBERRY` — *Frangula / Rhamnus californica* 'Eve Case'. A compact, very
+  dense glossy-green mound to ~8 × 8 ft.
+
+With these four the **entire homepage hero scene is procedural** — every one of
+its 13 placed species runs through this system; nothing falls back to the older
+clustered models anymore.
+
+> Note: `Sequoia sempervirens` is the **coast redwood**. The "giant sequoia" is
+> a different genus, *Sequoiadendron giganteum*.
+
+### Plateau clamp (why mature plants stop growing instead of shrinking)
+
+The shrubs are fitted with downward-opening quadratics (`c < 0`) for height and
+crown — they decelerate, which is what we want. But a parabola eventually turns
+back *down*: past its vertex the equation would make a mature shrub **shrink**.
+So `evalEqn` clamps the input to the vertex (`x = -b / 2c`) for any plain
+downward quadratic: the dimension rises, then holds flat at its maximum. The
+trees' vertices sit well beyond their sampled age range, so this is a no-op for
+them — it only matters for the shrubs, which reach their plateau in their 20s. A
+per-species test asserts height/crown are **monotonic non-decreasing out to 60
+years** to lock this in.
+
+---
+
+## 2. Skeleton generators — `treeGen.ts`
+
+Pure, dependency-free TypeScript (so they're unit-testable in node). Each returns
+a `PlantSkeleton`: `segments` (tapered branch cylinders), `leaves` (card
+placements), `height`/`spread` (normalized), and `maxOrder`. Every segment and
+leaf is tagged with its **branch order** (0 = trunk) — that tag is what lets the
+renderer reveal growth over time.
+
+Four forms, picked to match real architecture:
+
+- **`generateTree`** — single-leader L-system with an upward bias. *(Japanese maple.)*
+- **`generateDecurrentTree`** — short stout trunk forks **low** into several
+  codominant scaffold limbs that spread and arch into a broad crown. *(Coast live oak.)*
+- **`generateExcurrentTree`** — one straight **central leader** with tiers of
+  lateral branches that shorten toward the apex → a narrow cone; lower laterals
+  droop, the top lifts. *(Coast redwood, most conifers.)*
+- **`generateShrubShell`** — dense Fibonacci-sphere leaf shell over a stub.
+  *(Boxwood and other sheared evergreens.)*
+
+Common conventions:
+
+- **Radii are stored as fractions of the trunk** (base = 1.0). The renderer
+  multiplies by the real, DBH-derived thickness — so trunk girth is allometric,
+  not guessed.
+- **Positions are normalized to height 1** at the end. The renderer scales to
+  the allometric height.
+- **Seeded** via `mulberry32` — a given plant always generates the same tree,
+  which matters because the growth slider re-renders every frame.
+
+---
+
+## 3. Renderer — `ProceduralPlant.tsx`
+
+### Growth = generate-once + reveal-by-order
+
+For allometric species we generate the **full mature skeleton once** (memoized
+on the seed), then per integer year:
+
+1. Compute `rev`, the revealed branch order, from `maturity` (smoothstepped).
+2. **Show segments with `order ≤ rev`** — trunk and primary limbs always
+   present, finer branches appearing as the tree ages.
+3. **Show leaves on the outer ~2 revealed orders** — foliage rides the current
+   growth front.
+
+So the *same* trunk thickens and the *same* limbs extend and ramify — real,
+legible branch expansion instead of a tree that reshuffles every year. (Non
+-allometric species like the maple still regenerate per year.)
+
+### Scaling to the science
+
+```
+heightScale = allometric height / 5         // 1 world unit ≈ 5 ft
+widthScale  = (allometric crownWidth/2) / skeleton.spread
+group scale = [widthScale, heightScale, widthScale]
+```
+
+Height scales uniformly; **crown width is driven from the model** because a
+generator's natural spread rarely equals the species' true width:height. We tune
+each generator (see §5) so the width correction stays near 1.0 — gentle enough
+to avoid distortion. Trunk radius is then corrected by `heightScale/widthScale`
+so DBH thickness survives the non-uniform scale.
+
+### Instancing
+
+Branches and leaves are each one `InstancedMesh` — one draw call regardless of
+count. Matrices/colors are written in a `useLayoutEffect`. Branch color lerps
+from twig to trunk bark by radius; leaf color samples a per-species palette.
+
+---
+
+## 4. Textures — `leafTexture.ts`
+
+Leaf cards are **canvas-drawn neutral masks** (no external image assets), so the
+renderer can tint each leaf from a palette. `maple` (serrated palmate), `oak`
+(holly-like spiny), `oak-lobed` (deciduous oak), `boxwood` (ovate), `manzanita`
+(leathery ovate), `redwood`/`pine` (needle sprays/tufts), and `redbud-flower` (a
+blossom cluster). Plus a grayscale bark bump map. Cards are alpha-tested and
+double-sided.
+
+Because the mask is neutral and the color is per-instance, one card serves many
+plants: the `redbud-flower` cluster renders the redbud's magenta, the ceanothus's
+blue, and the bush anemone's white simply by swapping palettes; `oak` covers the
+live oak and the toyon's holly; `manzanita` covers the manzanita and the
+coffeeberry. A flowering shrub (ceanothus, bush anemone) is drawn as a **bloom
+mass** — the whole canopy is blossom cards — the same trick the redbud uses.
+
+---
+
+## 5. Tuning workflow (probe-driven, not guesswork)
+
+Because the result is WebGL, we don't eyeball parameters blind. Drop a temporary
+probe test that generates the skeleton and logs geometry stats:
+
+```ts
+const s = generateExcurrentTree(seed, 1, params);
+console.log(`spread/height=${s.spread} medianY=${median(ys)} H:W=${...}`);
+```
+
+Run it, read the numbers, adjust, repeat. This is how the oak's drooping-below-
+ground crown and the redwood's over-broad cone were found and fixed. Targets:
+
+- **Decurrent (oak):** `spread/height ≈ 0.6`, median branch Y ≈ 0.6 (crown sits
+  up on the trunk, not sagging).
+- **Excurrent (redwood):** `H:W ≈ 2.3–2.7`, leader reaches `y ≈ 1.0`.
+
+Delete the probe before committing.
+
+---
+
+## 6. Adding a new species
+
+1. **Growth model** — add a `TreeAllometry` constant in `treeAllometry.ts` with
+   the species' UTD coefficients (or best published curves). Add a test that
+   reproduces its known 30-year trajectory.
+2. **Generator** — reuse one of the four forms, or add a new one if the
+   architecture is genuinely different. Probe-tune its proportions (§5).
+3. **Texture** — add a `LeafKind` + a canvas draw function if the foliage differs.
+4. **Preset** — add an entry to `PRESETS` in `ProceduralPlant.tsx`
+   (`leafKind`, `leafSize`, `leafPalette`, bark colors, `allometry`, `generate`).
+5. **Register** — add the `speciesId` to `PROCEDURAL_SPECIES`.
+6. Build + test + view in a preview deploy; tune from the real render.
+
+---
+
+## 7. Leaf realism — arrangement, density, and light
+
+Foliage is grown from botanical data, not scattered at random. Three layers, all
+unit-tested in `treeGen.test.ts` alongside the growth trajectories.
+
+**Phyllotaxis (arrangement).** `phyllotaxisLayout(spec, count)` is the pure core:
+it returns where `count` leaves sit on a shoot — `(along, azimuth)` — for each
+real pattern:
+
+- `spiral` — alternate, golden-angle (137.5°) divergence; the default.
+- `opposite` — decussate pairs 180° apart, successive pairs at 90° (maple, *Carpenteria*).
+- `whorl` — k leaves per node.
+- `distichous` — 2-ranked flat sprays (redwood).
+- `fascicle` — a needle bundle from one node (pine).
+
+`emitShoot()` turns a layout into `LeafPlacement`s: each leaf gets a
+petiole-tilted midrib (`dir`) and — crucially — a **light-facing normal**
+(`face`) from the species' **leaf-angle distribution** (`lad`: 0 = erectophile /
+vertical, 1 = planophile / horizontal). The renderer rolls each leaf about its
+midrib to present that face to the light, instead of the old random roll that
+left half the cards edge-on (the "confetti" look). Per species: maple opposite,
+oaks and most shrubs spiral, manzanita erectophile (near-vertical leaves),
+redwood distichous, Monterey pine needle fascicles.
+
+**Density (Leaf Area Index).** `leafCountForLAI(base, lai)` scales each species'
+per-twig leaf count by its published LAI (one-sided leaf area per ground area),
+referenced to a median ~3.5 and clamped for instancing cost: redwood ~6.5 and
+coffeeberry ~4.5 read full; blue oak ~1.5 and valley oak ~2.5 stay open and airy.
+`MAX_LEAVES` still bounds the total, so dense species saturate rather than blow up.
+
+**Light.** Leaf cards are folded along the midrib (a ridge in +Z) so they
+self-shade and read 3D. The leaf material adds a dim, species-hued emissive
+(masked by the leaf texture) that fakes subsurface translucency — backlit and
+shadowed leaves keep their colour instead of going black — plus a per-leaf
+sun/shade tint that brightens the top of the canopy and dims the interior.
+
+## Worked examples
+
+**Coast Live Oak** — decurrent. Low fork, 4 sinuous scaffold limbs, broad
+rounded crown; small holly-leaf tufts on the branch tips; DBH-thick gray-brown
+trunk. Crown trends to as-wide-as-tall, matching the UTD numbers.
+
+**Coast Redwood** — excurrent. One central leader, 12 tiers of laterals
+shortening to the apex, drooping low and lifting at the top; flat needle-spray
+foliage; thick reddish-brown trunk. Races to ~80 ft in 30 years while staying
+narrow (~3:1) — exactly what the allometry says, and what makes its growth rate
+fun to watch on the slider.

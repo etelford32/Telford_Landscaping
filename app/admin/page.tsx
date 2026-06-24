@@ -94,7 +94,7 @@ export default function AdminDashboard() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Telford Landscapes Management</p>
+                <p className="text-sm text-gray-600">Telford Landscaping Management</p>
               </div>
             </div>
 

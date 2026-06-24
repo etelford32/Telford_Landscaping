@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Smart Irrigation Systems & Timer Automation | Telford Landscapes - Auburn, CA",
+  title: "Smart Irrigation Systems & Timer Automation | Telford Landscaping - Auburn, CA",
   description: "Professional irrigation design, installation, repair, and smart timer automation. Custom solutions for large properties and mature landscapes. Water-saving technology. Serving Auburn, Roseville, Granite Bay.",
   keywords: "smart irrigation Auburn CA, irrigation timer repair, automated sprinkler system, irrigation installation Roseville, water conservation, smart watering system, irrigation automation Granite Bay, sprinkler timer programming, large property irrigation",
   openGraph: {
