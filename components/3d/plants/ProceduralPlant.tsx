@@ -16,6 +16,8 @@ import { getBarkBumpTexture, getLeafTexture, type LeafKind } from "@/lib/procedu
 import {
   COAST_LIVE_OAK,
   COAST_REDWOOD,
+  VALLEY_OAK,
+  BLUE_OAK,
   treeDimensions,
   type TreeAllometry,
 } from "@/lib/growth/treeAllometry";
@@ -27,6 +29,8 @@ export const PROCEDURAL_SPECIES = new Set<string>([
   "acer-palmatum-sango-kaku",
   "buxus-sempervirens-suffruticosa",
   "quercus-agrifolia",
+  "quercus-lobata",
+  "quercus-douglasii",
   "sequoia-sempervirens",
 ]);
 
@@ -61,6 +65,10 @@ const BOXWOOD_PALETTE = ["#2E5A2E", "#356731", "#274E28", "#3C6E36", "#2A572B"];
 const OAK_PALETTE = ["#2F4A22", "#365A28", "#3E6B2E", "#2A4420", "#436F30", "#314E24"];
 // Coast redwood: deep blue-greens.
 const REDWOOD_PALETTE = ["#2E4A38", "#35583F", "#2A4233", "#3C6147", "#314E3A", "#274033"];
+// Valley oak: bright/deep deciduous greens.
+const VALLEY_OAK_PALETTE = ["#4C7A2E", "#5A8C36", "#6B9C40", "#3E6B28", "#588832", "#4F8230"];
+// Blue oak: glaucous blue-green / sage (the real foliage cast, not cartoon blue).
+const BLUE_OAK_PALETTE = ["#7A9483", "#86A08C", "#6E8A78", "#90A894", "#7E9888", "#728E7C"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -153,6 +161,60 @@ const PRESETS: Record<string, Preset> = {
         radiusFalloff: 0.6,
         segmentsPerBranch: 3,
         leavesPerTwig: 5,
+      }),
+  },
+  "quercus-lobata": {
+    leafKind: "oak-lobed",
+    formMaturityAge: 30,
+    leafSize: 0.03,
+    leafPalette: VALLEY_OAK_PALETTE,
+    barkThin: "#A39C90", // pale gray, checkered
+    barkThick: "#827A6E",
+    allometry: VALLEY_OAK,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
+        forkHeight: 0.32,
+        scaffolds: 5,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.4,
+        childAngle: 0.5,
+        lengthFalloff: 0.54,
+        radiusFalloff: 0.72,
+        segmentsPerBranch: 4,
+        sinuosity: 0.24,
+        droop: 0.28, // pendulous outer branchlets
+        crownWidthRatio: shape?.crownWidthRatio ?? 0.85,
+        leafStartDepth: 2, // open, airy crown
+        leavesPerTwig: 4,
+      }),
+  },
+  "quercus-douglasii": {
+    leafKind: "oak-lobed",
+    formMaturityAge: 30,
+    leafSize: 0.028,
+    leafPalette: BLUE_OAK_PALETTE,
+    barkThin: "#ADA89C", // pale whitish-gray, thin
+    barkThick: "#928C80",
+    allometry: BLUE_OAK,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
+        forkHeight: 0.28,
+        scaffolds: 4,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.5,
+        childAngle: 0.52,
+        lengthFalloff: 0.62,
+        radiusFalloff: 0.72,
+        segmentsPerBranch: 4,
+        sinuosity: 0.32, // gnarled
+        droop: 0.14,
+        crownWidthRatio: shape?.crownWidthRatio ?? 1.0,
+        leafStartDepth: 2,
+        leavesPerTwig: 4,
       }),
   },
 };

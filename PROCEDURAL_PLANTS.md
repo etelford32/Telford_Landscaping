@@ -47,11 +47,21 @@ Each species is validated by a test that **reproduces the published 30-year
 trajectory** (`lib/growth/__tests__/treeAllometry.test.ts`). If a coefficient is
 wrong, that test fails.
 
-Species currently modeled (both NoCalC — Northern California Coast region):
+Equations are polynomial (`lin`/`quad`/`cub`) by default; some UTD fits use the
+`loglogw1` form, supported via an `loglog` flag (the `c` field then holds the
+fit's MSE).
 
-- `COAST_LIVE_OAK` — *Quercus agrifolia*. Broad: crown ≈ as wide as tall by yr 30.
-- `COAST_REDWOOD` — *Sequoia sempervirens*. Tall and narrow (H:W ≈ 2.7), and
-  *fast* — ~13 ft at year 1 to ~79 ft / 24.7 in DBH by year 30.
+Species currently modeled:
+
+- `COAST_LIVE_OAK` — *Quercus agrifolia* (UTD NoCalC). Broad, decurrent;
+  crown ≈ as wide as tall by yr 30.
+- `VALLEY_OAK` — *Quercus lobata* (UTD SacVal; loglog height eqn). CA's largest
+  oak — fast, broad, open, pendulous outer branches.
+- `BLUE_OAK` — *Quercus douglasii*. **Not in the UTD** (wildland species);
+  coefficients **fitted** to published dendrochronology rates (~10 yr/inch DBH).
+  Small, slow, gnarled, blue-green.
+- `COAST_REDWOOD` — *Sequoia sempervirens* (UTD NoCalC). Tall and narrow
+  (H:W ≈ 2.7), excurrent, *fast* — ~13 ft at yr 1 to ~79 ft / 24.7 in DBH by yr 30.
 
 > Note: `Sequoia sempervirens` is the **coast redwood**. The "giant sequoia" is
 > a different genus, *Sequoiadendron giganteum*.

@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { COAST_LIVE_OAK, COAST_REDWOOD, treeDbhCm, treeDimensions } from "../treeAllometry";
+import {
+  COAST_LIVE_OAK,
+  COAST_REDWOOD,
+  VALLEY_OAK,
+  BLUE_OAK,
+  treeDbhCm,
+  treeDimensions,
+} from "../treeAllometry";
 
 const IN_PER_CM = 0.393701;
 
@@ -79,5 +86,45 @@ describe("coast redwood growth (USDA Urban Tree Database, NoCalC)", () => {
     expect(treeDimensions(COAST_REDWOOD, 30).height).toBeGreaterThan(70);
     // DBH near-linear ~2 cm/yr
     expect(treeDbhCm(COAST_REDWOOD, 30) - treeDbhCm(COAST_REDWOOD, 0)).toBeGreaterThan(50);
+  });
+});
+
+describe("valley oak growth (UTD SacVal; loglog height eqn)", () => {
+  it("reproduces the published 30-year trajectory", () => {
+    const expected = [
+      { age: 1, dbh: 1.5, height: 9.6, crown: 7.4 },
+      { age: 10, dbh: 7.1, height: 30, crown: 20 },
+      { age: 30, dbh: 17.1, height: 48, crown: 40 },
+    ];
+    for (const e of expected) {
+      const d = treeDimensions(VALLEY_OAK, e.age);
+      expect(Math.abs(d.dbh - e.dbh)).toBeLessThan(0.6);
+      expect(Math.abs(d.height - e.height)).toBeLessThan(2.0);
+      expect(Math.abs(d.crownWidth - e.crown)).toBeLessThan(2.0);
+    }
+  });
+
+  it("grows fast for an oak and ends broad", () => {
+    expect(treeDimensions(VALLEY_OAK, 30).height).toBeGreaterThan(40);
+    const d = treeDimensions(VALLEY_OAK, 30);
+    expect(d.crownWidth / d.height).toBeGreaterThan(0.7); // broad crown
+  });
+});
+
+describe("blue oak growth (fitted, slow)", () => {
+  it("follows the slow field trajectory", () => {
+    const d1 = treeDimensions(BLUE_OAK, 1);
+    const d30 = treeDimensions(BLUE_OAK, 30);
+    expect(d1.height).toBeGreaterThan(7);
+    expect(d1.height).toBeLessThan(11);
+    expect(d30.dbh).toBeGreaterThan(6.5);
+    expect(d30.dbh).toBeLessThan(9.5);
+    expect(d30.height).toBeGreaterThan(27);
+    expect(d30.height).toBeLessThan(36);
+  });
+
+  it("is slower and smaller than valley oak at 30 years", () => {
+    expect(treeDimensions(BLUE_OAK, 30).height).toBeLessThan(treeDimensions(VALLEY_OAK, 30).height);
+    expect(treeDbhCm(BLUE_OAK, 30)).toBeLessThan(treeDbhCm(VALLEY_OAK, 30));
   });
 });
