@@ -561,18 +561,25 @@ export default function ProceduralPlant({
       envMapIntensity: 0.5,
     });
   }, []);
-  const leafMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        map: leafTex,
-        alphaTest: 0.45,
-        side: THREE.DoubleSide,
-        roughness: 0.72,
-        metalness: 0,
-        envMapIntensity: 0.7,
-      }),
-    [leafTex]
-  );
+  const leafMat = useMemo(() => {
+    // Fake leaf translucency: a dim self-illumination keyed to the species'
+    // foliage colour (masked by the leaf texture) so backlit and shadowed leaves
+    // keep a hint of colour and "glow" instead of reading as cardboard-black —
+    // the cheap stand-in for true subsurface transmission, with no extra passes.
+    const mid = preset.leafPalette[Math.floor(preset.leafPalette.length / 2)];
+    const emissive = new THREE.Color(mid).multiplyScalar(0.55);
+    return new THREE.MeshStandardMaterial({
+      map: leafTex,
+      alphaTest: 0.45,
+      side: THREE.DoubleSide,
+      roughness: 0.58, // a touch glossier — the waxy cuticle catches light
+      metalness: 0,
+      envMapIntensity: 0.8,
+      emissive,
+      emissiveMap: leafTex,
+      emissiveIntensity: 0.28,
+    });
+  }, [leafTex, preset.leafPalette]);
 
   // Height scales uniformly to the allometric height. For allometric species
   // (oak, redwood) we also drive crown width from the model, since the
@@ -728,6 +735,15 @@ function LeafInstances({
     const faceProj = new THREE.Vector3();
     const crs = new THREE.Vector3();
 
+    // Canopy vertical extent, for sun/shade tinting: leaves up top get more sun.
+    let botY = Infinity;
+    let topY = -Infinity;
+    for (const lf of leaves) {
+      if (lf.pos[1] < botY) botY = lf.pos[1];
+      if (lf.pos[1] > topY) topY = lf.pos[1];
+    }
+    const canopySpan = Math.max(1e-3, topY - botY);
+
     for (let i = 0; i < leaves.length; i++) {
       const lf = leaves[i];
       pos.set(lf.pos[0], lf.pos[1], lf.pos[2]);
@@ -757,7 +773,9 @@ function LeafInstances({
       // pick a palette color, then vary lightness a touch per leaf
       const pick = colors[Math.floor(frac(Math.sin((i + 1) * 78.233) * 43758.5453) * colors.length) % colors.length];
       const v = 0.85 + 0.28 * frac(Math.sin((i + 1) * 12.9898) * 43758.5453);
-      col.copy(pick).multiplyScalar(v);
+      // Sun/shade: brighter toward the top of the canopy, dimmer in the interior.
+      const sun = 0.82 + 0.26 * ((lf.pos[1] - botY) / canopySpan);
+      col.copy(pick).multiplyScalar(v * sun);
       mesh.setColorAt(i, col);
     }
     mesh.instanceMatrix.needsUpdate = true;
