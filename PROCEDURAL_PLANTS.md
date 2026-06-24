@@ -13,9 +13,12 @@ The system has three layers, each in its own file:
 | **Renderer** | `components/3d/plants/ProceduralPlant.tsx` | reveal growth, instance the geometry, scale to the science |
 | Textures | `lib/procedural/leafTexture.ts` | canvas-drawn leaf/needle cards + bark bump |
 
-A species opts in through `PROCEDURAL_SPECIES` in the renderer; everything else
-falls back to the older clustered models in `components/design/PlantModels.tsx`.
-This is a deliberate phased rollout — we prove each species before widening.
+A species opts in through `PROCEDURAL_SPECIES` in the renderer; anything not yet
+listed falls back to the older clustered models in
+`components/design/PlantModels.tsx`. The rollout was deliberately phased — prove
+each species before widening — and the homepage hero is now **fully migrated**:
+all 13 of its species are procedural. The fallback remains for any other species
+the design tool can place.
 
 ---
 
@@ -72,8 +75,36 @@ Species currently modeled:
   species, not a sampled street tree). Fast excurrent conifer to ~65 ft × 32 ft
   by yr 30; long needle tufts, dark furrowed bark, fuller-topped than the redwood.
 
+The understory shrubs (all **fitted** — none are in the UTD — and all sharing the
+decurrent, multi-stem-from-a-low-base form):
+
+- `CEANOTHUS` — *Ceanothus thyrsiflorus* (blueblossom). A large, fast California
+  lilac to ~20 × 18 ft, rendered in its signature blue spring bloom.
+- `TOYON` — *Heteromeles arbutifolia* (California holly / Christmas berry). A
+  dense upright evergreen to ~16 × 12 ft (taller than wide), glossy holly leaves.
+- `BUSH_ANEMONE` — *Carpenteria californica*. A rounded evergreen to ~8 ft,
+  rendered in its showy white anemone bloom.
+- `COFFEEBERRY` — *Frangula / Rhamnus californica* 'Eve Case'. A compact, very
+  dense glossy-green mound to ~8 × 8 ft.
+
+With these four the **entire homepage hero scene is procedural** — every one of
+its 13 placed species runs through this system; nothing falls back to the older
+clustered models anymore.
+
 > Note: `Sequoia sempervirens` is the **coast redwood**. The "giant sequoia" is
 > a different genus, *Sequoiadendron giganteum*.
+
+### Plateau clamp (why mature plants stop growing instead of shrinking)
+
+The shrubs are fitted with downward-opening quadratics (`c < 0`) for height and
+crown — they decelerate, which is what we want. But a parabola eventually turns
+back *down*: past its vertex the equation would make a mature shrub **shrink**.
+So `evalEqn` clamps the input to the vertex (`x = -b / 2c`) for any plain
+downward quadratic: the dimension rises, then holds flat at its maximum. The
+trees' vertices sit well beyond their sampled age range, so this is a no-op for
+them — it only matters for the shrubs, which reach their plateau in their 20s. A
+per-species test asserts height/crown are **monotonic non-decreasing out to 60
+years** to lock this in.
 
 ---
 
@@ -151,8 +182,17 @@ from twig to trunk bark by radius; leaf color samples a per-species palette.
 
 Leaf cards are **canvas-drawn neutral masks** (no external image assets), so the
 renderer can tint each leaf from a palette. `maple` (serrated palmate), `oak`
-(holly-like spiny), `boxwood` (ovate), `redwood` (flat needle spray). Plus a
-grayscale bark bump map. Cards are alpha-tested and double-sided.
+(holly-like spiny), `oak-lobed` (deciduous oak), `boxwood` (ovate), `manzanita`
+(leathery ovate), `redwood`/`pine` (needle sprays/tufts), and `redbud-flower` (a
+blossom cluster). Plus a grayscale bark bump map. Cards are alpha-tested and
+double-sided.
+
+Because the mask is neutral and the color is per-instance, one card serves many
+plants: the `redbud-flower` cluster renders the redbud's magenta, the ceanothus's
+blue, and the bush anemone's white simply by swapping palettes; `oak` covers the
+live oak and the toyon's holly; `manzanita` covers the manzanita and the
+coffeeberry. A flowering shrub (ceanothus, bush anemone) is drawn as a **bloom
+mass** — the whole canopy is blossom cards — the same trick the redbud uses.
 
 ---
 

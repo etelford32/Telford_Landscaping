@@ -7,6 +7,10 @@ import {
   MANZANITA,
   WESTERN_REDBUD,
   MONTEREY_PINE,
+  CEANOTHUS,
+  TOYON,
+  BUSH_ANEMONE,
+  COFFEEBERRY,
   treeDbhCm,
   treeDimensions,
 } from "../treeAllometry";
@@ -178,4 +182,72 @@ describe("monterey pine growth (fitted, fast)", () => {
     expect(ratio).toBeGreaterThan(1.7);
     expect(ratio).toBeLessThan(2.6);
   });
+});
+
+// ── shrubs ─────────────────────────────────────────────────────────────────────
+// All four are fitted with decelerating quadratics that plateau at maturity.
+// The shared expectation: monotonic non-decreasing height/crown over 60 years
+// (never shrink — that's the vertex clamp doing its job) and a sensible mature
+// envelope.
+
+function expectMonotonic(a: typeof CEANOTHUS) {
+  let ph = -1;
+  let pw = -1;
+  for (let age = 0; age <= 60; age++) {
+    const d = treeDimensions(a, age);
+    expect(d.height).toBeGreaterThanOrEqual(ph - 1e-6);
+    expect(d.crownWidth).toBeGreaterThanOrEqual(pw - 1e-6);
+    ph = d.height;
+    pw = d.crownWidth;
+  }
+}
+
+describe("ceanothus growth (fitted shrub — large blueblossom)", () => {
+  it("fills to a large arching shrub ~20 ft tall x ~18 ft wide", () => {
+    const d1 = treeDimensions(CEANOTHUS, 1);
+    const d30 = treeDimensions(CEANOTHUS, 30);
+    expect(d1.height).toBeGreaterThan(2);
+    expect(d1.height).toBeLessThan(5);
+    expect(d30.height).toBeGreaterThan(17);
+    expect(d30.height).toBeLessThan(23);
+    expect(d30.crownWidth).toBeGreaterThan(15);
+  });
+  it("plateaus instead of shrinking (monotonic to 60 yr)", () => expectMonotonic(CEANOTHUS));
+});
+
+describe("toyon growth (fitted shrub — California holly)", () => {
+  it("grows to a large upright shrub ~16 ft tall x ~12 ft wide, taller than wide", () => {
+    const d1 = treeDimensions(TOYON, 1);
+    const d30 = treeDimensions(TOYON, 30);
+    expect(d1.height).toBeGreaterThan(1);
+    expect(d1.height).toBeLessThan(3);
+    expect(d30.height).toBeGreaterThan(14);
+    expect(d30.height).toBeLessThan(19);
+    expect(d30.crownWidth).toBeGreaterThan(10);
+    expect(d30.height).toBeGreaterThan(d30.crownWidth); // upright habit
+  });
+  it("plateaus instead of shrinking (monotonic to 60 yr)", () => expectMonotonic(TOYON));
+});
+
+describe("bush anemone growth (fitted shrub)", () => {
+  it("rounds out to ~8 ft, about as wide as tall", () => {
+    const d1 = treeDimensions(BUSH_ANEMONE, 1);
+    const d30 = treeDimensions(BUSH_ANEMONE, 30);
+    expect(d1.height).toBeLessThan(2.5);
+    expect(d30.height).toBeGreaterThan(7);
+    expect(d30.height).toBeLessThan(10);
+    expect(d30.crownWidth / d30.height).toBeGreaterThan(0.8);
+  });
+  it("plateaus instead of shrinking (monotonic to 60 yr)", () => expectMonotonic(BUSH_ANEMONE));
+});
+
+describe("coffeeberry growth (fitted shrub — dense mound)", () => {
+  it("forms a dense rounded mound ~8 ft x ~8 ft", () => {
+    const d30 = treeDimensions(COFFEEBERRY, 30);
+    expect(d30.height).toBeGreaterThan(7);
+    expect(d30.height).toBeLessThan(10);
+    // essentially round: width ≈ height
+    expect(Math.abs(d30.crownWidth - d30.height)).toBeLessThan(1.2);
+  });
+  it("plateaus instead of shrinking (monotonic to 60 yr)", () => expectMonotonic(COFFEEBERRY));
 });

@@ -36,7 +36,21 @@ function evalEqn(e: Eqn, x: number): number {
   if (e.loglog) {
     return Math.exp(e.a + e.b * Math.log(Math.log(x + 1) + (e.c ?? 0) / 2));
   }
-  return e.a + e.b * x + (e.c ?? 0) * x * x + (e.d ?? 0) * x * x * x;
+  const c = e.c ?? 0;
+  const d = e.d ?? 0;
+  // A downward-opening quadratic (c < 0, no cubic term) models a dimension that
+  // decelerates to a plateau — height/crown that level off as the plant matures.
+  // Past the parabola's vertex the curve turns back *down*, which would make a
+  // mature plant shrink. That's unphysical, so clamp x to the vertex: the
+  // dimension holds at its maximum instead of declining. (Fitted shrubs rely on
+  // this; the trees' vertices sit beyond their sampled age range, so it's a
+  // no-op for them.)
+  let xc = x;
+  if (d === 0 && c < 0) {
+    const vertex = -e.b / (2 * c);
+    if (xc > vertex) xc = vertex;
+  }
+  return e.a + e.b * xc + c * xc * xc + d * xc * xc * xc;
 }
 
 export interface TreeAllometry {
@@ -174,6 +188,71 @@ export const MONTEREY_PINE: TreeAllometry = {
   crownDiaFromDbh: { a: 0.317, b: 0.2326, c: -0.00108 },
   crownHtFromDbh: { a: 0.3, b: 0.35, c: -0.002 },
   clearRatio: 0.3, // self-prunes a bare lower trunk
+};
+
+// ── California-native shrubs (the hero-scene understory) ───────────────────────
+// None are in the UTD (all shrubs). Coefficients are FITTED to published
+// horticultural sizes; "DBH" is the main-stem caliper that drives trunk
+// thickness. The height/crown quadratics decelerate to a plateau (see the
+// vertex clamp in evalEqn) so each shrub fills in and then holds its mature
+// size rather than shrinking. All are multi-stemmed from a low base.
+
+// Blueblossom Ceanothus (Ceanothus thyrsiflorus) — one of the largest, fastest
+// California lilacs: an arching evergreen to ~20 ft tall x ~18 ft wide, smothered
+// in blue bloom each spring.
+//   Sources: Calscape, Las Pilitas, SF Botanical.
+export const CEANOTHUS: TreeAllometry = {
+  commonName: "Blueblossom Ceanothus",
+  region: "fitted (horticultural sizes — no UTD entry)",
+  source: "Fitted to Calscape / Las Pilitas sizes",
+  dbhFromAge: { a: 1.138, b: 0.362 },
+  heightFromDbh: { a: -1.4756, b: 1.7417, c: -0.09892 },
+  crownDiaFromDbh: { a: -1.3221, b: 1.5177, c: -0.08555 },
+  crownHtFromDbh: { a: -1.21, b: 1.428, c: -0.0811 },
+  clearRatio: 0.06,
+};
+
+// Toyon (Heteromeles arbutifolia) — "California holly" / Christmas berry: a dense
+// upright evergreen large shrub / small tree to ~16 ft tall x ~12 ft wide, glossy
+// holly-like leaves with red winter berries.
+//   Sources: Calscape, SelecTree, Las Pilitas.
+export const TOYON: TreeAllometry = {
+  commonName: "Toyon",
+  region: "fitted (horticultural sizes — no UTD entry)",
+  source: "Fitted to Calscape / SelecTree sizes",
+  dbhFromAge: { a: 0.74, b: 0.4593 },
+  heightFromDbh: { a: -0.5158, b: 0.8528, c: -0.0346 },
+  crownDiaFromDbh: { a: -0.2999, b: 0.6655, c: -0.02851 },
+  crownHtFromDbh: { a: -0.423, b: 0.699, c: -0.0284 },
+  clearRatio: 0.06,
+};
+
+// Bush Anemone (Carpenteria californica) — a rounded evergreen shrub to ~8 ft,
+// rare in the wild, prized for large white anemone-like flowers with gold stamens.
+//   Sources: Calscape, UC ANR, San Marcos Growers.
+export const BUSH_ANEMONE: TreeAllometry = {
+  commonName: "Bush Anemone",
+  region: "fitted (horticultural sizes — no UTD entry)",
+  source: "Fitted to Calscape / San Marcos Growers sizes",
+  dbhFromAge: { a: 0.79, b: 0.2069 },
+  heightFromDbh: { a: -0.7557, b: 1.2433, c: -0.11867 },
+  crownDiaFromDbh: { a: -0.6353, b: 1.1088, c: -0.10503 },
+  crownHtFromDbh: { a: -0.62, b: 1.0195, c: -0.0973 },
+  clearRatio: 0.06,
+};
+
+// Coffeeberry (Frangula / Rhamnus californica 'Eve Case') — a compact, very dense
+// evergreen mound to ~8 ft x ~8 ft, glossy dark foliage and red-to-black berries.
+//   Sources: Calscape, San Marcos Growers, OSU Landscape Plants.
+export const COFFEEBERRY: TreeAllometry = {
+  commonName: "Coffeeberry ('Eve Case')",
+  region: "fitted (horticultural sizes — no UTD entry)",
+  source: "Fitted to Calscape / San Marcos Growers sizes",
+  dbhFromAge: { a: 0.79, b: 0.2069 },
+  heightFromDbh: { a: -0.7269, b: 1.1389, c: -0.10435 },
+  crownDiaFromDbh: { a: -0.7269, b: 1.1389, c: -0.10435 },
+  crownHtFromDbh: { a: -0.596, b: 0.9339, c: -0.0856 },
+  clearRatio: 0.06,
 };
 
 export interface TreeDimensions {

@@ -21,6 +21,10 @@ import {
   MANZANITA,
   WESTERN_REDBUD,
   MONTEREY_PINE,
+  CEANOTHUS,
+  TOYON,
+  BUSH_ANEMONE,
+  COFFEEBERRY,
   treeDimensions,
   type TreeAllometry,
 } from "@/lib/growth/treeAllometry";
@@ -38,6 +42,10 @@ export const PROCEDURAL_SPECIES = new Set<string>([
   "arctostaphylos-densiflora",
   "cercis-occidentalis",
   "pinus-radiata",
+  "ceanothus-thyrsiflorus",
+  "heteromeles-arbutifolia",
+  "carpenteria-californica",
+  "rhamnus-californica",
 ]);
 
 // Shape ratios handed to the decurrent/excurrent generators, derived per-age
@@ -81,6 +89,14 @@ const MANZANITA_PALETTE = ["#3E6B2E", "#4A7A36", "#557F3D", "#356226", "#48742F"
 const REDBUD_PALETTE = ["#C71585", "#B81E6F", "#D6308A", "#A8166B", "#C42178", "#CE4D96"];
 // Monterey pine: dark conifer greens.
 const PINE_PALETTE = ["#2C4A2A", "#345A32", "#3E6B38", "#28432A", "#3A6234", "#305730"];
+// Blueblossom ceanothus in bloom: soft-to-deep blues (rendered as a flower mass).
+const CEANOTHUS_PALETTE = ["#4A6FB0", "#3D63A8", "#5A7FC0", "#34589C", "#4668AC", "#6B8FCB"];
+// Toyon: glossy dark evergreen greens, with a warm tone for new growth / berries.
+const TOYON_PALETTE = ["#2E4A24", "#365A2A", "#3E6B30", "#2A4420", "#43702E", "#B23A24"];
+// Bush anemone in bloom: white anemone flowers with gold stamens over a little green.
+const BUSH_ANEMONE_PALETTE = ["#F2F2EC", "#EAEAE0", "#F6F4EE", "#E6E6DC", "#E8D77A", "#3E6B30"];
+// Coffeeberry: dense glossy deep greens, one dark tone for ripening berries.
+const COFFEEBERRY_PALETTE = ["#2C4A26", "#33572C", "#3C6633", "#284322", "#37602F", "#243A20"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -307,6 +323,114 @@ const PRESETS: Record<string, Preset> = {
         radiusFalloff: 0.62,
         segmentsPerBranch: 3,
         leavesPerTwig: 5,
+      }),
+  },
+  "ceanothus-thyrsiflorus": {
+    leafKind: "redbud-flower", // dense blossom clusters — rendered in full blue bloom
+    formMaturityAge: 15, // fast grower
+    leafSize: 0.04,
+    leafPalette: CEANOTHUS_PALETTE,
+    barkThin: "#6E5E4E",
+    barkThick: "#4A3E32",
+    allometry: CEANOTHUS,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
+        forkHeight: 0.12,
+        scaffolds: 5,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.44,
+        childAngle: 0.5,
+        lengthFalloff: 0.66,
+        radiusFalloff: 0.72,
+        segmentsPerBranch: 4,
+        sinuosity: 0.22,
+        droop: 0.16, // arching habit
+        crownWidthRatio: shape?.crownWidthRatio ?? 0.9,
+        leafStartDepth: 1, // bloom smothers the whole shrub
+        leavesPerTwig: 8,
+      }),
+  },
+  "heteromeles-arbutifolia": {
+    leafKind: "oak", // glossy holly-like leaf
+    formMaturityAge: 20,
+    leafSize: 0.03,
+    leafPalette: TOYON_PALETTE,
+    barkThin: "#7A6E60",
+    barkThick: "#4E443A",
+    allometry: TOYON,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
+        forkHeight: 0.16, // upright, short clear stem
+        scaffolds: 4,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.38, // erect habit — taller than wide
+        childAngle: 0.46,
+        lengthFalloff: 0.64,
+        radiusFalloff: 0.72,
+        segmentsPerBranch: 4,
+        sinuosity: 0.2,
+        droop: 0.1,
+        crownWidthRatio: shape?.crownWidthRatio ?? 0.76,
+        leafStartDepth: 2,
+        leavesPerTwig: 6,
+      }),
+  },
+  "carpenteria-californica": {
+    leafKind: "redbud-flower", // showy white anemone flowers, rendered in bloom
+    formMaturityAge: 16,
+    leafSize: 0.05, // large flowers
+    leafPalette: BUSH_ANEMONE_PALETTE,
+    barkThin: "#9A8E7E", // pale shreddy bark
+    barkThick: "#6E6256",
+    allometry: BUSH_ANEMONE,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
+        forkHeight: 0.1, // multi-stem mound
+        scaffolds: 5,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.46,
+        childAngle: 0.5,
+        lengthFalloff: 0.66,
+        radiusFalloff: 0.7,
+        segmentsPerBranch: 4,
+        sinuosity: 0.24,
+        droop: 0.14,
+        crownWidthRatio: shape?.crownWidthRatio ?? 0.92,
+        leafStartDepth: 1, // flowers out to the branch tips
+        leavesPerTwig: 8,
+      }),
+  },
+  "rhamnus-californica": {
+    leafKind: "manzanita", // small glossy ovate leaf
+    formMaturityAge: 16,
+    leafSize: 0.035,
+    leafPalette: COFFEEBERRY_PALETTE,
+    barkThin: "#7A6A58",
+    barkThick: "#4E3E30",
+    allometry: COFFEEBERRY,
+    generate: (seed, _m, shape) =>
+      generateDecurrentTree(seed, 1, {
+        forkHeight: 0.1, // dense multi-stem mound
+        scaffolds: 5,
+        maxDepth: 5,
+        branchMin: 2,
+        branchMax: 3,
+        spreadAngle: 0.46, // broad, rounded
+        childAngle: 0.5,
+        lengthFalloff: 0.66,
+        radiusFalloff: 0.7,
+        segmentsPerBranch: 4,
+        sinuosity: 0.2,
+        droop: 0.12,
+        crownWidthRatio: shape?.crownWidthRatio ?? 1.0,
+        leafStartDepth: 1, // dense foliage to the interior
+        leavesPerTwig: 9,
       }),
   },
 };
