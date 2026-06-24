@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { Menu, X, TreePine, LogOut, User, Palette, Camera, Mail, Shield, Sparkles, Sprout, Droplets, BookOpen } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
@@ -100,8 +101,15 @@ export default function Navigation() {
           <div className="flex justify-between items-center h-20">
             {/* Logo with Leaf Float Animation */}
             <Link href="/" className="flex items-center gap-3 group relative">
-              <div className="bg-gradient-to-br from-primary-600 to-green-700 p-2 rounded-xl group-hover:shadow-lg transition-all duration-500 group-hover:scale-110 leaf-float">
-                <TreePine className="w-8 h-8 text-white" />
+              <div className="relative rounded-xl overflow-hidden shadow-md ring-1 ring-primary-100 group-hover:shadow-lg transition-all duration-500 group-hover:scale-110 leaf-float">
+                <Image
+                  src="/telford-logo.jpg"
+                  alt="Telford Landscapes logo"
+                  width={48}
+                  height={48}
+                  priority
+                  className="w-12 h-12 object-cover"
+                />
               </div>
               <div className="relative">
                 <div className="text-xl font-bold bg-gradient-to-r from-primary-700 to-green-700 bg-clip-text text-transparent">

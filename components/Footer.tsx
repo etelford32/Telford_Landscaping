@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { TreePine, MapPin, Mail, Phone } from "lucide-react";
+import Image from "next/image";
+import { MapPin, Mail, Phone } from "lucide-react";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -11,8 +12,14 @@ export default function Footer() {
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="bg-gradient-to-br from-primary-600 to-primary-700 p-2 rounded-lg">
-                <TreePine className="w-8 h-8 text-white" />
+              <div className="rounded-lg overflow-hidden shadow-lg ring-1 ring-white/10">
+                <Image
+                  src="/telford-logo.jpg"
+                  alt="Telford Landscapes logo"
+                  width={48}
+                  height={48}
+                  className="w-12 h-12 object-cover"
+                />
               </div>
               <div>
                 <div className="text-xl font-bold">Telford Landscapes</div>
