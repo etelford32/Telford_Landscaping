@@ -6,6 +6,7 @@ import {
   BLUE_OAK,
   MANZANITA,
   WESTERN_REDBUD,
+  MONTEREY_PINE,
   treeDbhCm,
   treeDimensions,
 } from "../treeAllometry";
@@ -159,5 +160,22 @@ describe("western redbud growth (fitted, multi-stem small tree)", () => {
 
   it("stays small (well under the oaks/redwood)", () => {
     expect(treeDimensions(WESTERN_REDBUD, 30).height).toBeLessThan(25);
+  });
+});
+
+describe("monterey pine growth (fitted, fast)", () => {
+  it("races up — ~6 ft yr1 to ~65 ft yr30", () => {
+    expect(treeDimensions(MONTEREY_PINE, 1).height).toBeLessThan(8);
+    const d30 = treeDimensions(MONTEREY_PINE, 30);
+    expect(d30.height).toBeGreaterThan(58);
+    expect(d30.height).toBeLessThan(72);
+    expect(d30.dbh).toBeGreaterThan(18);
+  });
+
+  it("is taller than wide (H:W ~2:1) — broader than the redwood", () => {
+    const d = treeDimensions(MONTEREY_PINE, 30);
+    const ratio = d.height / d.crownWidth;
+    expect(ratio).toBeGreaterThan(1.7);
+    expect(ratio).toBeLessThan(2.6);
   });
 });

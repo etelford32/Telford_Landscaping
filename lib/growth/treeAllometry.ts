@@ -160,6 +160,22 @@ export const WESTERN_REDBUD: TreeAllometry = {
   clearRatio: 0.06, // multi-stem from the base
 };
 
+// Monterey Pine (Pinus radiata) — NOT in the UTD (a coastal/park species, not a
+// sampled street tree). Coefficients FITTED to field data: very fast (~3-6 ft/yr
+// young) to ~65 ft tall x ~32 ft crown by year 30 (H:W ~2:1), excurrent. Lower
+// branches self-prune, so the crown rides the upper ~2/3 over a bare trunk.
+//   Sources: SelecTree, Calscape, USFS Silvics.
+export const MONTEREY_PINE: TreeAllometry = {
+  commonName: "Monterey Pine",
+  region: "fitted (field trajectory — no UTD entry)",
+  source: "Fitted to SelecTree / Calscape / USFS field sizes",
+  dbhFromAge: { a: 0.8, b: 1.78 },
+  heightFromDbh: { a: 0.507, b: 0.5206, c: -0.003036 },
+  crownDiaFromDbh: { a: 0.317, b: 0.2326, c: -0.00108 },
+  crownHtFromDbh: { a: 0.3, b: 0.35, c: -0.002 },
+  clearRatio: 0.3, // self-prunes a bare lower trunk
+};
+
 export interface TreeDimensions {
   dbh: number; // in
   height: number; // ft

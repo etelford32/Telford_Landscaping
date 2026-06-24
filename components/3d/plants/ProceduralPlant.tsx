@@ -20,6 +20,7 @@ import {
   BLUE_OAK,
   MANZANITA,
   WESTERN_REDBUD,
+  MONTEREY_PINE,
   treeDimensions,
   type TreeAllometry,
 } from "@/lib/growth/treeAllometry";
@@ -36,6 +37,7 @@ export const PROCEDURAL_SPECIES = new Set<string>([
   "sequoia-sempervirens",
   "arctostaphylos-densiflora",
   "cercis-occidentalis",
+  "pinus-radiata",
 ]);
 
 // Shape ratios handed to the decurrent/excurrent generators, derived per-age
@@ -77,6 +79,8 @@ const BLUE_OAK_PALETTE = ["#7A9483", "#86A08C", "#6E8A78", "#90A894", "#7E9888",
 const MANZANITA_PALETTE = ["#3E6B2E", "#4A7A36", "#557F3D", "#356226", "#48742F", "#5C8540"];
 // Western redbud bloom: vivid magenta / reddish-purple.
 const REDBUD_PALETTE = ["#C71585", "#B81E6F", "#D6308A", "#A8166B", "#C42178", "#CE4D96"];
+// Monterey pine: dark conifer greens.
+const PINE_PALETTE = ["#2C4A2A", "#345A32", "#3E6B38", "#28432A", "#3A6234", "#305730"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -277,6 +281,32 @@ const PRESETS: Record<string, Preset> = {
         crownWidthRatio: shape?.crownWidthRatio ?? 0.9,
         leafStartDepth: 1, // magenta bloom studs the branches (cauliflory)
         leavesPerTwig: 8, // dense bloom
+      }),
+  },
+  "pinus-radiata": {
+    leafKind: "pine",
+    formMaturityAge: 25,
+    leafSize: 0.06, // long needle tufts
+    leafPalette: PINE_PALETTE,
+    barkThin: "#6E5A48",
+    barkThick: "#4A3A2E", // dark, deeply furrowed
+    allometry: MONTEREY_PINE,
+    generate: (seed, _m, shape) =>
+      generateExcurrentTree(seed, 1, {
+        trunkSegments: 12,
+        crownBase: shape?.crownBase ?? 0.32, // self-pruned bare lower trunk
+        tiers: 9,
+        branchesPerTier: 4,
+        maxBranchLen: 0.16,
+        branchDroop: 0.18, // pine limbs more horizontal/upswept than the redwood
+        apexFullness: 0.45, // rounder, fuller crown — not a sharp spire
+        subDepth: 2,
+        branchMin: 2,
+        branchMax: 3,
+        lengthFalloff: 0.62,
+        radiusFalloff: 0.62,
+        segmentsPerBranch: 3,
+        leavesPerTwig: 5,
       }),
   },
 };

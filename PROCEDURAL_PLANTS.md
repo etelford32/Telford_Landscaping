@@ -68,6 +68,9 @@ Species currently modeled:
 - `WESTERN_REDBUD` — *Cercis occidentalis*. **Fitted** to field data (not in the
   UTD; the Eastern Redbud fallback equation extrapolates nonsensically). A
   multi-stem small tree (~18 × 16 ft) rendered in its signature magenta bloom.
+- `MONTEREY_PINE` — *Pinus radiata*. **Fitted** (not in the UTD — a park/coastal
+  species, not a sampled street tree). Fast excurrent conifer to ~65 ft × 32 ft
+  by yr 30; long needle tufts, dark furrowed bark, fuller-topped than the redwood.
 
 > Note: `Sequoia sempervirens` is the **coast redwood**. The "giant sequoia" is
 > a different genus, *Sequoiadendron giganteum*.

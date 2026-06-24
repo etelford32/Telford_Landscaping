@@ -90,6 +90,8 @@ export interface ExcurrentParams {
   radiusFalloff: number;
   segmentsPerBranch: number;
   leavesPerTwig: number;
+  /** 0 = branches taper to a sharp apex (cone); ~0.5 = fuller, rounder top. */
+  apexFullness?: number;
 }
 
 const UP: Vec = [0, 1, 0];
@@ -459,7 +461,7 @@ export function generateExcurrentTree(
       Math.abs(cur.h - hFrac) < Math.abs(best.h - hFrac) ? cur : best
     );
     const crownPos = (hFrac - p.crownBase) / (1 - p.crownBase); // 0 base .. 1 apex
-    const lenFactor = Math.pow(1 - crownPos * 0.85, 1.1);
+    const lenFactor = Math.pow(1 - crownPos * 0.85 * (1 - (p.apexFullness ?? 0)), 1.1);
     for (let b = 0; b < p.branchesPerTier; b++) {
       const roll = (b / p.branchesPerTier) * Math.PI * 2 + t * 1.3 + rng() * 0.5;
       const horiz: Vec = [Math.cos(roll), 0, Math.sin(roll)];

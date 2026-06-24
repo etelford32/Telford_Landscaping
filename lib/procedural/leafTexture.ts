@@ -15,7 +15,8 @@ export type LeafKind =
   | "oak-lobed"
   | "redwood"
   | "manzanita"
-  | "redbud-flower";
+  | "redbud-flower"
+  | "pine";
 
 const leafCache = new Map<LeafKind, THREE.Texture>();
 let barkBump: THREE.Texture | null = null;
@@ -29,6 +30,7 @@ export function getLeafTexture(kind: LeafKind): THREE.Texture {
   else if (kind === "redwood") tex = drawRedwoodSpray();
   else if (kind === "manzanita") tex = drawManzanitaLeaf();
   else if (kind === "redbud-flower") tex = drawRedbudFlower();
+  else if (kind === "pine") tex = drawPineTuft();
   else tex = drawMapleLeaf();
   leafCache.set(kind, tex);
   return tex;
@@ -348,6 +350,38 @@ function drawRedwoodSpray(): THREE.CanvasTexture {
     ctx.beginPath();
     ctx.moveTo(cx, y);
     ctx.lineTo(cx - nlen, y + dy);
+    ctx.stroke();
+  }
+
+  return makeTexture(c);
+}
+
+// A tuft of long pine needles fanning from the branch tip (Monterey pine bears
+// needles in dense tufts at the ends of the shoots). Neutral mask; color from
+// the palette. Tall card — its length runs up +Y.
+function drawPineTuft(): THREE.CanvasTexture {
+  const w = 56;
+  const h = 96;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2;
+  const baseY = h * 0.97;
+  ctx.strokeStyle = "#9c9c9c";
+  ctx.lineWidth = 1.7;
+  ctx.lineCap = "round";
+
+  const needles = 13;
+  for (let i = 0; i < needles; i++) {
+    const t = i / (needles - 1);
+    const ang = (t - 0.5) * 1.15; // fan
+    const len = h * 0.86 * (0.78 + 0.22 * Math.cos(ang)); // longest in the center
+    ctx.beginPath();
+    ctx.moveTo(cx, baseY);
+    ctx.lineTo(cx + Math.sin(ang) * len, baseY - Math.cos(ang) * len);
     ctx.stroke();
   }
 
