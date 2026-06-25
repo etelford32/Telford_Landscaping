@@ -1,6 +1,7 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useLayoutEffect, useMemo, useRef } from "react";
+import { Color, IcosahedronGeometry, InstancedMesh, Material, Object3D } from "three";
 import {
   PlacedPlant,
   PlantSpecies,
@@ -22,6 +23,15 @@ interface ShapeModelProps {
 }
 
 const BARK = "#5B4636";
+
+// Shared unit-radius canopy geometry, reused across every plant. Foliage size
+// comes from per-instance scale + the parent group scale, so one geometry per
+// detail level serves the whole scene. Module-scoped and never disposed by
+// design (it lives for the app's lifetime).
+const CANOPY_GEO: IcosahedronGeometry[] = [
+  new IcosahedronGeometry(1, 0),
+  new IcosahedronGeometry(1, 1),
+];
 
 // ── PlantModel router ─────────────────────────────────────────────────────────
 // Routes a placed plant to a shape-specific model. Overall dimensions come from
@@ -125,21 +135,71 @@ function Canopy({
 }) {
   const clumps = useMemo(() => buildClumps(seed, count), [seed, count]);
 
+  // Instanced by detail level: the whole canopy is 2 draw calls sharing one
+  // geometry + one material each, instead of one mesh/material per clump. Age
+  // still scales the parent group, so growth costs only a group-transform update.
   return (
     <group position={[0, centerY, 0]} scale={[radiusX, radiusY, radiusX]}>
-      {clumps.map((c, i) => (
-        <mesh key={i} position={[c.x, c.y, c.z]} castShadow receiveShadow>
-          <icosahedronGeometry args={[c.r, c.detail]} />
-          <meshStandardMaterial
-            color={selected ? adjustColorBrightness(color, 45) : adjustColorBrightness(color, c.shift)}
-            emissive={selected ? color : "#000000"}
-            emissiveIntensity={selected ? 0.18 : 0}
-            roughness={0.85}
-            flatShading
-          />
-        </mesh>
-      ))}
+      <ClumpInstances clumps={clumps} detail={0} color={color} selected={selected} />
+      <ClumpInstances clumps={clumps} detail={1} color={color} selected={selected} />
     </group>
+  );
+}
+
+// Renders the clumps of one detail level as a single InstancedMesh. Per-clump
+// size is the instance scale and per-clump tint is the instance color (material
+// color stays white so instanceColor passes through); selection drives the
+// shared emissive.
+function ClumpInstances({
+  clumps,
+  detail,
+  color,
+  selected,
+}: {
+  clumps: Clump[];
+  detail: number;
+  color: string;
+  selected?: boolean;
+}) {
+  const ref = useRef<InstancedMesh>(null);
+  const list = useMemo(() => clumps.filter((c) => c.detail === detail), [clumps, detail]);
+
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const dummy = new Object3D();
+    const col = new Color();
+    for (let i = 0; i < list.length; i++) {
+      const c = list[i];
+      dummy.position.set(c.x, c.y, c.z);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.setScalar(c.r);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      col.set(selected ? adjustColorBrightness(color, 45) : adjustColorBrightness(color, c.shift));
+      mesh.setColorAt(i, col);
+    }
+    mesh.count = list.length;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [list, color, selected]);
+
+  if (list.length === 0) return null;
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[CANOPY_GEO[detail], undefined as unknown as Material, list.length]}
+      castShadow
+      receiveShadow
+    >
+      <meshStandardMaterial
+        color="#ffffff"
+        emissive={selected ? color : "#000000"}
+        emissiveIntensity={selected ? 0.18 : 0}
+        roughness={0.85}
+        flatShading
+      />
+    </instancedMesh>
   );
 }
 

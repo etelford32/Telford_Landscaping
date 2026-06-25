@@ -88,6 +88,10 @@ export default function EditableTerrain({
     return geom;
   }, [size, resolution]);
 
+  // Dispose the geometry when it's replaced (size/resolution change) or on
+  // unmount; it's created via useMemo, so R3F won't dispose it for us.
+  useEffect(() => () => geometry.dispose(), [geometry]);
+
   // Push the heightmap into the geometry whenever the terrain changes. A freshly
   // built geometry is synced in full; afterwards only the region TerrainManager
   // reports dirty is rewritten, so a brush dab touches a few dozen vertices

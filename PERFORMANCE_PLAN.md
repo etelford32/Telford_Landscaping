@@ -59,9 +59,11 @@ _Targets the specific actions that stutter: dragging, terrain brushing, cursor t
 
 ---
 
-## Phase 3 — Draw-call / GPU diet
+## Phase 3 — Draw-call / GPU diet ✅ Implemented
 
 _Makes each frame cheap. Biggest raw GPU win, but the most work. With Phase 1 done, this is what keeps large designs at 60fps._
+
+> **Status:** Implemented on branch `claude/eloquent-brahmagupta-dr6l3e` across three commits. (8) `StructureModels` renders all high-count repeated geometry (deck planks, fence slats, wall boulders/timbers/brick-faces/course-lines/dry-stack, pergola rafters, path stepping-stones/joints/gravel) through one `InstancedParts` helper — a single draw call + shared material per part instead of one per element. (9) Every render-body `Math.random()` (structures + `Landscaping` flower beds) is now a per-object seeded PRNG (`lib/utils/seededRandom`), so layouts are stable and `React.memo` holds. (10) Plant canopies are instanced over a shared module-level unit icosahedron geometry, and `LandscapeScene` quantizes autoplay age to integer years so memoized plants don't re-render ~60×/s. (11) `ProceduralPlant` and `EditableTerrain` dispose their `useMemo`-created geometry/materials on unmount/rebuild. Per-commit detail: 3a structures+random, 3b plants+age, 3c disposal. Typecheck clean. Not yet verified in a browser — structures/plants should be smoke-tested visually.
 
 | # | Fix | Files | Effort | Impact |
 |---|-----|-------|--------|--------|
@@ -80,12 +82,16 @@ _Makes each frame cheap. Biggest raw GPU win, but the most work. With Phase 1 do
 
 _The `lib/ecs/` system (~5k lines, four render systems) is currently **dead code** — nothing outside `lib/ecs/**` imports it. The decision is to rework it into a genuinely performant system rather than delete it. This is the largest track in the plan and does **not** speed up the app until it is both fixed **and** adopted as the live render path (4d)._
 
-### 4a — Core hot-path fixes (**M–L**)
+> **Status:** 4a–4c implemented on branch `claude/eloquent-brahmagupta-dr6l3e`. The ECS is now performant in isolation but remains **dead code** — **4d (adoption) is the open go/no-go** and has not been started. Typecheck clean throughout; not exercised at runtime (no consumer yet).
+>
+> _As built, a few items landed slightly differently than the bullets below:_ the redundant `PlantRenderSystem` was **kept and documented as non-canonical** (not deleted) because `PlantDataBridge` constructs it; `EnhancedRenderSystem` got a distinct `name` to fix a registration collision. Care-tracking is **throttled to ~1Hz** rather than hard-skipped when paused. Asset disposal is implemented as **ref-counted `acquire`/`release`** on `AssetManager` (correct, callable plumbing); wiring it into entity removal is part of 4d.
+
+### 4a — Core hot-path fixes (**M–L**) ✅ Implemented
 - Replace `cloneComponent`'s `JSON.parse(JSON.stringify(...))` deep-clone on every get/set with a struct copy or no-clone access. `lib/ecs/core/Component.ts:44-46`, `lib/ecs/core/World.ts:90-110`
 - Remove the per-frame `forceUpdate()` React loop; drive consumer re-renders from a dirty-flag/subscription model so components only re-render on actual change. `lib/ecs/hooks.tsx:187-219`
 - Cache queries with invalidation-on-change instead of full-world scans every frame across ~5 systems. `lib/ecs/core/World.ts:155-165`
 
-### 4b — System consolidation (**M**)
+### 4b — System consolidation (**M**) ✅ Implemented
 - Register exactly **one** plant render system (the instanced one); remove/merge the overlap between `RenderSystem`, `EnhancedRenderSystem`, `PlantRenderSystem`, `InstancedPlantRenderSystem` (two systems currently claim the same entities and would render every plant twice). `lib/ecs/systems/*`
 - Reuse scratch `Matrix4`/`Vector3`/`Quaternion`/`Color` objects instead of allocating ~6-8 per instance per frame; gate matrix writes behind a real dirty flag. `lib/ecs/systems/InstancedPlantRenderSystem.ts:268-321`
 - Replace the per-frame `JSON.stringify` dirty check with field comparison. `lib/ecs/systems/MaterialSystem.ts:110`
@@ -93,16 +99,16 @@ _The `lib/ecs/` system (~5k lines, four render systems) is currently **dead code
 - Fix the async-in-sync-`update` race and per-frame `applyTexture`. `lib/ecs/systems/EnhancedRenderSystem.ts:90-187`
 - Switch entity IDs to deterministic generation (currently `Date.now()` + `Math.random()`). `lib/ecs/core/Entity.ts:26`
 
-### 4c — Asset layer (**S–M**)
+### 4c — Asset layer (**S–M**) ✅ Implemented
 - Stop inflating models ~3× — `toNonIndexed()` is mislabeled "dedup" and does the opposite; keep indexed geometry, and don't recompute normals/bounds that GLTFs already ship. `lib/ecs/assets/ModelLoader.ts:181-184`
 - Add a `Map<path, Texture>` cache so identical textures aren't re-decoded/re-uploaded. `lib/ecs/assets/TextureLoader.ts`
 - Auto-dispose geometry/material/texture when an entity/placement is removed (plumbing exists; nothing calls it). `lib/ecs/assets/AssetManager.ts:267-299`
 
-### 4d — Integration (**L**, go/no-go after 4a–4c)
+### 4d — Integration (**L**, go/no-go after 4a–4c) — ⏸️ Not adopted (decision)
 - Wire the ECS into the canvas as the single source of truth for rendering, bridging React design state → ECS entities, and remove the plain R3F `plants.map()` path so the two systems don't both render.
 - Update/realign `DESIGN_APP_INTEGRATION_GUIDE.md` and `INTEGRATION_SUMMARY.md` to the reworked design.
 
-> **Caveat:** until 4d lands, 4a–4c improve dead code only. Treat 4d as an architectural decision to make **after** Phases 1–3 prove out the cheaper wins on the live path.
+> **Decision (2026-06-25):** 4d is **not being adopted.** The optimized R3F path from Phases 1–3 stays the live renderer; the reworked ECS (4a–4c) remains available but unwired. Rationale: Phases 1–3 already delivered the performance wins on the actual app, and the ECS's render systems draw simpler geometry (sphere/cone canopies) than the live `PlantModels`/`ProceduralPlant`/`StructureModels`, so wholesale adoption as-is would regress visual quality. If revisited, adoption must also upgrade the ECS renderers to match current detail and be validated in-browser — the "prototype behind a flag" path is the lower-risk way in.
 
 ---
 

@@ -75,6 +75,7 @@ export class GrowthSystem extends BaseSystem {
   private config: GrowthSystemConfig;
   private growthCurves: Map<string, GrowthCurve> = new Map();
   private daysSinceStart: number = 0;
+  private careAccumulatorSec: number = 0; // throttles care-tracking to ~1Hz
 
   constructor(config: Partial<GrowthSystemConfig> = {}) {
     super();
@@ -148,9 +149,16 @@ export class GrowthSystem extends BaseSystem {
   private updateCareTracking(world: World, deltaTime: number): ComponentUpdate[] {
     if (!this.config.enableCareTracking) return [];
 
+    // Throttle to ~1Hz: care accrues over days (pruning/fertilization), so
+    // running it every frame was 60x the necessary work and churn.
+    this.careAccumulatorSec += deltaTime;
+    if (this.careAccumulatorSec < 1) return [];
+    const elapsedSec = this.careAccumulatorSec;
+    this.careAccumulatorSec = 0;
+
     const updates: ComponentUpdate[] = [];
     const entities = this.queryEntities(world);
-    const days = (deltaTime * this.config.timeScale) / 86400;
+    const days = (elapsedSec * this.config.timeScale) / 86400;
 
     for (const entity of entities) {
       const plantData = world.getComponent<PlantDataComponent>(entity.id, 'PlantData');

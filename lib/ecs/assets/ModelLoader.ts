@@ -175,13 +175,12 @@ export class ModelLoader {
     // Traverse and optimize each mesh
     model.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        // Optimize geometry
-        if (child.geometry) {
-          // Remove duplicate vertices
+        // Keep the GLTF's indexed geometry and authored normals. The previous
+        // version called toNonIndexed() — which INFLATES vertex count (~3x),
+        // despite the "dedup" comment — and recomputed normals, discarding the
+        // asset's authored (smooth) shading. Only fill in normals if missing.
+        if (child.geometry && !child.geometry.getAttribute('normal')) {
           child.geometry.computeVertexNormals();
-
-          // Enable vertex deduplication
-          child.geometry = child.geometry.toNonIndexed();
         }
 
         // Optimize materials

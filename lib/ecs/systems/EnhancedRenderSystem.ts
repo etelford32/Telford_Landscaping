@@ -58,8 +58,17 @@ const DEFAULT_ENHANCED_CONFIG: EnhancedRenderSystemConfig = {
  * EnhancedRenderSystem - Asset-aware rendering
  */
 export class EnhancedRenderSystem extends RenderSystem {
+  // Override the inherited name so this can't silently collide with a plain
+  // RenderSystem during registration (World dedupes systems by name).
+  readonly name = 'EnhancedRenderSystem';
+
   private enhancedConfig: EnhancedRenderSystemConfig;
   private assetManager?: AssetManager;
+
+  // Async guards: fire a model/texture load once per entity, not every frame
+  // while the promise is still in flight.
+  private modelInFlight: Set<string> = new Set();
+  private appliedTextures: Map<string, string> = new Map(); // entityId -> textureId
 
   // LOD management
   private lodObjects: Map<string, THREE.LOD> = new Map();
@@ -123,14 +132,22 @@ export class EnhancedRenderSystem extends RenderSystem {
 
       if (!asset || !transform || !this.assetManager) continue;
 
-      // Check if we need to load/create model
-      if (asset.modelId && !this.getMesh(entity.id)) {
-        this.createModelMesh(entity.id, asset, transform);
+      // Create the model mesh once. createModelMesh is async; without this guard
+      // the same load fires every frame until it resolves (race + duplicates).
+      if (asset.modelId && !this.modelInFlight.has(entity.id) && !this.getMesh(entity.id)) {
+        this.modelInFlight.add(entity.id);
+        void this.createModelMesh(entity.id, asset, transform);
       }
 
-      // Update texture if needed
-      if (asset.textureId) {
-        this.applyTexture(entity.id, asset.textureId);
+      // Apply the texture only when it changes, and only once the mesh exists —
+      // not every frame.
+      if (
+        asset.textureId &&
+        this.getMesh(entity.id) &&
+        this.appliedTextures.get(entity.id) !== asset.textureId
+      ) {
+        this.appliedTextures.set(entity.id, asset.textureId); // optimistic; cleared on error
+        void this.applyTexture(entity.id, asset.textureId);
       }
     }
   }
@@ -179,6 +196,7 @@ export class EnhancedRenderSystem extends RenderSystem {
         this.addModelToScene(entityId, clonedModel, transform);
       }
     } catch (error) {
+      this.modelInFlight.delete(entityId); // allow a retry next frame
       console.error(
         `Failed to create model mesh for ${entityId}:`,
         error
@@ -351,6 +369,7 @@ export class EnhancedRenderSystem extends RenderSystem {
         material.needsUpdate = true;
       }
     } catch (error) {
+      this.appliedTextures.delete(entityId); // allow a retry next frame
       console.error(
         `Failed to apply texture ${textureId} to ${entityId}:`,
         error

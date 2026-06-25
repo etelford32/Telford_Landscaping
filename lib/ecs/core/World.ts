@@ -11,7 +11,7 @@
  */
 
 import { Entity, EntityType, createEntity } from './Entity';
-import { Component, ComponentType, ComponentMap, cloneComponent } from './Component';
+import { Component, ComponentType, ComponentMap } from './Component';
 import { System, ComponentUpdate } from './System';
 
 /**
@@ -28,6 +28,15 @@ export interface WorldState {
  */
 export class World {
   private state: WorldState;
+
+  // Change notification (React subscribes via hooks; bumped only on real change)
+  private changeVersion = 0;
+  private listeners = new Set<() => void>();
+
+  // Query cache keyed by sorted component signature. Invalidated only on
+  // STRUCTURAL changes (entity add/remove, component add/remove) — value
+  // updates don't change query membership, so per-frame system queries hit it.
+  private queryCache = new Map<string, Entity[]>();
 
   constructor(initialState?: Partial<WorldState>) {
     this.state = {
@@ -48,6 +57,8 @@ export class World {
     const entity = createEntity(type, id);
     this.state.entities.set(entity.id, entity);
     this.state.components.set(entity.id, new Map());
+    this.invalidateQueryCache();
+    this.markChanged();
     return entity;
   }
 
@@ -55,8 +66,10 @@ export class World {
    * Remove an entity and all its components
    */
   removeEntity(entityId: string): void {
-    this.state.entities.delete(entityId);
+    if (!this.state.entities.delete(entityId)) return;
     this.state.components.delete(entityId);
+    this.invalidateQueryCache();
+    this.markChanged();
   }
 
   /**
@@ -88,25 +101,38 @@ export class World {
    * Add or update a component on an entity
    */
   setComponent<T extends Component>(entityId: string, component: T): void {
+    this.setComponentRaw(entityId, component);
+    this.markChanged();
+  }
+
+  /**
+   * Internal component write: no change notification (the update loop batches
+   * many writes then notifies once). Components are treated as immutable by
+   * convention — systems emit fresh component objects rather than mutating —
+   * so we store the reference directly instead of deep-cloning every write.
+   */
+  private setComponentRaw<T extends Component>(entityId: string, component: T): void {
     const componentMap = this.state.components.get(entityId);
     if (!componentMap) {
       throw new Error(`Entity ${entityId} does not exist`);
     }
 
-    // Store a deep clone to ensure immutability
-    componentMap.set(component.type, cloneComponent(component));
+    // Adding a component TYPE that wasn't present changes query membership.
+    if (!componentMap.has(component.type)) {
+      this.invalidateQueryCache();
+    }
+    componentMap.set(component.type, component);
   }
 
   /**
-   * Get a component from an entity
+   * Get a component from an entity. Returns the stored reference (no clone);
+   * callers must treat it as read-only.
    */
   getComponent<T extends Component>(entityId: string, componentType: ComponentType): T | undefined {
     const componentMap = this.state.components.get(entityId);
     if (!componentMap) return undefined;
 
-    const component = componentMap.get(componentType);
-    // Return a clone to prevent external mutations
-    return component ? cloneComponent(component) as T : undefined;
+    return componentMap.get(componentType) as T | undefined;
   }
 
   /**
@@ -129,8 +155,9 @@ export class World {
    */
   removeComponent(entityId: string, componentType: ComponentType): void {
     const componentMap = this.state.components.get(entityId);
-    if (componentMap) {
-      componentMap.delete(componentType);
+    if (componentMap && componentMap.delete(componentType)) {
+      this.invalidateQueryCache();
+      this.markChanged();
     }
   }
 
@@ -141,7 +168,7 @@ export class World {
     const componentMap = this.state.components.get(entityId);
     if (!componentMap) return [];
 
-    return Array.from(componentMap.values()).map(c => cloneComponent(c));
+    return Array.from(componentMap.values());
   }
 
   // ==========================================
@@ -153,14 +180,18 @@ export class World {
    * This is the primary way systems find relevant entities
    */
   queryEntities(requiredComponents: ComponentType[]): Entity[] {
-    const entities: Entity[] = [];
+    const key = this.queryKey(requiredComponents);
+    const cached = this.queryCache.get(key);
+    if (cached) return cached;
 
+    const entities: Entity[] = [];
     for (const [entityId, entity] of this.state.entities) {
       if (this.hasAllComponents(entityId, requiredComponents)) {
         entities.push(entity);
       }
     }
 
+    this.queryCache.set(key, entities);
     return entities;
   }
 
@@ -187,6 +218,47 @@ export class World {
     }
 
     return results;
+  }
+
+  // ==========================================
+  // Change Notification (React subscription)
+  // ==========================================
+
+  /**
+   * Subscribe to world changes. Returns an unsubscribe function. Used by the
+   * React hooks (useSyncExternalStore) so consumers re-render only when
+   * something actually changes — not every frame.
+   */
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  /**
+   * Monotonic change counter; the snapshot value for useSyncExternalStore.
+   */
+  getChangeVersion(): number {
+    return this.changeVersion;
+  }
+
+  /**
+   * Bump the change version and notify subscribers.
+   */
+  markChanged(): void {
+    this.changeVersion++;
+    this.listeners.forEach(listener => listener());
+  }
+
+  private queryKey(requiredComponents: ComponentType[]): string {
+    return requiredComponents.slice().sort().join(',');
+  }
+
+  private invalidateQueryCache(): void {
+    if (this.queryCache.size > 0) {
+      this.queryCache.clear();
+    }
   }
 
   // ==========================================
@@ -231,20 +303,30 @@ export class World {
 
     for (const system of this.state.systems) {
       const updates = system.update(this, deltaTime);
-      allUpdates.push(...updates);
+      if (updates.length > 0) {
+        allUpdates.push(...updates);
+      }
     }
 
-    // Apply all updates
+    // Apply all updates (notifies once, only if anything changed)
     this.applyUpdates(allUpdates);
   }
 
   /**
-   * Apply component updates
+   * Apply component updates. Writes silently, then notifies once — so a frame
+   * with no updates triggers zero React re-renders.
    */
   private applyUpdates(updates: ComponentUpdate[]): void {
+    if (updates.length === 0) return;
+
     for (const update of updates) {
-      this.setComponent(update.entityId, update.componentData);
+      // Skip updates for entities removed earlier this frame.
+      if (this.state.components.has(update.entityId)) {
+        this.setComponentRaw(update.entityId, update.componentData);
+      }
     }
+
+    this.markChanged();
   }
 
   // ==========================================
@@ -314,6 +396,8 @@ export class World {
       ),
       systems: [...snapshot.systems]
     };
+    this.invalidateQueryCache();
+    this.markChanged();
   }
 
   // ==========================================
@@ -344,5 +428,7 @@ export class World {
   clear(): void {
     this.state.entities.clear();
     this.state.components.clear();
+    this.invalidateQueryCache();
+    this.markChanged();
   }
 }

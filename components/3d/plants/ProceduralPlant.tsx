@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { PlacedPlant, calculatePlantSize } from "@/lib/plantData";
 import {
@@ -581,6 +581,21 @@ export default function ProceduralPlant({
     });
   }, [leafTex, preset.leafPalette]);
 
+  // Dispose per-plant geometry/material on unmount. R3F doesn't own these
+  // (useMemo-created, passed via args), so without this they leak on every
+  // plant deletion. branchGeo/leafGeo/branchMat are stable; leafMat is rebuilt
+  // when the leaf texture changes, so its old instance is disposed then too.
+  useEffect(
+    () => () => {
+      branchGeo.dispose();
+      leafGeo.dispose();
+      branchMat.dispose();
+    },
+    [branchGeo, leafGeo, branchMat]
+  );
+  useEffect(() => () => leafMat.dispose(), [leafMat]);
+
+  const worldScale = (size.height / 5) / draw.height;
   // Height scales uniformly to the allometric height. For allometric species
   // (oak, redwood) we also drive crown width from the model, since the
   // generator's natural spread differs from the species' true width:height —

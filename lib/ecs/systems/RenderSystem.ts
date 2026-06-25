@@ -60,7 +60,7 @@ const DEFAULT_CONFIG: RenderSystemConfig = {
  * RenderSystem - Syncs ECS components to Three.js meshes
  */
 export class RenderSystem extends BaseSystem {
-  readonly name = 'RenderSystem';
+  readonly name: string = 'RenderSystem'; // widened so subclasses can override
   readonly requiredComponents: ComponentType[] = ['Transform', 'Geometry', 'Material'];
   readonly priority = SystemPriority.RENDER;
 

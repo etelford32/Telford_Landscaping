@@ -47,6 +47,12 @@ export class TextureLoader {
   private loader: THREE.TextureLoader;
   private loadingManager: THREE.LoadingManager;
 
+  // Path-keyed cache so identical texture files are fetched/decoded/uploaded
+  // once and shared. Ref-counted so disposeTexture only frees the GPU resource
+  // when the last user releases it.
+  private cache: Map<string, { texture: THREE.Texture; refCount: number }> = new Map();
+  private pending: Map<string, Promise<THREE.Texture>> = new Map();
+
   constructor(config: Partial<TextureLoaderConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
 
@@ -62,30 +68,50 @@ export class TextureLoader {
     path: string,
     options: LoadOptions = {}
   ): Promise<THREE.Texture> {
-    return new Promise((resolve, reject) => {
-      const fullPath = this.resolvePath(path);
+    const fullPath = this.resolvePath(path);
 
+    // Cache hit — share the already-decoded/uploaded texture.
+    const cached = this.cache.get(fullPath);
+    if (cached) {
+      cached.refCount++;
+      return cached.texture;
+    }
+
+    // A load for this path is already in flight — join it.
+    const inFlight = this.pending.get(fullPath);
+    if (inFlight) {
+      await inFlight; // throws if the in-flight load failed
+      const entry = this.cache.get(fullPath);
+      if (entry) {
+        entry.refCount++;
+        return entry.texture;
+      }
+    }
+
+    const promise = new Promise<THREE.Texture>((resolve, reject) => {
       this.loader.load(
         fullPath,
-        (texture) => {
-          this.configureTexture(texture, options);
-          resolve(texture);
-        },
-        (progress) => {
-          if (options.onProgress) {
-            const percent = (progress.loaded / progress.total) * 100;
-            options.onProgress(percent);
-          }
-        },
-        (error) => {
-          const err = new Error(`Failed to load texture: ${fullPath}`);
-          if (options.onError) {
-            options.onError(err);
-          }
-          reject(err);
-        }
+        (texture) => resolve(texture),
+        undefined,
+        () => reject(new Error(`Failed to load texture: ${fullPath}`))
       );
     });
+    this.pending.set(fullPath, promise);
+
+    let texture: THREE.Texture;
+    try {
+      texture = await promise;
+    } catch (err) {
+      this.pending.delete(fullPath);
+      if (options.onError) options.onError(err as Error);
+      throw err;
+    }
+
+    this.pending.delete(fullPath);
+    this.configureTexture(texture, options);
+    texture.userData.__cachePath = fullPath;
+    this.cache.set(fullPath, { texture, refCount: 1 });
+    return texture;
   }
 
   /**
@@ -259,7 +285,27 @@ export class TextureLoader {
    * Dispose of a texture and free GPU memory
    */
   disposeTexture(texture: THREE.Texture): void {
+    const path = texture.userData?.__cachePath as string | undefined;
+    if (path) {
+      const entry = this.cache.get(path);
+      if (entry) {
+        entry.refCount--;
+        if (entry.refCount > 0) return; // still in use elsewhere
+        this.cache.delete(path);
+      }
+    }
     texture.dispose();
+  }
+
+  /**
+   * Dispose every cached texture and reset the cache (scene teardown).
+   */
+  clearCache(): void {
+    for (const { texture } of this.cache.values()) {
+      texture.dispose();
+    }
+    this.cache.clear();
+    this.pending.clear();
   }
 
   /**
