@@ -49,7 +49,7 @@ function LoginForm() {
               <TreePine className="w-8 h-8 text-primary-600" />
             </div>
             <div className="text-left">
-              <div className="text-2xl font-bold">Telford Landscapes</div>
+              <div className="text-2xl font-bold">Telford Landscaping</div>
               <div className="text-sm text-primary-200">PRO Design Tool</div>
             </div>
           </Link>
