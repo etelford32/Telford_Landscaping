@@ -60,6 +60,10 @@ export class AssetManager {
   private preloadQueue: AssetManifestEntry[] = [];
   private isPreloading: boolean = false;
 
+  // Per-consumer reference counts; release() disposes at zero so a shared asset
+  // isn't freed while another entity still uses it.
+  private refCounts: Map<string, number> = new Map();
+
   constructor(
     renderer?: THREE.WebGLRenderer,
     config: Partial<AssetManagerConfig> = {}
@@ -299,6 +303,28 @@ export class AssetManager {
   }
 
   /**
+   * Mark that a consumer (e.g. an entity) is using an asset. Pair with
+   * release() on removal so the asset is disposed only when the last user is
+   * gone. This is the disposal plumbing for 4d to wire into the entity lifecycle.
+   */
+  acquire(id: string): void {
+    this.refCounts.set(id, (this.refCounts.get(id) ?? 0) + 1);
+  }
+
+  /**
+   * Release a consumer's reference; unloads (disposes) the asset at zero refs.
+   */
+  release(id: string): void {
+    const next = (this.refCounts.get(id) ?? 0) - 1;
+    if (next > 0) {
+      this.refCounts.set(id, next);
+      return;
+    }
+    this.refCounts.delete(id);
+    this.unload(id);
+  }
+
+  /**
    * Load asset manifest
    */
   async loadManifest(path: string): Promise<void> {
@@ -446,6 +472,7 @@ export class AssetManager {
 
     this.assets.clear();
     this.loadingPromises.clear();
+    this.refCounts.clear();
   }
 
   /**
