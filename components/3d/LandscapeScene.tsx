@@ -279,7 +279,11 @@ export default function LandscapeScene() {
         />
 
         <Suspense fallback={null}>
-          <Scene age={age} />
+          {/* Quantize to integer years: the autoplay clock advances `age` ~60x/s
+              but plants only need per-year granularity, so memoized PlantModels
+              skip re-rendering between year steps (and procedural plants already
+              step per year internally). */}
+          <Scene age={Math.round(age)} />
         </Suspense>
       </Canvas>
 
