@@ -1,13 +1,63 @@
 "use client";
 
-import { memo, useRef } from "react";
-import { Mesh } from "three";
+import { memo, useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
+import { BufferGeometry, InstancedMesh, Material, Object3D } from "three";
 import { PlacedStructure } from "@/lib/structureData";
 import { calculateStructureSize } from "@/lib/structureData";
+import { hashString, mulberry32 } from "@/lib/utils/seededRandom";
 
 interface StructureModelProps {
   structure: PlacedStructure;
   onClick?: () => void;
+}
+
+// Renders `count` copies of one geometry + material in a SINGLE draw call.
+// The per-instance transform is supplied via setMatrix (mutating a shared dummy
+// Object3D). Geometry/material are passed as children so callers stay
+// declarative; R3F owns and disposes them. Replaces the old `.map(<mesh/>)`
+// patterns that emitted one draw call (and one material) per slat/brick/etc.
+function InstancedParts({
+  count,
+  setMatrix,
+  castShadow = false,
+  receiveShadow = false,
+  children,
+}: {
+  count: number;
+  setMatrix: (dummy: Object3D, i: number) => void;
+  castShadow?: boolean;
+  receiveShadow?: boolean;
+  children: ReactNode;
+}) {
+  const ref = useRef<InstancedMesh>(null);
+  const n = Math.max(0, count);
+
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const dummy = new Object3D();
+    for (let i = 0; i < n; i++) {
+      dummy.position.set(0, 0, 0);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      setMatrix(dummy, i);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.count = n;
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [n, setMatrix]);
+
+  return (
+    <instancedMesh
+      ref={ref}
+      args={[undefined as unknown as BufferGeometry, undefined as unknown as Material, n]}
+      castShadow={castShadow}
+      receiveShadow={receiveShadow}
+    >
+      {children}
+    </instancedMesh>
+  );
 }
 
 // Main component that routes to specific structure models
@@ -175,23 +225,21 @@ function DeckModel({ structure, size, onClick }: any) {
         </mesh>
       ))}
 
-      {/* Deck planks */}
-      {Array.from({ length: numPlanks }).map((_, i) => (
-        <mesh
-          key={i}
-          position={[0, size.height, (i - numPlanks / 2) * 0.5 + 0.25]}
-          castShadow
-          receiveShadow
-        >
-          <boxGeometry args={[size.width, 0.2, 0.4]} />
-          <meshStandardMaterial
-            color={structure.selected ? '#ffeb3b' : deckColor}
-            emissive={structure.selected ? '#ffeb3b' : '#000000'}
-            emissiveIntensity={structure.selected ? 0.2 : 0}
-            roughness={0.8}
-          />
-        </mesh>
-      ))}
+      {/* Deck planks (instanced) */}
+      <InstancedParts
+        count={numPlanks}
+        castShadow
+        receiveShadow
+        setMatrix={(d, i) => d.position.set(0, size.height, (i - numPlanks / 2) * 0.5 + 0.25)}
+      >
+        <boxGeometry args={[size.width, 0.2, 0.4]} />
+        <meshStandardMaterial
+          color={structure.selected ? '#ffeb3b' : deckColor}
+          emissive={structure.selected ? '#ffeb3b' : '#000000'}
+          emissiveIntensity={structure.selected ? 0.2 : 0}
+          roughness={0.8}
+        />
+      </InstancedParts>
 
       {/* Railing */}
       <group position={[0, size.height + 1.5, size.depth / 2]}>
@@ -266,39 +314,35 @@ function FenceModel({ structure, size, onClick }: any) {
         </mesh>
       ))}
 
-      {/* Fence boards/slats */}
+      {/* Fence boards/slats (instanced) */}
       {isHorizontal ? (
         // Horizontal slats
-        Array.from({ length: numSlats }).map((_, i) => (
-          <mesh
-            key={`slat-${i}`}
-            position={[0, (i / numSlats) * size.height + 0.5, 0]}
-            castShadow
-          >
-            <boxGeometry args={[size.width, 0.15, 0.05]} />
-            <meshStandardMaterial
-              color={structure.selected ? '#ffeb3b' : fenceColor}
-              emissive={structure.selected ? '#ffeb3b' : '#000000'}
-              emissiveIntensity={structure.selected ? 0.2 : 0}
-            />
-          </mesh>
-        ))
+        <InstancedParts
+          count={numSlats}
+          castShadow
+          setMatrix={(d, i) => d.position.set(0, (i / numSlats) * size.height + 0.5, 0)}
+        >
+          <boxGeometry args={[size.width, 0.15, 0.05]} />
+          <meshStandardMaterial
+            color={structure.selected ? '#ffeb3b' : fenceColor}
+            emissive={structure.selected ? '#ffeb3b' : '#000000'}
+            emissiveIntensity={structure.selected ? 0.2 : 0}
+          />
+        </InstancedParts>
       ) : (
         // Vertical boards
-        Array.from({ length: numSlats }).map((_, i) => (
-          <mesh
-            key={`board-${i}`}
-            position={[(i / numSlats - 0.5) * size.width, size.height / 2, 0]}
-            castShadow
-          >
-            <boxGeometry args={[0.15, size.height - 0.5, 0.05]} />
-            <meshStandardMaterial
-              color={structure.selected ? '#ffeb3b' : fenceColor}
-              emissive={structure.selected ? '#ffeb3b' : '#000000'}
-              emissiveIntensity={structure.selected ? 0.2 : 0}
-            />
-          </mesh>
-        ))
+        <InstancedParts
+          count={numSlats}
+          castShadow
+          setMatrix={(d, i) => d.position.set((i / numSlats - 0.5) * size.width, size.height / 2, 0)}
+        >
+          <boxGeometry args={[0.15, size.height - 0.5, 0.05]} />
+          <meshStandardMaterial
+            color={structure.selected ? '#ffeb3b' : fenceColor}
+            emissive={structure.selected ? '#ffeb3b' : '#000000'}
+            emissiveIntensity={structure.selected ? 0.2 : 0}
+          />
+        </InstancedParts>
       )}
 
       {structure.selected && (
@@ -333,6 +377,65 @@ function WallModel({ structure, size, onClick }: any) {
   const isStucco = structure.structureId === 'stucco-wall';
   const isDryStack = structure.structureId === 'dry-stack-stone-wall';
 
+  // Seeded, stable layouts for the procedurally-scattered variants (was
+  // Math.random() in the render body, which reshuffled every frame).
+  const boulderData = useMemo(() => {
+    if (!isBoulder) return [];
+    const cols = Math.floor(size.width / 2.5);
+    const rows = Math.floor(size.height / 1.5);
+    const rand = mulberry32(hashString(structure.id));
+    const out: { x: number; y: number; z: number; s: number }[] = [];
+    for (let i = 0; i < cols * rows; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      out.push({
+        x: -size.width / 2 + col * 2.5 + 1.25,
+        y: row * 1.5 + 0.75,
+        z: (rand() - 0.5) * size.depth * 0.8,
+        s: 0.7 + rand() * 0.3,
+      });
+    }
+    return out;
+  }, [isBoulder, size.width, size.height, size.depth, structure.id]);
+
+  const brickData = useMemo(() => {
+    if (!isBrick) return [];
+    const rows = Math.floor(size.height / 0.33);
+    const cols = Math.floor(size.width / 0.67);
+    const out: { x: number; y: number; z: number }[] = [];
+    for (let row = 0; row < rows; row++) {
+      const offset = row % 2 === 0 ? 0 : 0.33;
+      for (let col = 0; col < cols; col++) {
+        out.push({
+          x: -size.width / 2 + col * 0.67 + offset,
+          y: row * 0.33 + 0.16,
+          z: size.depth / 2 + 0.01,
+        });
+      }
+    }
+    return out;
+  }, [isBrick, size.width, size.height, size.depth]);
+
+  const dryStackData = useMemo(() => {
+    if (!isDryStack) return [];
+    const rows = Math.floor(size.height / 0.4);
+    const cols = Math.floor(size.width / 1.5) + 1;
+    const rand = mulberry32(hashString(structure.id));
+    const out: { x: number; y: number; z: number; w: number }[] = [];
+    for (let row = 0; row < rows; row++) {
+      const offset = (row % 2) * 0.3;
+      for (let col = 0; col < cols; col++) {
+        out.push({
+          x: -size.width / 2 + col * 1.5 + offset,
+          y: row * 0.4 + 0.2,
+          z: size.depth / 2 + 0.01,
+          w: 1.2 + rand() * 0.6,
+        });
+      }
+    }
+    return out;
+  }, [isDryStack, size.width, size.height, size.depth, structure.id]);
+
   return (
     <group
       position={[structure.position.x, 0, structure.position.z]}
@@ -340,42 +443,42 @@ function WallModel({ structure, size, onClick }: any) {
       onClick={onClick}
     >
       {isBoulder ? (
-        // Boulder wall - large individual rocks
-        <>
-          {Array.from({ length: Math.floor(size.width / 2.5) * Math.floor(size.height / 1.5) }, (_, i) => {
-            const col = i % Math.floor(size.width / 2.5);
-            const row = Math.floor(i / Math.floor(size.width / 2.5));
-            const x = -size.width / 2 + col * 2.5 + 1.25;
-            const y = row * 1.5 + 0.75;
-            const z = (Math.random() - 0.5) * size.depth * 0.8;
-            const scale = 0.7 + Math.random() * 0.3;
-            return (
-              <mesh key={i} position={[x, y, z]} castShadow receiveShadow>
-                <sphereGeometry args={[scale, 8, 6]} />
-                <meshStandardMaterial
-                  color={structure.selected ? '#ffeb3b' : getWallColor()}
-                  emissive={structure.selected ? '#ffeb3b' : '#000000'}
-                  emissiveIntensity={structure.selected ? 0.2 : 0}
-                  roughness={0.95}
-                />
-              </mesh>
-            );
-          })}
-        </>
+        // Boulder wall - large individual rocks (instanced; unit sphere scaled)
+        <InstancedParts
+          count={boulderData.length}
+          castShadow
+          receiveShadow
+          setMatrix={(d, i) => {
+            const b = boulderData[i];
+            d.position.set(b.x, b.y, b.z);
+            d.scale.setScalar(b.s);
+          }}
+        >
+          <sphereGeometry args={[1, 8, 6]} />
+          <meshStandardMaterial
+            color={structure.selected ? '#ffeb3b' : getWallColor()}
+            emissive={structure.selected ? '#ffeb3b' : '#000000'}
+            emissiveIntensity={structure.selected ? 0.2 : 0}
+            roughness={0.95}
+          />
+        </InstancedParts>
       ) : isWood ? (
         // Wood wall - horizontal timbers
         <>
-          {Array.from({ length: Math.floor(size.height / 0.67) }, (_, i) => (
-            <mesh key={i} position={[0, i * 0.67 + 0.33, 0]} castShadow receiveShadow>
-              <boxGeometry args={[size.width, 0.6, size.depth]} />
-              <meshStandardMaterial
-                color={structure.selected ? '#ffeb3b' : getWallColor()}
-                emissive={structure.selected ? '#ffeb3b' : '#000000'}
-                emissiveIntensity={structure.selected ? 0.2 : 0}
-                roughness={0.8}
-              />
-            </mesh>
-          ))}
+          <InstancedParts
+            count={Math.floor(size.height / 0.67)}
+            castShadow
+            receiveShadow
+            setMatrix={(d, i) => d.position.set(0, i * 0.67 + 0.33, 0)}
+          >
+            <boxGeometry args={[size.width, 0.6, size.depth]} />
+            <meshStandardMaterial
+              color={structure.selected ? '#ffeb3b' : getWallColor()}
+              emissive={structure.selected ? '#ffeb3b' : '#000000'}
+              emissiveIntensity={structure.selected ? 0.2 : 0}
+              roughness={0.8}
+            />
+          </InstancedParts>
           {/* Support posts */}
           {Array.from({ length: Math.floor(size.width / 4) + 1 }, (_, i) => (
             <mesh key={`post-${i}`} position={[-size.width / 2 + i * 4, size.height / 2, -size.depth / 2]} castShadow>
@@ -397,53 +500,45 @@ function WallModel({ structure, size, onClick }: any) {
             />
           </mesh>
 
-          {/* Texture patterns */}
-          {isBrick && Array.from({ length: Math.floor(size.height / 0.33) }).map((_, row) => (
-            <group key={row}>
-              {Array.from({ length: Math.floor(size.width / 0.67) }).map((_, col) => {
-                const offset = row % 2 === 0 ? 0 : 0.33;
-                return (
-                  <mesh
-                    key={`brick-${row}-${col}`}
-                    position={[-size.width / 2 + col * 0.67 + offset, row * 0.33 + 0.16, size.depth / 2 + 0.01]}
-                  >
-                    <planeGeometry args={[0.65, 0.31]} />
-                    <meshBasicMaterial color="#000000" transparent opacity={0.15} />
-                  </mesh>
-                );
-              })}
-            </group>
-          ))}
+          {/* Texture patterns (brick face overlay, instanced) */}
+          {isBrick && (
+            <InstancedParts
+              count={brickData.length}
+              setMatrix={(d, i) => {
+                const b = brickData[i];
+                d.position.set(b.x, b.y, b.z);
+              }}
+            >
+              <planeGeometry args={[0.65, 0.31]} />
+              <meshBasicMaterial color="#000000" transparent opacity={0.15} />
+            </InstancedParts>
+          )}
 
           {/* Stone course lines for non-gabion, non-brick, non-stucco walls */}
-          {!isGabion && !isBrick && !isStucco && !isDryStack && Array.from({ length: Math.floor(size.height / 0.5) }).map((_, i) => (
-            <mesh
-              key={i}
-              position={[0, i * 0.5 + 0.25, size.depth / 2 + 0.01]}
+          {!isGabion && !isBrick && !isStucco && !isDryStack && (
+            <InstancedParts
+              count={Math.floor(size.height / 0.5)}
+              setMatrix={(d, i) => d.position.set(0, i * 0.5 + 0.25, size.depth / 2 + 0.01)}
             >
               <planeGeometry args={[size.width, 0.02]} />
               <meshBasicMaterial color="#000000" transparent opacity={0.2} />
-            </mesh>
-          ))}
+            </InstancedParts>
+          )}
 
-          {/* Dry stack irregular stones */}
-          {isDryStack && Array.from({ length: Math.floor(size.height / 0.4) }).map((_, row) => (
-            <group key={row}>
-              {Array.from({ length: Math.floor(size.width / 1.5) + 1 }).map((_, col) => {
-                const offset = (row % 2) * 0.3;
-                const width = 1.2 + Math.random() * 0.6;
-                return (
-                  <mesh
-                    key={`stone-${row}-${col}`}
-                    position={[-size.width / 2 + col * 1.5 + offset, row * 0.4 + 0.2, size.depth / 2 + 0.01]}
-                  >
-                    <planeGeometry args={[width, 0.38]} />
-                    <meshBasicMaterial color="#000000" transparent opacity={0.25} />
-                  </mesh>
-                );
-              })}
-            </group>
-          ))}
+          {/* Dry stack irregular stones (instanced; unit plane scaled in X) */}
+          {isDryStack && (
+            <InstancedParts
+              count={dryStackData.length}
+              setMatrix={(d, i) => {
+                const s = dryStackData[i];
+                d.position.set(s.x, s.y, s.z);
+                d.scale.set(s.w, 1, 1);
+              }}
+            >
+              <planeGeometry args={[1, 0.38]} />
+              <meshBasicMaterial color="#000000" transparent opacity={0.25} />
+            </InstancedParts>
+          )}
         </>
       )}
 
@@ -464,6 +559,8 @@ function PergolaModel({ structure, size, onClick }: any) {
   const isLouvered = structure.structureId === 'louvered-pergola';
   const beamColor = isLouvered ? '#F5F5F5' : isModern ? '#2F4F4F' : '#CD853F';
   const postColor = isModern ? '#2F4F4F' : '#654321';
+
+  const numRafters = Math.floor(size.width / 2);
 
   return (
     <group
@@ -504,21 +601,19 @@ function PergolaModel({ structure, size, onClick }: any) {
         </mesh>
       ))}
 
-      {/* Rafters (running depth direction) */}
-      {Array.from({ length: Math.floor(size.width / 2) }).map((_, i) => (
-        <mesh
-          key={`rafter-${i}`}
-          position={[(i / Math.floor(size.width / 2) - 0.5) * size.width * 0.8, size.height - 0.1, 0]}
-          castShadow
-        >
-          <boxGeometry args={[0.3, 0.2, size.depth]} />
-          <meshStandardMaterial
-            color={structure.selected ? '#ffeb3b' : beamColor}
-            emissive={structure.selected ? '#ffeb3b' : '#000000'}
-            emissiveIntensity={structure.selected ? 0.15 : 0}
-          />
-        </mesh>
-      ))}
+      {/* Rafters (running depth direction, instanced) */}
+      <InstancedParts
+        count={numRafters}
+        castShadow
+        setMatrix={(d, i) => d.position.set((i / numRafters - 0.5) * size.width * 0.8, size.height - 0.1, 0)}
+      >
+        <boxGeometry args={[0.3, 0.2, size.depth]} />
+        <meshStandardMaterial
+          color={structure.selected ? '#ffeb3b' : beamColor}
+          emissive={structure.selected ? '#ffeb3b' : '#000000'}
+          emissiveIntensity={structure.selected ? 0.15 : 0}
+        />
+      </InstancedParts>
 
       {structure.selected && (
         <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -866,6 +961,13 @@ function OutdoorKitchenModel({ structure, size, onClick }: any) {
 
 function FirePitModel({ structure, size, onClick }: any) {
   const isModern = structure.structureId === 'modern-fire-feature';
+  const numFlames = isModern ? 8 : 6;
+
+  // Per-flame vertical jitter, seeded so flames don't twitch each render.
+  const flameJitter = useMemo(() => {
+    const rand = mulberry32(hashString(structure.id));
+    return Array.from({ length: numFlames }, () => rand() * 0.3);
+  }, [numFlames, structure.id]);
 
   return (
     <group
@@ -903,14 +1005,14 @@ function FirePitModel({ structure, size, onClick }: any) {
       </mesh>
 
       {/* Flames */}
-      {Array.from({ length: isModern ? 8 : 6 }).map((_, i) => (
+      {Array.from({ length: numFlames }).map((_, i) => (
         <mesh
           key={i}
           position={isModern
-            ? [(i / 8 - 0.5) * size.width * 0.6, size.height + 0.5 + Math.random() * 0.3, 0]
+            ? [(i / 8 - 0.5) * size.width * 0.6, size.height + 0.5 + flameJitter[i], 0]
             : [
                 Math.cos((i / 6) * Math.PI * 2) * size.width / 4,
-                size.height + 0.5 + Math.random() * 0.3,
+                size.height + 0.5 + flameJitter[i],
                 Math.sin((i / 6) * Math.PI * 2) * size.width / 4,
               ]
           }
@@ -1090,6 +1192,21 @@ function PathModel({ structure, size, onClick }: any) {
   const isPaved = ['concrete-paver-path', 'stone-paver-path', 'brick-path'].includes(structure.structureId);
   const isLoose = ['rubble-path', 'decomposed-granite-path', 'crushed-rock-path', 'pea-gravel-path', 'sand-path'].includes(structure.structureId);
 
+  // Seeded, stable scatter for loose-material texture bumps (was Math.random()).
+  const bumpData = useMemo(() => {
+    if (!isLoose) return [];
+    const rand = mulberry32(hashString(structure.id));
+    const out: { x: number; z: number; r: number }[] = [];
+    for (let i = 0; i < 20; i++) {
+      out.push({
+        x: (rand() - 0.5) * size.width * 0.8,
+        z: (rand() - 0.5) * size.depth * 0.8,
+        r: 0.1 + rand() * 0.15,
+      });
+    }
+    return out;
+  }, [isLoose, size.width, size.depth, structure.id]);
+
   return (
     <group
       position={[structure.position.x, 0, structure.position.z]}
@@ -1097,23 +1214,21 @@ function PathModel({ structure, size, onClick }: any) {
       onClick={onClick}
     >
       {isSteppingStone ? (
-        // Stepping stones - individual pavers with gaps
-        <>
-          {Array.from({ length: Math.floor(size.depth / 2.5) }, (_, i) => {
-            const offset = (i % 2) * 0.5; // Alternate left/right
-            return (
-              <mesh key={i} position={[offset, size.height / 2, -size.depth / 2 + i * 2.5 + 1]} receiveShadow castShadow>
-                <cylinderGeometry args={[0.8, 0.8, size.height, 6]} />
-                <meshStandardMaterial
-                  color={structure.selected ? '#ffeb3b' : getPathColor()}
-                  emissive={structure.selected ? '#ffeb3b' : '#000000'}
-                  emissiveIntensity={structure.selected ? 0.2 : 0}
-                  roughness={0.9}
-                />
-              </mesh>
-            );
-          })}
-        </>
+        // Stepping stones - individual pavers with gaps (instanced)
+        <InstancedParts
+          count={Math.floor(size.depth / 2.5)}
+          castShadow
+          receiveShadow
+          setMatrix={(d, i) => d.position.set((i % 2) * 0.5, size.height / 2, -size.depth / 2 + i * 2.5 + 1)}
+        >
+          <cylinderGeometry args={[0.8, 0.8, size.height, 6]} />
+          <meshStandardMaterial
+            color={structure.selected ? '#ffeb3b' : getPathColor()}
+            emissive={structure.selected ? '#ffeb3b' : '#000000'}
+            emissiveIntensity={structure.selected ? 0.2 : 0}
+            roughness={0.9}
+          />
+        </InstancedParts>
       ) : isPaved ? (
         // Paved paths - show paver pattern
         <>
@@ -1128,13 +1243,15 @@ function PathModel({ structure, size, onClick }: any) {
             />
           </mesh>
 
-          {/* Paver joints - grid pattern */}
-          {Array.from({ length: Math.floor(size.depth / 2) }, (_, i) => (
-            <mesh key={`joint-${i}`} position={[0, size.height + 0.01, -size.depth / 2 + i * 2]} receiveShadow>
-              <boxGeometry args={[size.width, 0.02, 0.1]} />
-              <meshStandardMaterial color="#444444" roughness={1} />
-            </mesh>
-          ))}
+          {/* Paver joints - grid pattern (instanced) */}
+          <InstancedParts
+            count={Math.floor(size.depth / 2)}
+            receiveShadow
+            setMatrix={(d, i) => d.position.set(0, size.height + 0.01, -size.depth / 2 + i * 2)}
+          >
+            <boxGeometry args={[size.width, 0.02, 0.1]} />
+            <meshStandardMaterial color="#444444" roughness={1} />
+          </InstancedParts>
         </>
       ) : (
         // Loose material paths - textured surface
@@ -1150,18 +1267,19 @@ function PathModel({ structure, size, onClick }: any) {
             />
           </mesh>
 
-          {/* Texture bumps for loose materials */}
-          {Array.from({ length: 20 }, (_, i) => {
-            const x = (Math.random() - 0.5) * size.width * 0.8;
-            const z = (Math.random() - 0.5) * size.depth * 0.8;
-            const radius = 0.1 + Math.random() * 0.15;
-            return (
-              <mesh key={`bump-${i}`} position={[x, size.height + 0.05, z]} receiveShadow>
-                <sphereGeometry args={[radius, 8, 8]} />
-                <meshStandardMaterial color={getPathColor()} roughness={1} />
-              </mesh>
-            );
-          })}
+          {/* Texture bumps for loose materials (instanced; unit sphere scaled) */}
+          <InstancedParts
+            count={bumpData.length}
+            receiveShadow
+            setMatrix={(d, i) => {
+              const b = bumpData[i];
+              d.position.set(b.x, size.height + 0.05, b.z);
+              d.scale.setScalar(b.r);
+            }}
+          >
+            <sphereGeometry args={[1, 8, 8]} />
+            <meshStandardMaterial color={getPathColor()} roughness={1} />
+          </InstancedParts>
         </>
       )}
 

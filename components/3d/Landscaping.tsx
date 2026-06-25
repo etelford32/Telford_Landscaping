@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Mesh } from "three";
+import { hashString, mulberry32 } from "@/lib/utils/seededRandom";
 
 interface TreeProps {
   position: [number, number, number];
@@ -122,6 +123,17 @@ interface FlowerBedProps {
 }
 
 export function FlowerBed({ position, width = 2, depth = 1 }: FlowerBedProps) {
+  // Seeded placement so flowers keep their spots across re-renders. The homepage
+  // scene re-renders on every growth frame; Math.random() here made them boil.
+  const flowers = useMemo(() => {
+    const rand = mulberry32(hashString(`${position[0]},${position[1]},${position[2]}:${width}x${depth}`));
+    return Array.from({ length: 8 }, () => ({
+      x: (rand() - 0.5) * (width - 0.3),
+      z: (rand() - 0.5) * (depth - 0.3),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [position[0], position[1], position[2], width, depth]);
+
   return (
     <group position={position}>
       {/* Soil bed */}
@@ -129,23 +141,13 @@ export function FlowerBed({ position, width = 2, depth = 1 }: FlowerBedProps) {
         <boxGeometry args={[width, 0.1, depth]} />
         <meshStandardMaterial color="#4a3c28" />
       </mesh>
-      {/* Flowers - random placement */}
-      {Array.from({ length: 8 }).map((_, i) => (
-        <mesh
-          key={i}
-          position={[
-            (Math.random() - 0.5) * (width - 0.3),
-            0.15,
-            (Math.random() - 0.5) * (depth - 0.3),
-          ]}
-          castShadow
-        >
+      {/* Flowers - seeded placement */}
+      {flowers.map((f, i) => (
+        <mesh key={i} position={[f.x, 0.15, f.z]} castShadow>
           <sphereGeometry args={[0.08, 6, 6]} />
           <meshStandardMaterial
             color={
-              ["#ff69b4", "#ff1493", "#ffd700", "#ff6347", "#9370db"][
-                i % 5
-              ]
+              ["#ff69b4", "#ff1493", "#ffd700", "#ff6347", "#9370db"][i % 5]
             }
           />
         </mesh>
