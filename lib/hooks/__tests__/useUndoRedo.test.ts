@@ -60,7 +60,7 @@ describe('useUndoRedo', () => {
     expect(result.current.canRedo).toBe(false);
   });
 
-  it('should clear future when new action is performed after undo', () => {
+  it('should clear future when new action is performed after undo', async () => {
     const { result } = renderHook(() => useUndoRedo({ count: 0 }));
 
     act(() => {
@@ -70,6 +70,12 @@ describe('useUndoRedo', () => {
     });
 
     expect(result.current.canRedo).toBe(true);
+
+    // undo() guards re-entrancy with a flag it clears on a setTimeout(0); let that
+    // macrotask run before the next edit, otherwise setState is ignored.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
 
     act(() => {
       result.current.setState({ count: 3 });

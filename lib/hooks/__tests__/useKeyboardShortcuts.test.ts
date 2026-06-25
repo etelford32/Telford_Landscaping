@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useKeyboardShortcuts, getShortcutString } from '../useKeyboardShortcuts';
+import { useKeyboardShortcuts, getShortcutString, platform } from '../useKeyboardShortcuts';
 
 describe('useKeyboardShortcuts', () => {
   it('should call handler when key matches', () => {
@@ -191,11 +191,12 @@ describe('useKeyboardShortcuts', () => {
 });
 
 describe('getShortcutString', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('should format shortcut with Ctrl on non-Mac', () => {
-    Object.defineProperty(navigator, 'platform', {
-      value: 'Win32',
-      configurable: true,
-    });
+    vi.spyOn(platform, 'isMac').mockReturnValue(false);
 
     const shortcut = {
       key: 'z',
@@ -207,10 +208,7 @@ describe('getShortcutString', () => {
   });
 
   it('should format shortcut with ⌘ on Mac', () => {
-    Object.defineProperty(navigator, 'platform', {
-      value: 'MacIntel',
-      configurable: true,
-    });
+    vi.spyOn(platform, 'isMac').mockReturnValue(true);
 
     const shortcut = {
       key: 'z',

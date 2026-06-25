@@ -34,10 +34,20 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[], enabled: boo
   }, [shortcuts, enabled]);
 }
 
+// macOS detection, wrapped in an object so tests can stub it and so a missing
+// navigator (e.g. SSR) doesn't throw on `.platform`.
+export const platform = {
+  isMac(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    const id = navigator.platform || navigator.userAgent || '';
+    return /Mac|iPhone|iPad|iPod/i.test(id);
+  },
+};
+
 export function getShortcutString(shortcut: KeyboardShortcut): string {
   const parts: string[] = [];
 
-  if (shortcut.ctrl) parts.push(navigator.platform.includes('Mac') ? '⌘' : 'Ctrl');
+  if (shortcut.ctrl) parts.push(platform.isMac() ? '⌘' : 'Ctrl');
   if (shortcut.shift) parts.push('Shift');
   if (shortcut.alt) parts.push('Alt');
   parts.push(shortcut.key.toUpperCase());

@@ -41,20 +41,24 @@ describe('saveDesign', () => {
       },
     ];
 
-    const mockAnchor = {
-      href: '',
-      download: '',
-      click: clickSpy,
-      style: {},
-    };
-
-    createElementSpy.mockReturnValue(mockAnchor);
+    // Build a real anchor so document.body.appendChild() works; capture it and
+    // stub click() so no real navigation happens.
+    let anchor: HTMLAnchorElement | undefined;
+    createElementSpy.mockImplementation((tag: string) => {
+      const el = Document.prototype.createElement.call(document, tag) as HTMLElement;
+      if (tag === 'a') {
+        anchor = el as HTMLAnchorElement;
+        vi.spyOn(anchor, 'click').mockImplementation(() => {});
+      }
+      return el;
+    });
 
     saveDesign('Test Design', plants, structures, 10);
 
     expect(createElementSpy).toHaveBeenCalledWith('a');
-    expect(mockAnchor.download).toMatch(/Test_Design_\d+\.landscape\.json/);
-    expect(clickSpy).toHaveBeenCalled();
+    expect(anchor).toBeDefined();
+    expect(anchor!.download).toMatch(/Test_Design_\d+\.landscape\.json/);
+    expect(anchor!.click).toHaveBeenCalled();
   });
 });
 
