@@ -104,11 +104,11 @@ _The `lib/ecs/` system (~5k lines, four render systems) is currently **dead code
 - Add a `Map<path, Texture>` cache so identical textures aren't re-decoded/re-uploaded. `lib/ecs/assets/TextureLoader.ts`
 - Auto-dispose geometry/material/texture when an entity/placement is removed (plumbing exists; nothing calls it). `lib/ecs/assets/AssetManager.ts:267-299`
 
-### 4d — Integration (**L**, go/no-go after 4a–4c)
+### 4d — Integration (**L**, go/no-go after 4a–4c) — ⏸️ Not adopted (decision)
 - Wire the ECS into the canvas as the single source of truth for rendering, bridging React design state → ECS entities, and remove the plain R3F `plants.map()` path so the two systems don't both render.
 - Update/realign `DESIGN_APP_INTEGRATION_GUIDE.md` and `INTEGRATION_SUMMARY.md` to the reworked design.
 
-> **Caveat:** until 4d lands, 4a–4c improve dead code only. Treat 4d as an architectural decision to make **after** Phases 1–3 prove out the cheaper wins on the live path.
+> **Decision (2026-06-25):** 4d is **not being adopted.** The optimized R3F path from Phases 1–3 stays the live renderer; the reworked ECS (4a–4c) remains available but unwired. Rationale: Phases 1–3 already delivered the performance wins on the actual app, and the ECS's render systems draw simpler geometry (sphere/cone canopies) than the live `PlantModels`/`ProceduralPlant`/`StructureModels`, so wholesale adoption as-is would regress visual quality. If revisited, adoption must also upgrade the ECS renderers to match current detail and be validated in-browser — the "prototype behind a flag" path is the lower-risk way in.
 
 ---
 
