@@ -59,9 +59,11 @@ _Targets the specific actions that stutter: dragging, terrain brushing, cursor t
 
 ---
 
-## Phase 3 — Draw-call / GPU diet
+## Phase 3 — Draw-call / GPU diet ✅ Implemented
 
 _Makes each frame cheap. Biggest raw GPU win, but the most work. With Phase 1 done, this is what keeps large designs at 60fps._
+
+> **Status:** Implemented on branch `claude/eloquent-brahmagupta-dr6l3e` across three commits. (8) `StructureModels` renders all high-count repeated geometry (deck planks, fence slats, wall boulders/timbers/brick-faces/course-lines/dry-stack, pergola rafters, path stepping-stones/joints/gravel) through one `InstancedParts` helper — a single draw call + shared material per part instead of one per element. (9) Every render-body `Math.random()` (structures + `Landscaping` flower beds) is now a per-object seeded PRNG (`lib/utils/seededRandom`), so layouts are stable and `React.memo` holds. (10) Plant canopies are instanced over a shared module-level unit icosahedron geometry, and `LandscapeScene` quantizes autoplay age to integer years so memoized plants don't re-render ~60×/s. (11) `ProceduralPlant` and `EditableTerrain` dispose their `useMemo`-created geometry/materials on unmount/rebuild. Per-commit detail: 3a structures+random, 3b plants+age, 3c disposal. Typecheck clean. Not yet verified in a browser — structures/plants should be smoke-tested visually.
 
 | # | Fix | Files | Effort | Impact |
 |---|-----|-------|--------|--------|
