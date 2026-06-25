@@ -18,12 +18,16 @@ export interface Entity {
   readonly type: EntityType;
 }
 
+// Monotonic counter for deterministic entity IDs — stable across a session and
+// far cheaper / more testable than Date.now() + Math.random().
+let entityCounter = 0;
+
 /**
  * Create a new entity with deterministic ID generation
  */
 export function createEntity(type: EntityType, id?: string): Entity {
   return {
-    id: id || `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: id || `${type}-${(entityCounter++).toString(36)}`,
     type
   };
 }

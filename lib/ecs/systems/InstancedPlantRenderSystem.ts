@@ -75,6 +75,18 @@ export class InstancedPlantRenderSystem extends BaseSystem {
   private instancedGroups: Map<string, InstancedGroup> = new Map(); // speciesId -> group
   private entityToSpecies: Map<string, string> = new Map(); // entityId -> speciesId
 
+  // Reused scratch objects — avoids allocating ~7 THREE objects per instance,
+  // per frame.
+  private readonly _matrix = new THREE.Matrix4();
+  private readonly _position = new THREE.Vector3();
+  private readonly _euler = new THREE.Euler();
+  private readonly _quat = new THREE.Quaternion();
+  private readonly _scale = new THREE.Vector3();
+  private readonly _trunkMatrix = new THREE.Matrix4();
+  private readonly _trunkScale = new THREE.Vector3();
+  private readonly _colorSelected = new THREE.Color(0xffff00);
+  private readonly _colorDefault = new THREE.Color(0xffffff);
+
   constructor(scene?: THREE.Scene, config: Partial<InstancedPlantRenderSystemConfig> = {}) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -258,64 +270,36 @@ export class InstancedPlantRenderSystem extends BaseSystem {
       };
       group.instances.set(entityId, instance);
       this.entityToSpecies.set(entityId, speciesId);
-    }
-
-    // Update transform
-    instance.transform = transform;
-    instance.selected = selected;
-
-    // Build transform matrix
-    const matrix = new THREE.Matrix4();
-    const position = new THREE.Vector3(
-      transform.position.x,
-      transform.position.y,
-      transform.position.z
-    );
-    const rotation = new THREE.Euler(
-      transform.rotation.x,
-      transform.rotation.y,
-      transform.rotation.z
-    );
-    const scale = new THREE.Vector3(
-      transform.scale.x,
-      transform.scale.y,
-      transform.scale.z
-    );
-
-    matrix.compose(position, new THREE.Quaternion().setFromEuler(rotation), scale);
-
-    // Set instance matrix
-    group.canopyMesh.setMatrixAt(instance.matrixIndex, matrix);
-
-    // Update trunk if present
-    if (group.trunkMesh) {
-      // Trunk needs different scale
-      const trunkMatrix = new THREE.Matrix4();
-      const trunkPosition = new THREE.Vector3(
-        transform.position.x,
-        transform.position.y,
-        transform.position.z
-      );
-      const trunkScale = new THREE.Vector3(
-        transform.scale.x,
-        transform.scale.y * 0.6, // Trunk height adjustment
-        transform.scale.z
-      );
-      trunkMatrix.compose(
-        trunkPosition,
-        new THREE.Quaternion().setFromEuler(rotation),
-        trunkScale
-      );
-      group.trunkMesh.setMatrixAt(instance.matrixIndex, trunkMatrix);
-    }
-
-    // Update selection color
-    if (selected) {
-      const color = new THREE.Color(0xffff00); // Yellow highlight
-      group.canopyMesh.setColorAt(instance.matrixIndex, color);
+    } else if (instance.transform === transform && instance.selected === selected) {
+      // Dirty check: the World returns the same component reference until it
+      // actually changes (no per-get cloning), so identical refs mean this
+      // instance's matrix/color are already current — skip the rewrite.
+      return;
     } else {
-      group.canopyMesh.setColorAt(instance.matrixIndex, new THREE.Color(0xffffff));
+      instance.transform = transform;
+      instance.selected = selected;
     }
+
+    // Build transform matrix (reusing scratch objects)
+    this._position.set(transform.position.x, transform.position.y, transform.position.z);
+    this._euler.set(transform.rotation.x, transform.rotation.y, transform.rotation.z);
+    this._quat.setFromEuler(this._euler);
+    this._scale.set(transform.scale.x, transform.scale.y, transform.scale.z);
+    this._matrix.compose(this._position, this._quat, this._scale);
+    group.canopyMesh.setMatrixAt(instance.matrixIndex, this._matrix);
+
+    // Update trunk if present (shares position/rotation, different Y scale)
+    if (group.trunkMesh) {
+      this._trunkScale.set(transform.scale.x, transform.scale.y * 0.6, transform.scale.z);
+      this._trunkMatrix.compose(this._position, this._quat, this._trunkScale);
+      group.trunkMesh.setMatrixAt(instance.matrixIndex, this._trunkMatrix);
+    }
+
+    // Update selection color (reused Color instances)
+    group.canopyMesh.setColorAt(
+      instance.matrixIndex,
+      selected ? this._colorSelected : this._colorDefault
+    );
 
     // Mark for update
     group.needsUpdate = true;
@@ -345,6 +329,14 @@ export class InstancedPlantRenderSystem extends BaseSystem {
           if (group.trunkMesh) {
             group.trunkMesh.getMatrixAt(lastIndex, matrix);
             group.trunkMesh.setMatrixAt(instance.matrixIndex, matrix);
+          }
+
+          // Compact the instance color too, so the dirty-check skip in
+          // updatePlantInstance doesn't leave a stale color at the moved slot.
+          if (group.canopyMesh.instanceColor) {
+            const color = new THREE.Color();
+            group.canopyMesh.getColorAt(lastIndex, color);
+            group.canopyMesh.setColorAt(instance.matrixIndex, color);
           }
 
           break;

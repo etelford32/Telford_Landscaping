@@ -87,7 +87,9 @@ export class MaterialSystem extends BaseSystem {
       // Apply visibility
       if (!selection.visible) {
         modifiedMaterial = this.applyHidden(modifiedMaterial);
-        updates.push(this.createUpdate(entity.id, 'Material', modifiedMaterial));
+        if (!this.materialEffectsEqual(modifiedMaterial, material)) {
+          updates.push(this.createUpdate(entity.id, 'Material', modifiedMaterial));
+        }
         continue;
       }
 
@@ -106,13 +108,35 @@ export class MaterialSystem extends BaseSystem {
         modifiedMaterial = this.applySelection(modifiedMaterial);
       }
 
-      // Only update if material changed
-      if (JSON.stringify(modifiedMaterial) !== JSON.stringify(material)) {
+      // Only update if the effect-relevant fields actually changed (was a
+      // full JSON.stringify of both materials, every entity, every frame).
+      if (!this.materialEffectsEqual(modifiedMaterial, material)) {
         updates.push(this.createUpdate(entity.id, 'Material', modifiedMaterial));
       }
     }
 
     return updates;
+  }
+
+  /**
+   * Compare only the fields these effects touch — cheap, and replaces a
+   * per-frame JSON.stringify of the entire material on both sides.
+   */
+  private materialEffectsEqual(a: MaterialComponent, b: MaterialComponent): boolean {
+    const pa = a.properties;
+    const pb = b.properties;
+    return (
+      this.colorsEqual(pa.color, pb.color) &&
+      this.colorsEqual(pa.emissive, pb.emissive) &&
+      (pa.emissiveIntensity ?? 0) === (pb.emissiveIntensity ?? 0) &&
+      (pa.opacity ?? 1) === (pb.opacity ?? 1) &&
+      (pa.transparent ?? false) === (pb.transparent ?? false)
+    );
+  }
+
+  private colorsEqual(a?: ColorData, b?: ColorData): boolean {
+    if (a === undefined || b === undefined) return a === b;
+    return colorToHex(a) === colorToHex(b);
   }
 
   /**

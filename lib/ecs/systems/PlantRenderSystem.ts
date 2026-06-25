@@ -48,6 +48,12 @@ const DEFAULT_CONFIG: PlantRenderSystemConfig = {
 
 /**
  * PlantRenderSystem
+ *
+ * NOTE: This and InstancedPlantRenderSystem both match ['Transform','PlantData'].
+ * Register only ONE plant renderer — registering both renders every plant twice.
+ * InstancedPlantRenderSystem is the canonical, performant choice (one draw call
+ * per species); this group-based renderer is the varied-species / low-count
+ * alternative and is what PlantDataBridge wires up.
  */
 export class PlantRenderSystem extends BaseSystem {
   readonly name = 'PlantRenderSystem';
