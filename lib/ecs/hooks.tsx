@@ -2,24 +2,34 @@
  * ECS-React Bridge Hooks
  *
  * Provides React hooks for integrating ECS World with React components.
- * Enables reactive updates when ECS state changes.
+ * Consumers re-render only when the world actually changes: the World exposes
+ * a subscribe()/getChangeVersion() store, and these hooks read it via
+ * useSyncExternalStore. A static scene triggers zero re-renders.
  */
 
 'use client';
 
-import { useRef, useEffect, useState, useCallback, useMemo, createContext, useContext } from 'react';
+import {
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useSyncExternalStore,
+  createContext,
+  useContext,
+} from 'react';
 import { World, WorldState } from './core/World';
 import { Entity, EntityType } from './core/Entity';
 import { Component, ComponentType } from './core/Component';
 import { System } from './core/System';
 
 /**
- * ECS World Context
+ * ECS World Context — just the world; change notification flows through the
+ * world's subscription store rather than a context value that changes per frame.
  */
 interface ECSContextValue {
   world: World;
-  version: number; // Incremented on each update to trigger re-renders
-  forceUpdate: () => void;
 }
 
 const ECSContext = createContext<ECSContextValue | null>(null);
@@ -36,30 +46,19 @@ interface ECSProviderProps {
 
 export function ECSProvider({ children, world: providedWorld, systems = [] }: ECSProviderProps) {
   const worldRef = useRef<World>(providedWorld || new World());
-  const [version, setVersion] = useState(0);
 
-  // Initialize systems
+  // Register/unregister systems
   useEffect(() => {
-    systems.forEach(system => {
-      worldRef.current.registerSystem(system);
-    });
+    const world = worldRef.current;
+    systems.forEach(system => world.registerSystem(system));
 
     return () => {
-      systems.forEach(system => {
-        worldRef.current.unregisterSystem(system.name);
-      });
+      systems.forEach(system => world.unregisterSystem(system.name));
     };
   }, [systems]);
 
-  const forceUpdate = useCallback(() => {
-    setVersion(v => v + 1);
-  }, []);
-
-  const contextValue = useMemo(() => ({
-    world: worldRef.current,
-    version,
-    forceUpdate
-  }), [version, forceUpdate]);
+  // Stable context value — the world reference never changes.
+  const contextValue = useMemo<ECSContextValue>(() => ({ world: worldRef.current }), []);
 
   return (
     <ECSContext.Provider value={contextValue}>
@@ -69,39 +68,49 @@ export function ECSProvider({ children, world: providedWorld, systems = [] }: EC
 }
 
 /**
- * Hook to get the ECS World instance
- * Returns the world and a function to trigger updates
+ * Internal: read the world from context (throws if no provider).
  */
-export function useECSWorld() {
+function useWorld(): World {
   const context = useContext(ECSContext);
-
   if (!context) {
-    throw new Error('useECSWorld must be used within an ECSProvider');
+    throw new Error('ECS hooks must be used within an ECSProvider');
   }
-
-  return {
-    world: context.world,
-    forceUpdate: context.forceUpdate
-  };
+  return context.world;
 }
 
 /**
- * Hook to query entities with specific components
- * Automatically re-renders when the query results change
+ * Internal: subscribe to the world's change store and return its version.
+ * Components using this re-render only when the world notifies a change.
+ */
+function useWorldVersion(world: World): number {
+  const subscribe = useCallback((onChange: () => void) => world.subscribe(onChange), [world]);
+  const getSnapshot = useCallback(() => world.getChangeVersion(), [world]);
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/**
+ * Hook to get the ECS World instance plus a manual change trigger.
+ */
+export function useECSWorld() {
+  const world = useWorld();
+  const forceUpdate = useCallback(() => world.markChanged(), [world]);
+  return { world, forceUpdate };
+}
+
+/**
+ * Hook to query entities with specific components.
+ * Re-renders only when the world changes; the world caches query results so
+ * repeated calls with an unchanged scene are O(1).
  */
 export function useECSQuery(requiredComponents: ComponentType[]) {
-  const { world, version } = useContext(ECSContext) || {};
+  const world = useWorld();
+  const version = useWorldVersion(world);
 
-  if (!world) {
-    throw new Error('useECSQuery must be used within an ECSProvider');
-  }
-
-  // Query entities - will update when version changes
-  const entities = useMemo(() => {
+  return useMemo(() => {
     return world.queryEntities(requiredComponents);
+    // version participates so the query re-runs after a change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world, requiredComponents, version]);
-
-  return entities;
 }
 
 /**
@@ -111,17 +120,13 @@ export function useECSQuery(requiredComponents: ComponentType[]) {
 export function useECSQueryWithComponents<T extends Component>(
   requiredComponents: ComponentType[]
 ) {
-  const { world, version } = useContext(ECSContext) || {};
+  const world = useWorld();
+  const version = useWorldVersion(world);
 
-  if (!world) {
-    throw new Error('useECSQueryWithComponents must be used within an ECSProvider');
-  }
-
-  const results = useMemo(() => {
+  return useMemo(() => {
     return world.queryWithComponents<T>(requiredComponents);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world, requiredComponents, version]);
-
-  return results;
 }
 
 /**
@@ -129,17 +134,13 @@ export function useECSQueryWithComponents<T extends Component>(
  * Re-renders when the entity changes
  */
 export function useEntity(entityId: string | null) {
-  const { world, version } = useContext(ECSContext) || {};
+  const world = useWorld();
+  const version = useWorldVersion(world);
 
-  if (!world) {
-    throw new Error('useEntity must be used within an ECSProvider');
-  }
-
-  const entity = useMemo(() => {
+  return useMemo(() => {
     return entityId ? world.getEntity(entityId) : null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world, entityId, version]);
-
-  return entity;
 }
 
 /**
@@ -150,117 +151,90 @@ export function useComponent<T extends Component>(
   entityId: string | null,
   componentType: ComponentType
 ): T | undefined {
-  const { world, version } = useContext(ECSContext) || {};
+  const world = useWorld();
+  const version = useWorldVersion(world);
 
-  if (!world) {
-    throw new Error('useComponent must be used within an ECSProvider');
-  }
-
-  const component = useMemo(() => {
+  return useMemo(() => {
     return entityId ? world.getComponent<T>(entityId, componentType) : undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world, entityId, componentType, version]);
-
-  return component;
 }
 
 /**
  * Hook to get all entities of a specific type
  */
 export function useEntitiesByType(type: EntityType) {
-  const { world, version } = useContext(ECSContext) || {};
+  const world = useWorld();
+  const version = useWorldVersion(world);
 
-  if (!world) {
-    throw new Error('useEntitiesByType must be used within an ECSProvider');
-  }
-
-  const entities = useMemo(() => {
+  return useMemo(() => {
     return world.getEntitiesByType(type);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world, type, version]);
-
-  return entities;
 }
 
 /**
- * Hook to run ECS update loop
- * Automatically updates at specified FPS (default 60)
+ * Hook to run the ECS update loop.
+ *
+ * Ticks systems at (most) the requested FPS using the rAF timestamp. It does
+ * NOT force a React re-render every frame — world.update() notifies subscribers
+ * only when systems actually produce updates, so a still scene is free.
  */
 export function useECSUpdateLoop(fps: number = 60, enabled: boolean = true) {
-  const { world, forceUpdate } = useECSWorld();
-  const lastTimeRef = useRef<number>(Date.now());
+  const world = useWorld();
 
   useEffect(() => {
     if (!enabled) return;
 
     const interval = 1000 / fps;
-    let animationFrameId: number;
+    let animationFrameId = 0;
+    let lastTime = performance.now();
 
-    const update = () => {
-      const now = Date.now();
-      const deltaTime = (now - lastTimeRef.current) / 1000; // Convert to seconds
-      lastTimeRef.current = now;
-
-      // Update ECS world
-      world.update(deltaTime);
-
-      // Trigger React re-render
-      forceUpdate();
-
-      // Schedule next update
+    const update = (now: number) => {
       animationFrameId = requestAnimationFrame(update);
+
+      const elapsed = now - lastTime;
+      if (elapsed < interval) return; // throttle to the target FPS
+
+      lastTime = now - (elapsed % interval);
+      world.update(elapsed / 1000); // seconds; notifies only if something changed
     };
 
-    // Start the loop
     animationFrameId = requestAnimationFrame(update);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [world, forceUpdate, fps, enabled]);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [world, fps, enabled]);
 }
 
 /**
- * Hook for ECS operations with automatic re-rendering
- * Returns helper functions that automatically trigger updates
+ * Hook for ECS operations. The world's mutation methods notify subscribers on
+ * their own, so these don't need to force updates individually.
  */
 export function useECSOperations() {
-  const { world, forceUpdate } = useECSWorld();
+  const world = useWorld();
 
   const operations = useMemo(() => ({
-    createEntity: (type: EntityType, id?: string) => {
-      const entity = world.createEntity(type, id);
-      forceUpdate();
-      return entity;
-    },
+    createEntity: (type: EntityType, id?: string) => world.createEntity(type, id),
 
-    removeEntity: (entityId: string) => {
-      world.removeEntity(entityId);
-      forceUpdate();
-    },
+    removeEntity: (entityId: string) => world.removeEntity(entityId),
 
-    setComponent: <T extends Component>(entityId: string, component: T) => {
-      world.setComponent(entityId, component);
-      forceUpdate();
-    },
+    setComponent: <T extends Component>(entityId: string, component: T) =>
+      world.setComponent(entityId, component),
 
-    removeComponent: (entityId: string, componentType: ComponentType) => {
-      world.removeComponent(entityId, componentType);
-      forceUpdate();
-    },
+    removeComponent: (entityId: string, componentType: ComponentType) =>
+      world.removeComponent(entityId, componentType),
 
-    getComponent: <T extends Component>(entityId: string, componentType: ComponentType) => {
-      return world.getComponent<T>(entityId, componentType);
-    },
+    getComponent: <T extends Component>(entityId: string, componentType: ComponentType) =>
+      world.getComponent<T>(entityId, componentType),
 
-    hasComponent: (entityId: string, componentType: ComponentType) => {
-      return world.hasComponent(entityId, componentType);
-    },
+    hasComponent: (entityId: string, componentType: ComponentType) =>
+      world.hasComponent(entityId, componentType),
 
-    // Batch operations (only triggers one re-render)
-    batch: (operations: () => void) => {
-      operations();
-      forceUpdate();
-    }
-  }), [world, forceUpdate]);
+    // Run several mutations, then make sure at least one notification fires.
+    batch: (run: () => void) => {
+      run();
+      world.markChanged();
+    },
+  }), [world]);
 
   return operations;
 }
@@ -269,7 +243,7 @@ export function useECSOperations() {
  * Hook to snapshot ECS state for undo/redo
  */
 export function useECSSnapshot() {
-  const { world, forceUpdate } = useECSWorld();
+  const world = useWorld();
   const [snapshots, setSnapshots] = useState<WorldState[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
 
@@ -282,20 +256,18 @@ export function useECSSnapshot() {
   const undo = useCallback(() => {
     if (currentIndex > 0) {
       const snapshot = snapshots[currentIndex - 1];
-      world.restore(snapshot);
+      world.restore(snapshot); // notifies subscribers
       setCurrentIndex(prev => prev - 1);
-      forceUpdate();
     }
-  }, [world, snapshots, currentIndex, forceUpdate]);
+  }, [world, snapshots, currentIndex]);
 
   const redo = useCallback(() => {
     if (currentIndex < snapshots.length - 1) {
       const snapshot = snapshots[currentIndex + 1];
-      world.restore(snapshot);
+      world.restore(snapshot); // notifies subscribers
       setCurrentIndex(prev => prev + 1);
-      forceUpdate();
     }
-  }, [world, snapshots, currentIndex, forceUpdate]);
+  }, [world, snapshots, currentIndex]);
 
   return {
     takeSnapshot,
@@ -308,14 +280,16 @@ export function useECSSnapshot() {
 }
 
 /**
- * Hook to get ECS statistics
+ * Hook to get ECS statistics (refreshes on world changes)
  */
 export function useECSStats() {
-  const { world } = useECSWorld();
+  const world = useWorld();
+  const version = useWorldVersion(world);
 
   const stats = useMemo(() => {
     return world.getStats();
-  }, [world]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [world, version]);
 
   return stats;
 }
