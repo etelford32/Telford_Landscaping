@@ -43,6 +43,12 @@ export function useUndoRedo<T>(initialState: T, maxHistory: number = 50) {
         return { ...currentHistory, present: resolvedState };
       }
 
+      // Skip no-op edits: if nothing actually changed, don't grow the undo
+      // history (otherwise repeated undo presses appear to do nothing).
+      if (JSON.stringify(resolvedState) === JSON.stringify(currentHistory.present)) {
+        return currentHistory;
+      }
+
       // Create new history entry
       const newPast = [
         ...currentHistory.past.slice(-maxHistory + 1),

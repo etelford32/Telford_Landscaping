@@ -106,7 +106,9 @@ describe('DebugPanel', () => {
     rerender(<DebugPanel {...defaultProps} plantsCount={10} />);
 
     await waitFor(() => {
-      expect(screen.getByText('10')).toBeInTheDocument(); // updated plants count
+      // plantsCount is now 10, joining historySize (also 10), so two "10"s appear
+      // (before the rerender only historySize was 10). Use getAllByText to disambiguate.
+      expect(screen.getAllByText('10').length).toBeGreaterThanOrEqual(2);
     });
   });
 

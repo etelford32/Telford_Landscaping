@@ -202,14 +202,11 @@ describe('PropertyPanel', () => {
         />
       );
 
-      const closeButton = screen.getAllByRole('button').find((btn) => {
-        return btn.querySelector('svg') !== null;
-      });
-
-      if (closeButton) {
-        fireEvent.click(closeButton);
-        expect(onClose).toHaveBeenCalled();
-      }
+      // The panel header has minimize/maximize/close buttons; target close by its
+      // accessible name (from title="Close (Esc)") rather than the first icon
+      // button, which is minimize.
+      fireEvent.click(screen.getByRole('button', { name: /close/i }));
+      expect(onClose).toHaveBeenCalled();
     });
   });
 
