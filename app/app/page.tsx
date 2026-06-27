@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect } from "react";
+import { trackDesignToolOpened } from "@/lib/analytics";
 
 // Consolidated to use IntegratedDesignCanvas - the most feature-complete version
 const IntegratedDesignCanvas = dynamic(() => import("@/components/design/IntegratedDesignCanvas"), {
@@ -19,6 +21,12 @@ const IntegratedDesignCanvas = dynamic(() => import("@/components/design/Integra
 export default function AppPage() {
   // No authentication gate - design tool is freely accessible
   // Uses IntegratedDesignCanvas - the complete design tool with all features
+
+  // Track the activation step: a visitor opened the 3D design tool.
+  useEffect(() => {
+    trackDesignToolOpened("app_page");
+  }, []);
+
   return (
     <div className="w-full h-screen">
       <IntegratedDesignCanvas />
