@@ -3,26 +3,23 @@
 The site uses **Google Analytics 4 (GA4)** to measure traffic and the
 new-customer acquisition funnel.
 
-## Activating analytics
+## Configuration
 
-Analytics is **off until a measurement ID is configured**. Every tracking call
-is a safe no-op when the ID is missing, so nothing breaks in local dev.
+Analytics is **active**. The production GA4 property is `G-HMKJ7B3EZK`, set as
+the default in `app/layout.tsx`, so tracking works on every deploy with no extra
+configuration.
 
-To turn it on:
+To point a deploy at a *different* property (e.g. a staging GA4 property),
+override it with an environment variable — it takes precedence over the default:
 
-1. Create a GA4 property at <https://analytics.google.com> and copy its
-   measurement ID (looks like `G-XXXXXXXXXX`, under **Admin → Data Streams**).
-2. Set it in your environment:
-
-   ```bash
-   # .env.local (local) or your hosting provider's env settings (e.g. Vercel)
-   NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
-   ```
-
-3. Restart / redeploy. Page views and the events below will start flowing.
+```bash
+# .env.local (local) or your hosting provider's env settings (e.g. Vercel)
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
 
 > The variable is prefixed `NEXT_PUBLIC_` so it's available in the browser. That
-> is expected for GA4 — the measurement ID is not a secret.
+> is expected for GA4 — the measurement ID is not a secret (it's visible in the
+> page source). If no ID is set anywhere, every tracking call is a safe no-op.
 
 ## How it's wired
 

@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "G-HMKJ7B3EZK"} />
         <AuthProvider>
           {children}
         </AuthProvider>
