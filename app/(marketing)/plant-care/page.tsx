@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
+import { trackLead } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import {
   Leaf,
@@ -88,14 +89,11 @@ export default function PlantCarePage() {
 
       if (response.ok) {
         setFormStatus('success');
-        // Track conversion with Google Analytics
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-          (window as any).gtag('event', 'form_submission', {
-            form_name: 'plant_care_contact',
-            location: formData.location,
-            service: formData.service
-          });
-        }
+        // Track the consultation-request conversion.
+        trackLead('plant_care_contact', {
+          location: formData.location,
+          service: formData.service,
+        });
       } else {
         throw new Error('Failed to submit form');
       }

@@ -3,6 +3,7 @@
 import Script from 'next/script';
 import { useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { trackPageView } from '@/lib/analytics';
 
 interface GoogleAnalyticsProps {
   GA_MEASUREMENT_ID?: string;
@@ -15,14 +16,11 @@ function GoogleAnalyticsInner({ GA_MEASUREMENT_ID }: GoogleAnalyticsProps) {
   useEffect(() => {
     if (!GA_MEASUREMENT_ID) return;
 
-    const url = pathname + searchParams.toString();
+    // Build the full path, including a properly-delimited query string.
+    const query = searchParams.toString();
+    const url = query ? `${pathname}?${query}` : pathname;
 
-    // Track page views
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('config', GA_MEASUREMENT_ID, {
-        page_path: url,
-      });
-    }
+    trackPageView(GA_MEASUREMENT_ID, url);
   }, [pathname, searchParams, GA_MEASUREMENT_ID]);
 
   // Return null if no GA_MEASUREMENT_ID is provided

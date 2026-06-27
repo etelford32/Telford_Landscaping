@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/authContext";
+import { trackSignUp } from "@/lib/analytics";
 import Link from "next/link";
 import { TreePine, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
 
@@ -32,6 +33,8 @@ function SignupForm() {
 
     try {
       await signup(email, password, name);
+      // Track the account-creation conversion before navigating away.
+      trackSignUp('email');
       router.push(redirectUrl);
     } catch (err: any) {
       setError(err.message || "Signup failed");

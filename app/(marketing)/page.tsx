@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import HeroCanvas from "@/components/HeroCanvas";
 import ScrollSlider from "@/components/ScrollSlider";
+import ContactForm from "@/components/ContactForm";
+import TrackedLink from "@/components/TrackedLink";
 
 export default function Home() {
   return (
@@ -48,14 +50,16 @@ export default function Home() {
 
             {/* CTAs */}
             <div className="flex flex-wrap gap-3 pointer-events-auto">
-              <Link
+              <TrackedLink
                 href="/app"
+                ctaId="open_design_tool"
+                ctaLocation="hero"
                 className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-bold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 text-sm sm:text-base"
               >
                 <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
                 See Your Yard in 2055
                 <ArrowRight className="w-4 h-4" />
-              </Link>
+              </TrackedLink>
               <Link
                 href="#contact"
                 className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/30 hover:bg-white/25 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 text-sm sm:text-base"
@@ -252,12 +256,14 @@ export default function Home() {
           </div>
 
           <div className="mt-12 text-center">
-            <Link
+            <TrackedLink
               href="/app"
+              ctaId="open_design_tool"
+              ctaLocation="design_tool_section"
               className="inline-block bg-white text-primary-900 px-10 py-5 rounded-xl font-bold hover:bg-primary-50 transition-all shadow-2xl hover:shadow-3xl hover:scale-105 text-lg"
             >
               Open the Design Tool
-            </Link>
+            </TrackedLink>
             <p className="mt-4 text-white/70">Free to use. If you like what you see, we&rsquo;ll build it.</p>
           </div>
         </div>
@@ -368,83 +374,7 @@ export default function Home() {
               </div>
             </div>
 
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                    placeholder="John Doe"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                    placeholder="john@example.com"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                    City
-                  </label>
-                  <select
-                    id="city"
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                  >
-                    <option value="">Select your city</option>
-                    <option value="auburn">Auburn</option>
-                    <option value="roseville">Roseville</option>
-                    <option value="granite-bay">Granite Bay</option>
-                    <option value="lincoln">Lincoln</option>
-                    <option value="loomis">Loomis</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                  Tell us about your project
-                </label>
-                <textarea
-                  id="message"
-                  rows={6}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-600 focus:border-transparent"
-                  placeholder="Describe your landscaping needs, project timeline, or any questions you have..."
-                ></textarea>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 text-lg"
-              >
-                Request Free Consultation
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </form>
+            <ContactForm />
           </div>
         </div>
       </section>
