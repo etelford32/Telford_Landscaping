@@ -16,16 +16,20 @@ interface SamplePlantDef {
 // ~4-ft-per-unit world. Species are drawn from the real plant library, so the
 // canopy dimensions here are driven by the same growth models as the design tool.
 const PLANT_PLACEMENTS: SamplePlantDef[] = [
-  // ── Specimen trees ──
+  // ── Specimen trees — procedural species only: the branch-expansion
+  //    renderer gives organic canopies, while primitive models read as
+  //    low-poly lollipops at hero scale ──
   { speciesId: "quercus-lobata", x: 6, z: -6.5, scale: 0.5 },             // Valley Oak — rear
-  { speciesId: "quercus-agrifolia", x: -7.5, z: 5.5, scale: 0.75 },       // Coast Live Oak — procedural specimen, front-left (scientific branch-expansion model)
+  { speciesId: "quercus-agrifolia", x: -7.5, z: 5.5, scale: 0.75 },       // Coast Live Oak — front-left specimen
   { speciesId: "quercus-douglasii", x: -2, z: -8, scale: 0.5 },           // Blue Oak — rear
-  { speciesId: "acer-palmatum-sango-kaku", x: 8.5, z: 3.5, scale: 0.9 },  // Coral Bark Maple — procedural front accent
+  { speciesId: "cercis-occidentalis", x: 8.5, z: 3.5, scale: 1.0 },       // Western Redbud — flowering front accent
 
-  // ── Conifer screen (side/rear) ──
-  { speciesId: "pinus-radiata", x: -8.5, z: -2, scale: 0.5 },             // Monterey Pine
-  { speciesId: "sequoia-sempervirens", x: -8.5, z: -5, scale: 0.35 },     // Coast Redwood — tall
-  { speciesId: "sequoia-sempervirens", x: 9.5, z: -3, scale: 0.35 },      // Coast Redwood — side
+  // ── Evergreen screen (side/rear) ──
+  { speciesId: "pinus-radiata", x: -8.5, z: -2, scale: 0.5 },             // Monterey Pine — left
+  { speciesId: "pinus-radiata", x: -8.5, z: -5, scale: 0.45 },            // Monterey Pine — rear-left
+  { speciesId: "quercus-agrifolia", x: 9.5, z: -3, scale: 0.45 },         // Coast Live Oak — side
+  { speciesId: "pinus-radiata", x: 8.2, z: -6.8, scale: 0.5 },            // Monterey Pine — rear-right screen
+  { speciesId: "quercus-douglasii", x: 3.5, z: -9, scale: 0.45 },         // Blue Oak — rear skyline
 
   // ── Flowering accents near pool/patio ──
   { speciesId: "cercis-occidentalis", x: -6.5, z: -2.5, scale: 0.85 },    // Western Redbud

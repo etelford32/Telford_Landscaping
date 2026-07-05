@@ -28,34 +28,34 @@ export default function House3D() {
       {/* Eave / soffit base */}
       <mesh position={[0, 2.88, 0]} castShadow>
         <boxGeometry args={[7.65, 0.14, 5.65]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.7} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.7} />
       </mesh>
       {/* Left slope — angle ≈ 11.5° around Z */}
       <mesh position={[-1.88, 3.12, 0]} rotation={[0, 0, 0.2]} castShadow>
         <boxGeometry args={[3.72, 0.13, 5.65]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.8} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.8} />
       </mesh>
       {/* Right slope */}
       <mesh position={[1.88, 3.12, 0]} rotation={[0, 0, -0.2]} castShadow>
         <boxGeometry args={[3.72, 0.13, 5.65]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.8} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.8} />
       </mesh>
       {/* Ridge cap */}
       <mesh position={[0, 3.46, 0]}>
         <boxGeometry args={[0.22, 0.1, 5.65]} />
-        <meshStandardMaterial color="#1C1410" roughness={0.9} />
+        <meshStandardMaterial color="#372E26" roughness={0.9} />
       </mesh>
 
       {/* ── COVERED FRONT PORCH ── */}
       {/* Porch roof */}
       <mesh position={[0, 2.65, 3.55]} castShadow>
         <boxGeometry args={[4.8, 0.13, 2.0]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.7} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.7} />
       </mesh>
       {/* Porch fascia */}
       <mesh position={[0, 2.59, 4.5]}>
         <boxGeometry args={[4.8, 0.18, 0.08]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.7} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.7} />
       </mesh>
       {/* Square craftsman posts */}
       {([-1.7, 0, 1.7] as number[]).map((x, i) => (
@@ -93,7 +93,7 @@ export default function House3D() {
       {/* Left picture window frame */}
       <mesh position={[-2.3, 1.62, 2.51]}>
         <boxGeometry args={[2.2, 1.05, 0.07]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.5} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.5} />
       </mesh>
       {/* Left picture window glass */}
       <mesh position={[-2.3, 1.62, 2.53]}>
@@ -103,13 +103,13 @@ export default function House3D() {
       {/* Left window mullion */}
       <mesh position={[-2.3, 1.62, 2.535]}>
         <boxGeometry args={[0.04, 0.87, 0.02]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.5} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.5} />
       </mesh>
 
       {/* Right picture window */}
       <mesh position={[2.3, 1.62, 2.51]}>
         <boxGeometry args={[2.2, 1.05, 0.07]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.5} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.5} />
       </mesh>
       <mesh position={[2.3, 1.62, 2.53]}>
         <boxGeometry args={[2.0, 0.87, 0.04]} />
@@ -117,14 +117,14 @@ export default function House3D() {
       </mesh>
       <mesh position={[2.3, 1.62, 2.535]}>
         <boxGeometry args={[0.04, 0.87, 0.02]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.5} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.5} />
       </mesh>
 
       {/* ── FRONT DOOR ── */}
       {/* Door frame */}
       <mesh position={[0, 1.03, 2.52]}>
         <boxGeometry args={[1.08, 2.06, 0.07]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.5} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.5} />
       </mesh>
       {/* Door panel — dark wood */}
       <mesh position={[0, 0.98, 2.535]}>
@@ -165,7 +165,7 @@ export default function House3D() {
       {/* ── SIDE WINDOWS ── */}
       <mesh position={[-3.52, 1.5, 0.5]}>
         <boxGeometry args={[0.07, 0.88, 1.6]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.5} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.5} />
       </mesh>
       <mesh position={[-3.53, 1.5, 0.5]}>
         <boxGeometry args={[0.04, 0.7, 1.42]} />
@@ -173,7 +173,7 @@ export default function House3D() {
       </mesh>
       <mesh position={[3.52, 1.5, 0.5]}>
         <boxGeometry args={[0.07, 0.88, 1.6]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.5} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.5} />
       </mesh>
       <mesh position={[3.53, 1.5, 0.5]}>
         <boxGeometry args={[0.04, 0.7, 1.42]} />
@@ -199,21 +199,21 @@ export default function House3D() {
       {/* Garage roof eave */}
       <mesh position={[5.45, 2.66, -0.5]}>
         <boxGeometry args={[3.95, 0.13, 5.15]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.7} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.7} />
       </mesh>
       {/* Garage roof slopes */}
       <mesh position={[4.57, 2.88, -0.5]} rotation={[0, 0, 0.22]}>
         <boxGeometry args={[2.1, 0.12, 5.15]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.8} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.8} />
       </mesh>
       <mesh position={[6.33, 2.88, -0.5]} rotation={[0, 0, -0.22]}>
         <boxGeometry args={[2.1, 0.12, 5.15]} />
-        <meshStandardMaterial color="#2C2420" roughness={0.8} />
+        <meshStandardMaterial color="#4A3D33" roughness={0.8} />
       </mesh>
       {/* Garage door panel */}
       <mesh position={[5.45, 1.15, 1.9]}>
         <boxGeometry args={[2.85, 2.1, 0.07]} />
-        <meshStandardMaterial color="#3A3028" roughness={0.55} />
+        <meshStandardMaterial color="#4A3B2E" roughness={0.55} />
       </mesh>
       {/* Garage door panel lines */}
       {[0.6, 0.0, -0.6].map((y, i) => (
