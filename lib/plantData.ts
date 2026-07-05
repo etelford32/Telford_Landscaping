@@ -1,4 +1,6 @@
 // Plant species definitions
+import { shrubGrowthArrays } from "./growth/shrubGrowth";
+
 export interface PlantSpecies {
   id: string;
   commonName: string;
@@ -1152,21 +1154,15 @@ export const PLANT_LIBRARY: PlantSpecies[] = [
     nativeToCA: false,
     droughtTolerant: false,
     color: '#2E5D34', // Boxwood green
-    // Calibrated to real 'Suffruticosa' data: ~0.5–1.5 in/yr, decelerating,
-    // reaching ~2.3 ft tall × ~2.8 ft wide (broader than tall) by year 30.
+    // European box. Very slow (~1 in/yr), broader than tall; the monomolecular
+    // curve tops out near ~2.3 ft tall × ~2.9 ft wide at year 30.
     growthData: {
-      baseHeightGrowth: [
-        0.55, 0.66, 0.77, 0.87, 0.97, 1.06, 1.15, 1.23, 1.31, 1.39,
-        1.46, 1.53, 1.60, 1.66, 1.72, 1.78, 1.83, 1.88, 1.93, 1.98,
-        2.02, 2.06, 2.10, 2.14, 2.17, 2.20, 2.23, 2.26, 2.28, 2.30,
-      ],
-      baseWidthGrowth: [
-        0.60, 0.74, 0.88, 1.01, 1.13, 1.25, 1.36, 1.47, 1.57, 1.67,
-        1.76, 1.85, 1.93, 2.01, 2.09, 2.16, 2.23, 2.29, 2.35, 2.41,
-        2.46, 2.51, 2.56, 2.61, 2.65, 2.69, 2.73, 2.76, 2.79, 2.82,
-      ],
-      maxHeight: 2.5,
-      maxWidth: 3,
+      ...shrubGrowthArrays({
+        height: { start: 0.55, mature: 3.0, ratePerYear: 0.11 },
+        width: { start: 0.6, mature: 3.6, ratePerYear: 0.15 },
+      }),
+      maxHeight: 3,
+      maxWidth: 3.5,
       growthRate: 'slow',
       lifespan: 120,
       shapeType: 'rounded',
@@ -1188,17 +1184,13 @@ export const PLANT_LIBRARY: PlantSpecies[] = [
     nativeToCA: false,
     droughtTolerant: false,
     color: '#274B26',
+    // European box, the vigorous species form: ~2–3 in/yr, to ~6 ft by year 30
+    // and eventually a small tree.
     growthData: {
-      baseHeightGrowth: [
-        0.80, 1.00, 1.25, 1.50, 1.75, 2.00, 2.25, 2.50, 2.75, 3.00,
-        3.25, 3.50, 3.72, 3.94, 4.15, 4.35, 4.54, 4.72, 4.90, 5.07,
-        5.23, 5.38, 5.53, 5.67, 5.80, 5.93, 6.05, 6.17, 6.28, 6.40,
-      ],
-      baseWidthGrowth: [
-        0.70, 0.90, 1.12, 1.34, 1.55, 1.76, 1.96, 2.15, 2.34, 2.52,
-        2.70, 2.87, 3.03, 3.19, 3.34, 3.48, 3.62, 3.75, 3.88, 4.00,
-        4.11, 4.22, 4.33, 4.43, 4.53, 4.62, 4.71, 4.79, 4.87, 4.95,
-      ],
+      ...shrubGrowthArrays({
+        height: { start: 0.8, mature: 11, ratePerYear: 0.26 },
+        width: { start: 0.7, mature: 8.5, ratePerYear: 0.24 },
+      }),
       maxHeight: 12,
       maxWidth: 8,
       growthRate: 'moderate',
@@ -1214,25 +1206,55 @@ export const PLANT_LIBRARY: PlantSpecies[] = [
     },
   },
   {
+    id: 'buxus-green-mountain',
+    commonName: "Green Mountain Boxwood",
+    scientificName: "Buxus 'Green Mountain'",
+    description: "A naturally upright, cone-shaped hybrid (a Korean × common box cross) that holds a rich green through winter without bronzing. Grows into a 3–5 ft pyramid, ideal for topiary cones, matched pairs flanking an entry, and vertical accents in a formal bed. Vigorous and cold-hardy, it keeps its conical form with minimal shearing.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#315E2E',
+    // Upright: height outpaces width, staying markedly taller than wide (cone).
+    growthData: {
+      ...shrubGrowthArrays({
+        height: { start: 0.8, mature: 5.2, ratePerYear: 0.25 },
+        width: { start: 0.45, mature: 3.0, ratePerYear: 0.13 },
+      }),
+      maxHeight: 5,
+      maxWidth: 3,
+      growthRate: 'moderate',
+      lifespan: 100,
+      shapeType: 'pyramidal',
+    },
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'full-sun',
+      soilType: 'Well-drained, loamy',
+      hardiness: 'USDA Zones 4-9',
+      maintenanceLevel: 'low',
+    },
+  },
+
+  // ===== JAPANESE & KOREAN BOXWOOD (Buxus microphylla / sinica) =====
+  // The littleleaf boxwoods diverge sharply in growth pattern — from vigorous
+  // heat-tolerant globes to barely-creeping true dwarfs. Each cultivar below is
+  // encoded by its published planting size, mature size, and annual rate, and
+  // the monomolecular curve turns those numbers into the 30-year trajectory.
+  {
     id: 'buxus-microphylla-winter-gem',
     commonName: "Winter Gem Boxwood",
     scientificName: "Buxus microphylla japonica 'Winter Gem'",
     description: "A fast, tough littleleaf boxwood that fills quickly into a tidy rounded mound of bright green. Small leaves take on a bronze cast through winter and green up again in spring. Reaches 3–4 ft, a modern workhorse for low hedges and foundation plantings that holds a shear well.",
     category: 'shrub',
     nativeToCA: false,
-    droughtTolerant: false,
+    droughtTolerant: true,
     color: '#3C6C33',
+    // Moderate littleleaf: ~2–3 in/yr, tidy mound to ~3.4 ft, slightly wider.
     growthData: {
-      baseHeightGrowth: [
-        0.60, 0.82, 1.03, 1.23, 1.42, 1.60, 1.77, 1.93, 2.08, 2.22,
-        2.35, 2.47, 2.58, 2.68, 2.78, 2.87, 2.95, 3.02, 3.09, 3.15,
-        3.21, 3.26, 3.31, 3.35, 3.39, 3.43, 3.46, 3.49, 3.52, 3.55,
-      ],
-      baseWidthGrowth: [
-        0.65, 0.90, 1.14, 1.37, 1.59, 1.80, 2.00, 2.19, 2.37, 2.54,
-        2.70, 2.85, 2.99, 3.12, 3.24, 3.35, 3.45, 3.54, 3.62, 3.70,
-        3.77, 3.83, 3.89, 3.94, 3.99, 4.03, 4.07, 4.10, 4.13, 4.15,
-      ],
+      ...shrubGrowthArrays({
+        height: { start: 0.6, mature: 4.0, ratePerYear: 0.2 },
+        width: { start: 0.65, mature: 4.6, ratePerYear: 0.22 },
+      }),
       maxHeight: 4,
       maxWidth: 4.5,
       growthRate: 'moderate',
@@ -1248,36 +1270,149 @@ export const PLANT_LIBRARY: PlantSpecies[] = [
     },
   },
   {
-    id: 'buxus-green-mountain',
-    commonName: "Green Mountain Boxwood",
-    scientificName: "Buxus 'Green Mountain'",
-    description: "A naturally upright, cone-shaped hybrid that holds a rich green through winter without bronzing. Grows into a 3–5 ft pyramid, ideal for topiary cones, matched pairs flanking an entry, and vertical accents in a formal bed. Vigorous and cold-hardy, it keeps its conical form with minimal shearing.",
+    id: 'buxus-microphylla-green-beauty',
+    commonName: "Green Beauty Boxwood",
+    scientificName: "Buxus microphylla japonica 'Green Beauty'",
+    description: "The heat-and-humidity champion of the littleleaf boxwoods, and unusual for holding a deep, glossy green right through summer scorch and winter cold instead of bronzing. Moderate growth into a dense, naturally rounded 3–5 ft globe with excellent blight resistance — the go-to modern boxwood for warm-climate hedging and topiary.",
     category: 'shrub',
     nativeToCA: false,
-    droughtTolerant: false,
-    color: '#315E2E',
+    droughtTolerant: true,
+    color: '#2F6B2C',
+    // Moderate, dense globe — height and width track together (round).
     growthData: {
-      baseHeightGrowth: [
-        0.80, 1.05, 1.30, 1.54, 1.77, 1.99, 2.20, 2.40, 2.59, 2.77,
-        2.94, 3.10, 3.25, 3.39, 3.52, 3.64, 3.75, 3.85, 3.94, 4.03,
-        4.11, 4.18, 4.25, 4.31, 4.37, 4.42, 4.47, 4.51, 4.55, 4.60,
-      ],
-      baseWidthGrowth: [
-        0.45, 0.58, 0.72, 0.85, 0.97, 1.09, 1.20, 1.31, 1.41, 1.50,
-        1.59, 1.67, 1.75, 1.82, 1.89, 1.95, 2.01, 2.06, 2.11, 2.16,
-        2.20, 2.24, 2.28, 2.31, 2.34, 2.37, 2.40, 2.42, 2.44, 2.46,
-      ],
+      ...shrubGrowthArrays({
+        height: { start: 0.7, mature: 4.6, ratePerYear: 0.23 },
+        width: { start: 0.7, mature: 4.6, ratePerYear: 0.23 },
+      }),
       maxHeight: 5,
-      maxWidth: 3,
+      maxWidth: 5,
       growthRate: 'moderate',
       lifespan: 100,
-      shapeType: 'pyramidal',
+      shapeType: 'rounded',
+    },
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'full-sun',
+      soilType: 'Well-drained, loamy',
+      hardiness: 'USDA Zones 6-9',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'buxus-microphylla-baby-gem',
+    commonName: "Baby Gem Boxwood",
+    scientificName: "Buxus microphylla japonica 'Baby Gem'",
+    description: "A compact littleleaf boxwood bred to stay small and tidy with almost no shearing. Slow, even growth builds a tight, dark-green globe to about 3 ft — heat and drought tolerant, dense from the ground up. Ideal for low edging, small hedges, and containers where a full-size boxwood would overrun the space.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: true,
+    color: '#274B26',
+    // Slow, compact globe — small and tight.
+    growthData: {
+      ...shrubGrowthArrays({
+        height: { start: 0.6, mature: 3.2, ratePerYear: 0.15 },
+        width: { start: 0.6, mature: 3.2, ratePerYear: 0.16 },
+      }),
+      maxHeight: 3,
+      maxWidth: 3,
+      growthRate: 'slow',
+      lifespan: 90,
+      shapeType: 'rounded',
+    },
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'full-sun',
+      soilType: 'Well-drained, loamy',
+      hardiness: 'USDA Zones 5-9',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'buxus-sinica-wintergreen',
+    commonName: "Wintergreen Korean Boxwood",
+    scientificName: "Buxus sinica var. insularis 'Wintergreen'",
+    description: "The cold-hardiest boxwood of all (to zone 4) and the fastest grower here — 4–6 in a year — with a looser, more open, informal habit than the tight Japanese globes. Spreads wider than tall into a billowing low mound. Foliage can pick up a faint bronze in hard winters but greens up fast; a tough, quick-establishing choice for northern hedges.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: true,
+    color: '#33612D',
+    // Fast Korean box: surges early (4–6 in/yr) then plateaus; broad, spreading,
+    // distinctly wider than tall.
+    growthData: {
+      ...shrubGrowthArrays({
+        height: { start: 0.6, mature: 3.0, ratePerYear: 0.33 },
+        width: { start: 0.7, mature: 4.6, ratePerYear: 0.42 },
+      }),
+      maxHeight: 3,
+      maxWidth: 5,
+      growthRate: 'fast',
+      lifespan: 90,
+      shapeType: 'rounded',
     },
     care: {
       waterNeeds: 'moderate',
       sunExposure: 'full-sun',
       soilType: 'Well-drained, loamy',
       hardiness: 'USDA Zones 4-9',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'buxus-microphylla-green-pillow',
+    commonName: "Green Pillow Boxwood",
+    scientificName: "Buxus microphylla 'Green Pillow'",
+    description: "A dwarf boxwood that grows as a low, dense cushion — distinctly wider than tall, like a green pillow settled on the ground. Slow-growing and fine-textured, it holds a neat mounded form without shearing, staying under 2 ft high while spreading to 2–3 ft. Perfect for the front of a border, low knot-garden lines, or softening the base of a wall.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: true,
+    color: '#356832',
+    // Dwarf low spreader: stays low, spreads wide — a flat cushion.
+    growthData: {
+      ...shrubGrowthArrays({
+        height: { start: 0.4, mature: 1.9, ratePerYear: 0.09 },
+        width: { start: 0.5, mature: 2.9, ratePerYear: 0.14 },
+      }),
+      maxHeight: 2,
+      maxWidth: 3,
+      growthRate: 'slow',
+      lifespan: 90,
+      shapeType: 'rounded',
+    },
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Well-drained, loamy',
+      hardiness: 'USDA Zones 6-9',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'buxus-microphylla-morris-midget',
+    commonName: "Morris Midget Boxwood",
+    scientificName: "Buxus microphylla japonica 'Morris Midget'",
+    description: "The ultimate miniature boxwood — an ultra-dwarf that creeps along at barely half an inch to an inch a year, making a tight little ball of bright green only about 10 inches across after a decade and knee-low at most in a lifetime. Bronzes orange-red in winter sun. A collector's plant for rock gardens, miniature parterres, troughs, and bonsai.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: true,
+    color: '#3E7538',
+    // True dwarf: the slowest of all — a tiny tight bun that is still only ~14 in
+    // after 30 years.
+    growthData: {
+      ...shrubGrowthArrays({
+        height: { start: 0.3, mature: 1.35, ratePerYear: 0.06 },
+        width: { start: 0.35, mature: 1.55, ratePerYear: 0.07 },
+      }),
+      maxHeight: 1.5,
+      maxWidth: 1.5,
+      growthRate: 'slow',
+      lifespan: 100,
+      shapeType: 'rounded',
+    },
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Well-drained, loamy',
+      hardiness: 'USDA Zones 6-9',
       maintenanceLevel: 'low',
     },
   },

@@ -63,9 +63,13 @@ const PLANT_PLACEMENTS: SamplePlantDef[] = [
   { speciesId: "buxus-green-mountain", x: -1.9, z: 3.0, scale: 1 },
   { speciesId: "buxus-green-mountain", x: 1.9, z: 3.0, scale: 1 },
 
-  // 'Winter Gem' mounds anchoring the walk approach.
-  { speciesId: "buxus-microphylla-winter-gem", x: -2.2, z: 5.4, scale: 1 },
-  { speciesId: "buxus-microphylla-winter-gem", x: 2.2, z: 5.4, scale: 1 },
+  // 'Green Beauty' specimen globes anchoring the walk approach (hold color).
+  { speciesId: "buxus-microphylla-green-beauty", x: -2.3, z: 5.5, scale: 1 },
+  { speciesId: "buxus-microphylla-green-beauty", x: 2.3, z: 5.5, scale: 1 },
+
+  // Low 'Green Pillow' dwarf cushions edging the front of the walk.
+  { speciesId: "buxus-microphylla-green-pillow", x: -1.55, z: 5.6, scale: 1 },
+  { speciesId: "buxus-microphylla-green-pillow", x: 1.55, z: 5.6, scale: 1 },
 
   // ── Pool border shrubs ──
   { speciesId: "rhamnus-californica", x: -7.0, z: -1.0, scale: 1 },       // Coffeeberry

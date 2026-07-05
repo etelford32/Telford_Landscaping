@@ -39,8 +39,13 @@ export const PROCEDURAL_SPECIES = new Set<string>([
   "acer-palmatum-sango-kaku",
   "buxus-sempervirens-suffruticosa",
   "buxus-sempervirens",
-  "buxus-microphylla-winter-gem",
   "buxus-green-mountain",
+  "buxus-microphylla-winter-gem",
+  "buxus-microphylla-green-beauty",
+  "buxus-microphylla-baby-gem",
+  "buxus-sinica-wintergreen",
+  "buxus-microphylla-green-pillow",
+  "buxus-microphylla-morris-midget",
   "quercus-agrifolia",
   "quercus-lobata",
   "quercus-douglasii",
@@ -95,6 +100,14 @@ const BOXWOOD_AMERICAN_PALETTE = [
 // Japanese/'Winter Gem' boxwood: brighter light-green, bronzes at the tips.
 const BOXWOOD_WINTERGEM_PALETTE = [
   "#325E2C", "#3C6C33", "#47793B", "#548742", "#47793B", "#6A9848", "#8A6B34",
+];
+// 'Green Beauty' / dwarf littleleaf: rich, clean, glossy greens that hold color.
+const BOXWOOD_BRIGHT_PALETTE = [
+  "#2C5A28", "#356832", "#3E7538", "#4C8341", "#3E7538", "#5A934A", "#6BA152",
+];
+// Korean 'Wintergreen': green with a scatter of olive/bronze winter tones.
+const BOXWOOD_KOREAN_PALETTE = [
+  "#2C5228", "#345E2E", "#3D6B36", "#4A7A3E", "#3D6B36", "#6E6A32", "#8A6E3A",
 ];
 // Coast live oak: dark, glossy, evergreen greens.
 const OAK_PALETTE = ["#2F4A22", "#365A28", "#3E6B2E", "#2A4420", "#436F30", "#314E24"];
@@ -479,7 +492,7 @@ const BOXWOOD_PRESETS: Record<string, Preset> = {
     coreColor: "#2A542A",
     formMaturityAge: 20,
     leafSize: 0.085,
-    params: { width: 1.2, clip: 0.44, leafCount: 1500, lobes: 6, lobeDepth: 0.11, taper: 0, trunkRadius: 0.05 },
+    params: { width: 1.25, clip: 0.44, leafCount: 1500, lobes: 6, lobeDepth: 0.11, taper: 0, trunkRadius: 0.05 },
   }),
   // American boxwood — larger, more vigorous, broad rounded mound, bigger leaf.
   "buxus-sempervirens": boxwoodPreset({
@@ -487,15 +500,7 @@ const BOXWOOD_PRESETS: Record<string, Preset> = {
     coreColor: "#274B26",
     formMaturityAge: 22,
     leafSize: 0.095,
-    params: { width: 1.05, clip: 0.4, leafCount: 1600, lobes: 5, lobeDepth: 0.13, taper: 0.08, trunkRadius: 0.06 },
-  }),
-  // 'Winter Gem' (littleleaf) — fast, dense, tidy rounded mound.
-  "buxus-microphylla-winter-gem": boxwoodPreset({
-    palette: BOXWOOD_WINTERGEM_PALETTE,
-    coreColor: "#325E2C",
-    formMaturityAge: 14,
-    leafSize: 0.08,
-    params: { width: 1.15, clip: 0.42, leafCount: 1400, lobes: 6, lobeDepth: 0.1, taper: 0, trunkRadius: 0.05 },
+    params: { width: 0.92, clip: 0.4, leafCount: 1600, lobes: 5, lobeDepth: 0.13, taper: 0.06, trunkRadius: 0.06 },
   }),
   // 'Green Mountain' — upright, cone/egg form for pyramids and vertical accents.
   "buxus-green-mountain": boxwoodPreset({
@@ -504,6 +509,56 @@ const BOXWOOD_PRESETS: Record<string, Preset> = {
     formMaturityAge: 16,
     leafSize: 0.08,
     params: { width: 0.78, clip: 0.32, leafCount: 1500, lobes: 5, lobeDepth: 0.09, taper: 0.5, trunkRadius: 0.05 },
+  }),
+
+  // ── Japanese / Korean littleleaf cultivars ──
+  // 'Winter Gem' — moderate, dense, tidy rounded mound, bronzes in winter.
+  "buxus-microphylla-winter-gem": boxwoodPreset({
+    palette: BOXWOOD_WINTERGEM_PALETTE,
+    coreColor: "#325E2C",
+    formMaturityAge: 14,
+    leafSize: 0.08,
+    params: { width: 1.15, clip: 0.42, leafCount: 1400, lobes: 6, lobeDepth: 0.1, taper: 0, trunkRadius: 0.05 },
+  }),
+  // 'Green Beauty' — dense heat-tolerant globe that holds a deep glossy green.
+  "buxus-microphylla-green-beauty": boxwoodPreset({
+    palette: BOXWOOD_BRIGHT_PALETTE,
+    coreColor: "#2F6B2C",
+    formMaturityAge: 16,
+    leafSize: 0.075,
+    params: { width: 1.0, clip: 0.42, leafCount: 1650, lobes: 6, lobeDepth: 0.09, taper: 0.05, trunkRadius: 0.05 },
+  }),
+  // 'Baby Gem' — compact, very tight little dark-green globe.
+  "buxus-microphylla-baby-gem": boxwoodPreset({
+    palette: BOXWOOD_AMERICAN_PALETTE,
+    coreColor: "#274B26",
+    formMaturityAge: 14,
+    leafSize: 0.07,
+    params: { width: 1.02, clip: 0.42, leafCount: 1500, lobes: 6, lobeDepth: 0.08, taper: 0, trunkRadius: 0.045 },
+  }),
+  // 'Wintergreen' (Korean) — fast, looser, informal, broad low spreading mound.
+  "buxus-sinica-wintergreen": boxwoodPreset({
+    palette: BOXWOOD_KOREAN_PALETTE,
+    coreColor: "#345E2E",
+    formMaturityAge: 12,
+    leafSize: 0.09,
+    params: { width: 1.45, clip: 0.46, leafCount: 1150, lobes: 4, lobeDepth: 0.16, taper: 0, trunkRadius: 0.05 },
+  }),
+  // 'Green Pillow' — dwarf low cushion, distinctly wider than tall, smooth bun.
+  "buxus-microphylla-green-pillow": boxwoodPreset({
+    palette: BOXWOOD_BRIGHT_PALETTE,
+    coreColor: "#356832",
+    formMaturityAge: 12,
+    leafSize: 0.07,
+    params: { width: 1.5, clip: 0.5, leafCount: 1450, lobes: 6, lobeDepth: 0.08, taper: 0, trunkRadius: 0.045 },
+  }),
+  // 'Morris Midget' — ultra-dwarf tiny tight bun, fine leaves, smooth surface.
+  "buxus-microphylla-morris-midget": boxwoodPreset({
+    palette: BOXWOOD_BRIGHT_PALETTE,
+    coreColor: "#3E7538",
+    formMaturityAge: 10,
+    leafSize: 0.055,
+    params: { width: 1.15, clip: 0.42, leafCount: 1500, lobes: 7, lobeDepth: 0.07, taper: 0, trunkRadius: 0.04 },
   }),
 };
 
