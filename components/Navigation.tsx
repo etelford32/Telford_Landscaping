@@ -33,9 +33,27 @@ export default function Navigation() {
   return (
     <>
       <style jsx global>{`
-        @keyframes leafFloat {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-8px) rotate(5deg); }
+        @keyframes logoSprout {
+          0% { opacity: 0; transform: scale(0.4) rotate(-12deg); }
+          60% { opacity: 1; transform: scale(1.08) rotate(3deg); }
+          80% { transform: scale(0.97) rotate(-1deg); }
+          100% { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+
+        @keyframes logoGlow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4), 0 4px 12px rgba(20, 83, 45, 0.15); }
+          50% { box-shadow: 0 0 0 7px rgba(34, 197, 94, 0), 0 4px 16px rgba(22, 163, 74, 0.3); }
+        }
+
+        @keyframes logoSheen {
+          0% { transform: translateX(-150%) skewX(-20deg); }
+          14% { transform: translateX(400%) skewX(-20deg); }
+          100% { transform: translateX(400%) skewX(-20deg); }
+        }
+
+        @keyframes wordmarkIn {
+          0% { opacity: 0; transform: translateX(-10px); }
+          100% { opacity: 1; transform: translateX(0); }
         }
 
         @keyframes leafFall {
@@ -53,11 +71,34 @@ export default function Navigation() {
           100% { transform: scale(1.2); opacity: 0; }
         }
 
-        .leaf-float {
-          animation: leafFloat 3s ease-in-out infinite;
+        .logo-sprout {
+          animation: logoSprout 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .logo-glow {
+          animation: logoGlow 4s ease-in-out infinite;
+        }
+
+        .logo-sheen {
+          animation: logoSheen 7s ease-in-out 1.5s infinite;
+          transform: translateX(-150%) skewX(-20deg);
+        }
+
+        .wordmark-in {
+          animation: wordmarkIn 0.6s ease-out 0.4s backwards;
         }
 
         .leaf-fall {
+          animation: leafFall 0.6s ease-out forwards;
+        }
+
+        /* Run leafFall only while the group is hovered; when hover ends the
+           animation is removed, so fill-forwards can't pin the leaf visible */
+        .leaf-fall-on-hover {
+          opacity: 0;
+        }
+
+        .group:hover .leaf-fall-on-hover {
           animation: leafFall 0.6s ease-out forwards;
         }
 
@@ -99,20 +140,27 @@ export default function Navigation() {
       <nav className="bg-gradient-to-r from-white via-green-50/30 to-white backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b-2 border-primary-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* Logo with Leaf Float Animation */}
+            {/* Logo with sprout entrance, breathing glow, and periodic sheen */}
             <Link href="/" className="flex items-center gap-3 group relative">
-              <div className="relative rounded-xl overflow-hidden shadow-md ring-1 ring-primary-100 group-hover:shadow-lg transition-all duration-500 group-hover:scale-110 leaf-float">
-                <Image
-                  src="/telford-logo.jpg"
-                  alt="Telford Landscaping logo"
-                  width={48}
-                  height={48}
-                  priority
-                  className="w-12 h-12 object-cover"
-                />
+              {/* shrink-0: without it the overflow-hidden box gets flex-crushed to 0px
+                  when the header row runs out of room, collapsing the logo entirely */}
+              <div className="logo-sprout shrink-0">
+                <div className="logo-glow relative rounded-xl overflow-hidden ring-2 ring-primary-200/70 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3">
+                  <Image
+                    src="/telford-logo.jpg"
+                    alt="Telford Landscaping logo"
+                    width={56}
+                    height={56}
+                    priority
+                    className="w-14 h-14 object-cover"
+                  />
+                  <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+                    <span className="logo-sheen absolute top-0 h-full w-1/3 bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+                  </span>
+                </div>
               </div>
-              <div className="relative">
-                <div className="text-xl font-bold bg-gradient-to-r from-primary-700 to-green-700 bg-clip-text text-transparent">
+              <div className="relative wordmark-in whitespace-nowrap">
+                <div className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary-700 to-green-700 bg-clip-text text-transparent">
                   Telford Landscaping
                 </div>
                 <div className="text-xs text-gray-600 flex items-center gap-1">
@@ -122,15 +170,15 @@ export default function Navigation() {
               </div>
 
               {/* Decorative leaves on hover */}
-              <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-2xl leaf-fall">
+              <div className="absolute -top-2 -right-2 text-2xl leaf-fall-on-hover">
                 🍃
               </div>
             </Link>
 
-            {/* Desktop Navigation with Nature Animations */}
-            <div className="hidden md:flex items-center gap-2">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
+            {/* Desktop Navigation with Nature Animations.
+                Home is omitted here — the logo links home; it stays in the mobile menu. */}
+            <div className="hidden xl:flex items-center gap-0.5">
+              {navLinks.filter((link) => link.href !== "/").map((link) => {
                 const isHovered = hoveredLink === link.href;
                 const isFeatured = link.featured;
                 const isAdmin = link.admin;
@@ -142,8 +190,8 @@ export default function Navigation() {
                     onMouseEnter={() => setHoveredLink(link.href)}
                     onMouseLeave={() => setHoveredLink(null)}
                     className={`
-                      relative px-4 py-2 rounded-xl font-semibold transition-all duration-300
-                      nav-link-hover group flex items-center gap-2
+                      relative px-2 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-300
+                      nav-link-hover group flex items-center
                       ${isFeatured
                         ? 'bg-gradient-to-r from-primary-600 to-green-600 text-white shadow-md hover:shadow-xl hover:scale-105'
                         : isAdmin
@@ -152,9 +200,6 @@ export default function Navigation() {
                       }
                     `}
                   >
-                    {/* Icon with bounce effect */}
-                    <Icon className={`w-4 h-4 transition-transform duration-300 ${isHovered ? 'scale-125 rotate-12' : ''}`} />
-
                     <span className="relative z-10">{link.label}</span>
 
                     {/* Leaf indicator on hover */}
@@ -171,7 +216,7 @@ export default function Navigation() {
               })}
 
               {/* User Section with Nature Theme */}
-              <div className="ml-4 pl-4 border-l-2 border-green-200 flex items-center gap-3">
+              <div className="ml-1.5 pl-2 border-l-2 border-green-200 flex items-center gap-1.5">
                 {isAuthenticated ? (
                   <>
                     <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 transition-all duration-300 hover:shadow-md hover:scale-105">
@@ -195,13 +240,13 @@ export default function Navigation() {
                   <>
                     <Link
                       href="/login"
-                      className="text-gray-700 hover:text-primary-700 font-semibold px-4 py-2 rounded-xl hover:bg-green-50 transition-all duration-300"
+                      className="text-gray-700 hover:text-primary-700 text-sm font-semibold whitespace-nowrap px-2 py-2 rounded-xl hover:bg-green-50 transition-all duration-300"
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/signup"
-                      className="bg-gradient-to-r from-primary-600 to-green-600 text-white px-6 py-2 rounded-xl font-bold hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 group"
+                      className="bg-gradient-to-r from-primary-600 to-green-600 text-white text-sm px-3 py-2 rounded-xl font-bold whitespace-nowrap hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-1.5 group"
                     >
                       <span>Start Free</span>
                       <Sparkles className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
@@ -214,7 +259,7 @@ export default function Navigation() {
             {/* Mobile Menu Button with Nature Animation */}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-3 rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group"
+              className="xl:hidden p-3 rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group"
               aria-label="Toggle menu"
             >
               {isOpen ? (
@@ -227,7 +272,7 @@ export default function Navigation() {
 
           {/* Mobile Navigation with Nature Theme */}
           {isOpen && (
-            <div className="md:hidden py-6 border-t-2 border-green-100 bg-gradient-to-b from-green-50/50 to-white rounded-b-2xl">
+            <div className="xl:hidden py-6 border-t-2 border-green-100 bg-gradient-to-b from-green-50/50 to-white rounded-b-2xl">
               <div className="flex flex-col gap-3">
                 {navLinks.map((link, index) => {
                   const Icon = link.icon;
