@@ -2,14 +2,36 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Menu, X, TreePine, LogOut, User, Palette, Camera, Mail, Shield, Sparkles, Sprout, Droplets, BookOpen } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 
+/* Engraved-style bird silhouette, matching the logo artwork's palette */
+function Bird({ delay = "0s" }: { delay?: string }) {
+  return (
+    <span className="bird-flap block" style={{ animationDelay: delay }}>
+      <svg viewBox="0 0 24 14" width="13" height="8" fill="none" stroke="#57534e" strokeWidth="2.4" strokeLinecap="round">
+        <path d="M2 10 Q 7 3 12 8" />
+        <path d="M12 8 Q 17 3 22 10" />
+      </svg>
+    </span>
+  );
+}
+
+const BURST_LEAVES = [
+  { leaf: "🍃", dx: "-34px", dy: "-38px", rot: "-80deg", delay: "0s" },
+  { leaf: "🍂", dx: "36px", dy: "-32px", rot: "75deg", delay: "0.03s" },
+  { leaf: "🌿", dx: "-40px", dy: "4px", rot: "-55deg", delay: "0.05s" },
+  { leaf: "🍃", dx: "42px", dy: "0px", rot: "60deg", delay: "0.02s" },
+  { leaf: "🍃", dx: "4px", dy: "-46px", rot: "30deg", delay: "0.06s" },
+  { leaf: "🍂", dx: "-12px", dy: "34px", rot: "-40deg", delay: "0.04s" },
+];
+
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const [burstId, setBurstId] = useState(0);
   const { user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -34,10 +56,10 @@ export default function Navigation() {
     <>
       <style jsx global>{`
         @keyframes logoSprout {
-          0% { opacity: 0; transform: scale(0.4) rotate(-12deg); }
-          60% { opacity: 1; transform: scale(1.08) rotate(3deg); }
-          80% { transform: scale(0.97) rotate(-1deg); }
-          100% { opacity: 1; transform: scale(1) rotate(0deg); }
+          0% { opacity: 0; transform: scale(0.6, 0.25); }
+          55% { opacity: 1; transform: scale(1.02, 1.08); }
+          75% { transform: scale(1.005, 0.96); }
+          100% { opacity: 1; transform: scale(1, 1); }
         }
 
         @keyframes logoGlow {
@@ -45,10 +67,37 @@ export default function Navigation() {
           50% { box-shadow: 0 0 0 7px rgba(34, 197, 94, 0), 0 4px 16px rgba(22, 163, 74, 0.3); }
         }
 
-        @keyframes logoSheen {
-          0% { transform: translateX(-150%) skewX(-20deg); }
-          14% { transform: translateX(400%) skewX(-20deg); }
-          100% { transform: translateX(400%) skewX(-20deg); }
+        @keyframes logoSway {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(1.2deg); }
+          75% { transform: rotate(-1.2deg); }
+        }
+
+        @keyframes birdFlyA {
+          0% { opacity: 0; transform: translate(0, 0); }
+          2% { opacity: 0.9; }
+          20% { opacity: 0.9; transform: translate(64px, -12px); }
+          27% { opacity: 0; transform: translate(104px, -18px); }
+          100% { opacity: 0; transform: translate(104px, -18px); }
+        }
+
+        @keyframes birdFlyB {
+          0% { opacity: 0; transform: translate(0, 0) scale(0.85); }
+          3% { opacity: 0.8; }
+          22% { opacity: 0.8; transform: translate(70px, -6px) scale(0.85); }
+          30% { opacity: 0; transform: translate(112px, -14px) scale(0.85); }
+          100% { opacity: 0; transform: translate(112px, -14px) scale(0.85); }
+        }
+
+        @keyframes birdFlap {
+          from { transform: scaleY(1); }
+          to { transform: scaleY(0.5); }
+        }
+
+        @keyframes burstOut {
+          0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0deg); }
+          12% { opacity: 1; }
+          100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.05) rotate(var(--rot)); }
         }
 
         @keyframes wordmarkIn {
@@ -72,16 +121,36 @@ export default function Navigation() {
         }
 
         .logo-sprout {
-          animation: logoSprout 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+          animation: logoSprout 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+          transform-origin: 50% 100%;
         }
 
         .logo-glow {
           animation: logoGlow 4s ease-in-out infinite;
         }
 
-        .logo-sheen {
-          animation: logoSheen 7s ease-in-out 1.5s infinite;
-          transform: translateX(-150%) skewX(-20deg);
+        /* Gentle wind sway, pivoting from the trunk base */
+        .logo-sway {
+          animation: logoSway 6.5s ease-in-out 1.2s infinite;
+          transform-origin: 50% 100%;
+        }
+
+        .bird-a {
+          opacity: 0;
+          animation: birdFlyA 16s linear 2.2s infinite;
+        }
+
+        .bird-b {
+          opacity: 0;
+          animation: birdFlyB 19s linear 3.4s infinite;
+        }
+
+        .bird-flap {
+          animation: birdFlap 0.26s ease-in-out infinite alternate;
+        }
+
+        .burst-particle {
+          animation: burstOut 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .wordmark-in {
@@ -140,25 +209,50 @@ export default function Navigation() {
       <nav className="bg-gradient-to-r from-white via-green-50/30 to-white backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b-2 border-primary-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
-            {/* Logo with sprout entrance, breathing glow, and periodic sheen */}
-            <Link href="/" className="flex items-center gap-3 group relative">
+            {/* Logo: grows from the ground on load, sways in the breeze,
+                birds take flight, and clicking it bursts leaves */}
+            <Link
+              href="/"
+              onClick={() => setBurstId((id) => id + 1)}
+              className="flex items-center gap-2 group relative"
+            >
               {/* shrink-0: without it the overflow-hidden box gets flex-crushed to 0px
                   when the header row runs out of room, collapsing the logo entirely */}
               <div className="logo-sprout shrink-0">
-                <div className="logo-glow relative rounded-xl overflow-hidden ring-2 ring-primary-200/70 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3">
-                  <Image
-                    src="/telford-logo.jpg"
-                    alt="Telford Landscaping logo"
-                    width={56}
-                    height={56}
-                    priority
-                    className="w-14 h-14 object-cover"
-                  />
-                  <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
-                    <span className="logo-sheen absolute top-0 h-full w-1/3 bg-gradient-to-r from-transparent via-white/60 to-transparent" />
-                  </span>
+                <div className="logo-sway">
+                  <div className="logo-glow relative rounded-xl overflow-hidden ring-2 ring-primary-200/70 transition-transform duration-300 group-hover:scale-110 group-active:scale-90">
+                    <Image
+                      src="/telford-logo.jpg"
+                      alt="Telford Landscaping logo"
+                      width={64}
+                      height={64}
+                      priority
+                      className="w-16 h-16 object-cover"
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Birds taking flight from the canopy */}
+              <span aria-hidden className="pointer-events-none absolute left-9 top-1 z-10">
+                <span className="bird-a absolute left-0 top-0"><Bird /></span>
+                <span className="bird-b absolute left-1 top-3"><Bird delay="0.13s" /></span>
+              </span>
+
+              {/* Leaf poof on click; key change remounts and replays the burst */}
+              {burstId > 0 && (
+                <span key={burstId} aria-hidden className="pointer-events-none absolute left-7 top-7 z-10">
+                  {BURST_LEAVES.map((p, i) => (
+                    <span
+                      key={i}
+                      className="burst-particle absolute text-base"
+                      style={{ "--dx": p.dx, "--dy": p.dy, "--rot": p.rot, animationDelay: p.delay } as CSSProperties}
+                    >
+                      {p.leaf}
+                    </span>
+                  ))}
+                </span>
+              )}
               <div className="relative wordmark-in whitespace-nowrap">
                 <div className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary-700 to-green-700 bg-clip-text text-transparent">
                   Telford Landscaping
