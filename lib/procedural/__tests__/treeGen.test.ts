@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateTree,
   generateShrubShell,
+  generateBoxwood,
   generateDecurrentTree,
   generateExcurrentTree,
   phyllotaxisLayout,
@@ -11,6 +12,7 @@ import {
   type TreeParams,
   type DecurrentParams,
   type ExcurrentParams,
+  type BoxwoodParams,
 } from "../treeGen";
 
 const GOLDEN_ANGLE = 2.399963229728653; // ~137.5°
@@ -137,6 +139,50 @@ describe("generateShrubShell", () => {
     const young = generateShrubShell(5, 0.15, params);
     const mature = generateShrubShell(5, 1, params);
     expect(mature.leaves.length).toBeGreaterThan(young.leaves.length);
+  });
+});
+
+describe("generateBoxwood", () => {
+  const MOUND: BoxwoodParams = {
+    width: 1.2,
+    clip: 0.44,
+    leafCount: 1600,
+    lobes: 6,
+    lobeDepth: 0.11,
+    taper: 0,
+    trunkRadius: 0.05,
+  };
+
+  it("builds a dense, finite, grounded mound normalized to unit height", () => {
+    const s = generateBoxwood(2024, 1, MOUND);
+    expect(s.height).toBeCloseTo(1, 6);
+    expect(s.leaves.length).toBeGreaterThan(600);
+    expect(allFinite(s)).toBe(true);
+    // interior woody stubs are present
+    expect(s.segments.length).toBeGreaterThan(3);
+    // flat, grounded base: no foliage below the ground plane
+    expect(s.leaves.every((l) => l.pos[1] >= 0)).toBe(true);
+  });
+
+  it("fills in with maturity (slower fill when young)", () => {
+    const young = generateBoxwood(7, 0.2, MOUND);
+    const mature = generateBoxwood(7, 1, MOUND);
+    expect(mature.leaves.length).toBeGreaterThan(young.leaves.length);
+  });
+
+  it("taper pinches the crown narrower at the top than the base", () => {
+    const cone = generateBoxwood(9, 1, { ...MOUND, width: 0.8, taper: 0.5 });
+    const horiz = (l: { pos: [number, number, number] }) => Math.hypot(l.pos[0], l.pos[2]);
+    const heights = cone.leaves.map((l) => l.pos[1]);
+    const top = Math.max(...heights);
+    const bottom = Math.min(...heights);
+    const band = (lo: number, hi: number) =>
+      cone.leaves.filter((l) => l.pos[1] >= lo && l.pos[1] < hi);
+    const lowBand = band(bottom, bottom + (top - bottom) * 0.25);
+    const highBand = band(bottom + (top - bottom) * 0.75, top + 1e-6);
+    const maxLow = Math.max(...lowBand.map(horiz));
+    const maxHigh = Math.max(...highBand.map(horiz));
+    expect(maxHigh).toBeLessThan(maxLow);
   });
 });
 

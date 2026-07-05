@@ -47,13 +47,25 @@ const PLANT_PLACEMENTS: SamplePlantDef[] = [
   { speciesId: "carpenteria-californica", x: -1.8, z: 3.2, scale: 0.9 },  // Bush Anemone
   { speciesId: "carpenteria-californica", x: 1.8, z: 3.2, scale: 0.9 },
 
-  // ── Formal boxwood edging along the front walk (procedural) ──
-  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.15, z: 3.4, scale: 1 },
-  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.15, z: 4.2, scale: 1 },
-  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.15, z: 5.0, scale: 1 },
-  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.15, z: 3.4, scale: 1 },
-  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.15, z: 4.2, scale: 1 },
-  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.15, z: 5.0, scale: 1 },
+  // ── Formal dwarf English boxwood parterre edging along the front walk.
+  //    Tight spacing so the slow-growing dwarves read as one low hedge that
+  //    fills in over the 30-year timeline. ──
+  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.2, z: 3.3, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.2, z: 3.9, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.2, z: 4.5, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: -1.2, z: 5.1, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.2, z: 3.3, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.2, z: 3.9, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.2, z: 4.5, scale: 1 },
+  { speciesId: "buxus-sempervirens-suffruticosa", x: 1.2, z: 5.1, scale: 1 },
+
+  // Matched pair of upright 'Green Mountain' boxwood cones flanking the entry.
+  { speciesId: "buxus-green-mountain", x: -1.9, z: 3.0, scale: 1 },
+  { speciesId: "buxus-green-mountain", x: 1.9, z: 3.0, scale: 1 },
+
+  // 'Winter Gem' mounds anchoring the walk approach.
+  { speciesId: "buxus-microphylla-winter-gem", x: -2.2, z: 5.4, scale: 1 },
+  { speciesId: "buxus-microphylla-winter-gem", x: 2.2, z: 5.4, scale: 1 },
 
   // ── Pool border shrubs ──
   { speciesId: "rhamnus-californica", x: -7.0, z: -1.0, scale: 1 },       // Coffeeberry
