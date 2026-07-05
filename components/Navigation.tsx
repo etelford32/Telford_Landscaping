@@ -340,7 +340,7 @@ export default function Navigation() {
                     </Link>
                     <Link
                       href="/signup"
-                      className="bg-gradient-to-r from-primary-600 to-green-600 text-white text-sm px-3 py-2 rounded-xl font-bold whitespace-nowrap hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-1.5 group"
+                      className="btn-3d bg-gradient-to-r from-primary-600 to-green-600 text-white text-sm px-3 py-2 rounded-xl font-bold whitespace-nowrap flex items-center gap-1.5 group"
                     >
                       <span>Start Free</span>
                       <Sparkles className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
@@ -444,7 +444,7 @@ export default function Navigation() {
                       </Link>
                       <Link
                         href="/signup"
-                        className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg mx-2 mt-2"
+                        className="btn-3d flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 text-white px-6 py-3 rounded-xl font-bold mx-2 mt-2"
                         onClick={() => setIsOpen(false)}
                       >
                         <span>Start Free</span>

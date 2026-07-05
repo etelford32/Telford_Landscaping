@@ -52,7 +52,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-3 pointer-events-auto">
               <Link
                 href="/app"
-                className="flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-bold px-6 py-3 rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 text-sm sm:text-base"
+                className="btn-3d flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-bold px-6 py-3 rounded-xl text-sm sm:text-base"
               >
                 <Palette className="w-4 h-4 sm:w-5 sm:h-5" />
                 See Your Yard in 2055
@@ -60,13 +60,13 @@ export default function Home() {
               </Link>
               <Link
                 href="#contact"
-                className="flex items-center gap-2 bg-white/20 backdrop-blur-sm border-2 border-white/60 hover:bg-white/30 hover:border-white text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 text-sm sm:text-base shadow-lg"
+                className="btn-3d btn-3d-dark flex items-center gap-2 bg-white/20 backdrop-blur-sm border-2 border-white/60 hover:bg-white/30 hover:border-white text-white font-bold px-6 py-3 rounded-xl text-sm sm:text-base"
               >
                 Request a Consultation
               </Link>
               <Link
                 href="/plants"
-                className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/40 hover:bg-white/20 hover:border-white/70 text-white font-semibold px-5 py-3 rounded-xl transition-all duration-200 text-sm"
+                className="btn-3d btn-3d-dark hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/40 hover:bg-white/20 hover:border-white/70 text-white font-semibold px-5 py-3 rounded-xl text-sm"
               >
                 The Palette
               </Link>
@@ -264,7 +264,7 @@ export default function Home() {
           <div className="mt-12 text-center">
             <Link
               href="/app"
-              className="inline-flex items-center gap-2 bg-white text-primary-900 px-10 py-5 rounded-xl font-bold hover:bg-primary-50 transition-all duration-200 shadow-2xl hover:scale-105 text-lg"
+              className="btn-3d btn-3d-dark inline-flex items-center gap-2 bg-white text-primary-900 px-10 py-5 rounded-xl font-bold hover:bg-primary-50 text-lg"
             >
               Open the Design Tool
             </Link>
@@ -339,7 +339,7 @@ export default function Home() {
           <div className="mt-12 text-center">
             <Link
               href="#contact"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+              className="btn-3d inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white px-8 py-4 rounded-xl font-bold"
             >
               Start a Conversation
             </Link>
@@ -455,7 +455,7 @@ export default function Home() {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 text-lg"
+                className="btn-3d w-full bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white px-8 py-4 rounded-xl font-bold flex items-center justify-center gap-2 text-lg"
               >
                 Request Free Consultation
                 <ArrowRight className="w-5 h-5" />

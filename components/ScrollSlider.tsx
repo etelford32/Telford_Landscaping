@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { ChevronUp, ChevronDown, MousePointer2 } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 export default function ScrollSlider() {
   const [pct, setPct] = useState(0);
   const [maxScroll, setMaxScroll] = useState(1);
   const [visible, setVisible] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
 
   const recalc = useCallback(() => {
     const ms = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
@@ -35,6 +37,45 @@ export default function ScrollSlider() {
     window.scrollBy({ top: dir * window.innerHeight * 0.75, behavior: "smooth" });
   };
 
+  // Map a pointer's Y position onto the track: grabbing the top of the track
+  // is the top of the page, dragging down scrolls down — never inverted.
+  const pctFromPointer = (clientY: number) => {
+    const rect = trackRef.current!.getBoundingClientRect();
+    return ((clientY - rect.top) / rect.height) * 100;
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    draggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    scrollTo(pctFromPointer(e.clientY));
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (draggingRef.current) scrollTo(pctFromPointer(e.clientY));
+  };
+
+  const endDrag = () => {
+    draggingRef.current = false;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const step =
+      e.key === "ArrowDown" ? 3 :
+      e.key === "ArrowUp" ? -3 :
+      e.key === "PageDown" ? 15 :
+      e.key === "PageUp" ? -15 : null;
+    if (step !== null) {
+      e.preventDefault();
+      scrollTo(pct + step);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      scrollTo(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      scrollTo(100);
+    }
+  };
+
   if (!visible) return null;
 
   return (
@@ -51,32 +92,31 @@ export default function ScrollSlider() {
         <ChevronUp className="w-3.5 h-3.5" />
       </button>
 
-      {/* Vertical track + thumb */}
-      <div className="relative flex-1 flex items-center justify-center w-8">
+      {/* Vertical track + thumb — custom pointer drag: the native vertical
+          range input (writing-mode + direction:rtl) tracked opposite to the
+          mouse, so we position from the pointer directly */}
+      <div
+        ref={trackRef}
+        role="slider"
+        tabIndex={0}
+        aria-label="Page scroll position"
+        aria-orientation="vertical"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(pct)}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onKeyDown={handleKeyDown}
+        className="relative flex-1 flex items-center justify-center w-8 cursor-pointer touch-none"
+      >
         {/* Track */}
         <div className="absolute inset-x-0 mx-auto w-1 rounded-full bg-white/15 h-full" />
         {/* Fill */}
         <div
           className="absolute inset-x-0 mx-auto w-1 rounded-full bg-primary-500/70 top-0 transition-all duration-75"
           style={{ height: `${pct}%` }}
-        />
-        {/* Native range input — rotated */}
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={0.5}
-          value={pct}
-          onChange={(e) => scrollTo(Number(e.target.value))}
-          className="absolute opacity-0 cursor-pointer"
-          style={{
-            writingMode: "vertical-lr",
-            direction: "rtl",
-            width: "100%",
-            height: "100%",
-            WebkitAppearance: "slider-vertical",
-          }}
-          aria-label="Page scroll position"
         />
         {/* Visible thumb */}
         <div
