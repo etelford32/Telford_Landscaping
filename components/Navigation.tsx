@@ -290,7 +290,7 @@ export default function Navigation() {
                         ? 'bg-gradient-to-r from-primary-600 to-green-600 text-white shadow-md hover:shadow-xl hover:scale-105'
                         : isAdmin
                         ? 'text-purple-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50'
-                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700'
+                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700'
                       }
                     `}
                   >

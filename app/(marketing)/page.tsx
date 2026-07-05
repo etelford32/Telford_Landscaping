@@ -24,7 +24,9 @@ export default function Home() {
         <HeroCanvas />
 
         {/* Gradient vignette — bottom fade to let content anchor */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent pointer-events-none z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent pointer-events-none z-10" />
+        {/* Left scrim — keeps the headline readable over the bright 3D lawn */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/15 to-transparent pointer-events-none z-10" />
 
         {/* Content overlay — anchored to bottom-left */}
         <div className="absolute bottom-0 left-0 right-0 z-20 pb-8 px-4 sm:px-8 lg:px-12 pointer-events-none">
@@ -38,11 +40,11 @@ export default function Home() {
             </div>
 
             {/* Headline */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-[1.15] mb-5 drop-shadow-lg max-w-3xl">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-[1.15] mb-5 drop-shadow-lg max-w-3xl">
               Landscapes designed to be more beautiful in thirty years than they are the day we plant them.
             </h1>
 
-            <p className="text-white/85 text-base sm:text-lg mb-6 leading-relaxed max-w-2xl">
+            <p className="text-white/90 text-base sm:text-lg mb-6 leading-relaxed max-w-2xl drop-shadow">
               Estate-scale landscape design-build for Granite Bay, Loomis, and the Sacramento foothills. Heavy hardscape, mature tree installation, and heritage landscapes. Built by hand, designed by science, meant to outlast us.
             </p>
 
@@ -58,13 +60,13 @@ export default function Home() {
               </Link>
               <Link
                 href="#contact"
-                className="flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/30 hover:bg-white/25 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 text-sm sm:text-base"
+                className="flex items-center gap-2 bg-white/20 backdrop-blur-sm border-2 border-white/60 hover:bg-white/30 hover:border-white text-white font-bold px-6 py-3 rounded-xl transition-all duration-200 text-sm sm:text-base shadow-lg"
               >
                 Request a Consultation
               </Link>
               <Link
                 href="/plants"
-                className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white/90 font-medium px-5 py-3 rounded-xl transition-all duration-200 text-sm"
+                className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/40 hover:bg-white/20 hover:border-white/70 text-white font-semibold px-5 py-3 rounded-xl transition-all duration-200 text-sm"
               >
                 The Palette
               </Link>
@@ -77,8 +79,8 @@ export default function Home() {
                 { icon: MapPin,       text: "Granite Bay · Loomis · Auburn · Roseville" },
                 { icon: Star,         text: "Design-Build. One shop." },
               ].map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-1.5 text-white/65 text-xs">
-                  <Icon className="w-3.5 h-3.5 text-primary-400 flex-shrink-0" />
+                <div key={text} className="flex items-center gap-1.5 text-white/85 text-xs font-medium drop-shadow">
+                  <Icon className="w-3.5 h-3.5 text-primary-300 flex-shrink-0" />
                   {text}
                 </div>
               ))}
@@ -86,14 +88,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Scroll indicator — bottom center */}
+        {/* Scroll indicator — chevron only, kept clear of the trust pills */}
         <a
           href="#services"
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1 text-white/50 hover:text-white/80 transition-colors pointer-events-auto group"
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 hidden md:flex flex-col items-center text-white/60 hover:text-white transition-colors pointer-events-auto"
           aria-label="Scroll to services"
         >
-          <span className="text-xs tracking-widest uppercase font-medium">Scroll</span>
-          <ChevronDown className="w-5 h-5 animate-bounce" />
+          <ChevronDown className="w-6 h-6 animate-bounce" />
         </a>
       </section>
 
@@ -101,22 +102,25 @@ export default function Home() {
       <ScrollSlider />
 
       {/* Services Section */}
-      <section id="services" className="py-20 bg-white">
+      <section id="services" className="py-20 bg-white scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <span className="inline-block text-primary-700 text-xs font-bold tracking-[0.2em] uppercase bg-primary-50 border border-primary-200 rounded-full px-4 py-1.5 mb-4">
+              Services
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4">
               What We Do
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
               Estate-scale landscape design-build. Designed and built by the same hands.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl border border-primary-100 hover:shadow-xl transition-shadow">
+            <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl border-2 border-primary-100 hover:border-primary-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <TreePine className="w-12 h-12 text-primary-600 mb-4" />
               <h3 className="text-2xl font-bold text-gray-900 mb-3">Landscape Design-Build</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4">
                 Designed and built by the same hands. California natives, drought-tolerant palettes, mature trees set at scale. We design the landscape, build it, and stand behind it for the next thirty years.
               </p>
               <ul className="space-y-2 text-gray-700">
@@ -135,10 +139,10 @@ export default function Home() {
               </ul>
             </div>
 
-            <div className="bg-gradient-to-br from-earth-50 to-white p-8 rounded-xl border border-earth-100 hover:shadow-xl transition-shadow">
+            <div className="bg-gradient-to-br from-earth-50 to-white p-8 rounded-2xl border-2 border-earth-100 hover:border-earth-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <Wrench className="w-12 h-12 text-earth-600 mb-4" />
               <h3 className="text-2xl font-bold text-gray-900 mb-3">Heavy Hardscape</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4">
                 Retaining walls up to 100 feet. Forged iron gates. Cedar fences milled long and joined tight. Corten steel, Sierra granite, cast concrete. Built once, to last.
               </p>
               <ul className="space-y-2 text-gray-700">
@@ -157,10 +161,10 @@ export default function Home() {
               </ul>
             </div>
 
-            <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl border border-primary-100 hover:shadow-xl transition-shadow">
+            <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl border-2 border-primary-100 hover:border-primary-300 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <Leaf className="w-12 h-12 text-primary-600 mb-4" />
               <h3 className="text-2xl font-bold text-gray-900 mb-3">Landscape Stewardship</h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4">
                 A landscape is a living thing. We stay with the ones we build. Pruning on the right schedule, adjusting irrigation as plants mature, keeping soil biology alive. Thirty-year landscapes need thirty-year attention.
               </p>
               <ul className="space-y-2 text-gray-700">
@@ -186,10 +190,13 @@ export default function Home() {
       <section className="py-20 bg-gradient-to-br from-earth-50 to-primary-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <span className="inline-block text-primary-700 text-xs font-bold tracking-[0.2em] uppercase bg-white border border-primary-200 rounded-full px-4 py-1.5 mb-4">
+              Where We Work
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4">
               Built for the Sacramento Foothills
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
               Estate work in Granite Bay, Loomis, Auburn, Roseville, and Lincoln. Soils, microclimates, and valley oaks we know by hand.
             </p>
           </div>
@@ -198,10 +205,10 @@ export default function Home() {
             {['Granite Bay', 'Loomis', 'Auburn', 'Roseville', 'Lincoln'].map((city) => (
               <div
                 key={city}
-                className="bg-white p-6 rounded-lg text-center shadow-md hover:shadow-xl transition-shadow border-2 border-primary-200 hover:border-primary-400"
+                className="bg-white p-6 rounded-xl text-center shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-2 border-primary-200 hover:border-primary-400"
               >
                 <MapPin className="w-8 h-8 text-primary-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-gray-900">{city}</h3>
+                <h3 className="font-bold text-gray-900">{city}</h3>
               </div>
             ))}
           </div>
@@ -223,10 +230,13 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-12">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-6">
+            <span className="inline-block text-primary-200 text-xs font-bold tracking-[0.2em] uppercase bg-white/10 border border-white/25 rounded-full px-4 py-1.5 mb-4">
+              The Design Tool
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight mb-6">
               See Your Yard in 2055
             </h2>
-            <div className="max-w-3xl mx-auto space-y-4 text-lg text-white/85 leading-relaxed text-left sm:text-center">
+            <div className="max-w-3xl mx-auto space-y-4 text-lg text-white/90 leading-relaxed text-left sm:text-center">
               <p>
                 We built a design tool because clients kept asking the same question. <em>What will this actually look like when it grows in?</em> A five-gallon valley oak is a promise. We wanted to show the oak at forty feet, in 2055, before we dug the hole.
               </p>
@@ -239,26 +249,26 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 max-w-5xl mx-auto">
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
               <h3 className="font-bold text-xl mb-2">Thirty-year simulation</h3>
-              <p className="text-white/80">Scrub a slider and watch the canopy fill in. A sapling in year one, a forty-foot oak in year thirty.</p>
+              <p className="text-white/90">Scrub a slider and watch the canopy fill in. A sapling in year one, a forty-foot oak in year thirty.</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
               <h3 className="font-bold text-xl mb-2">Place plants and hardscape</h3>
-              <p className="text-white/80">Drag and rotate trees, walls, and gates in a 3D workspace. Snap to grid. Measure as you go.</p>
+              <p className="text-white/90">Drag and rotate trees, walls, and gates in a 3D workspace. Snap to grid. Measure as you go.</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-6 rounded-xl border border-white/20">
               <h3 className="font-bold text-xl mb-2">Real growth models</h3>
-              <p className="text-white/80">Valley oak, Japanese maple, Atlas cedar, Sawara cypress. Calibrated to foothill climate and soil.</p>
+              <p className="text-white/90">Valley oak, Japanese maple, Atlas cedar, Sawara cypress. Calibrated to foothill climate and soil.</p>
             </div>
           </div>
 
           <div className="mt-12 text-center">
             <Link
               href="/app"
-              className="inline-block bg-white text-primary-900 px-10 py-5 rounded-xl font-bold hover:bg-primary-50 transition-all shadow-2xl hover:shadow-3xl hover:scale-105 text-lg"
+              className="inline-flex items-center gap-2 bg-white text-primary-900 px-10 py-5 rounded-xl font-bold hover:bg-primary-50 transition-all duration-200 shadow-2xl hover:scale-105 text-lg"
             >
               Open the Design Tool
             </Link>
-            <p className="mt-4 text-white/70">Free to use. If you like what you see, we&rsquo;ll build it.</p>
+            <p className="mt-4 text-white/80">Free to use. If you like what you see, we&rsquo;ll build it.</p>
           </div>
         </div>
       </section>
@@ -267,16 +277,19 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <span className="inline-block text-primary-700 text-xs font-bold tracking-[0.2em] uppercase bg-primary-50 border border-primary-200 rounded-full px-4 py-1.5 mb-4">
+              Process
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4">
               Design and Build, Under One Roof
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
               The same hands that draw the plan set the stone. No subcontractor coordination on you. No phone trees.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-xl border-2 border-primary-200 hover:shadow-xl transition-shadow">
+            <div className="bg-gradient-to-br from-primary-50 to-white p-8 rounded-2xl border-2 border-primary-200 hover:border-primary-400 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <div className="flex items-center gap-4 mb-4">
                 <div className="bg-primary-600 p-3 rounded-full">
                   <Palette className="w-6 h-6 text-white" />
@@ -299,7 +312,7 @@ export default function Home() {
               </ul>
             </div>
 
-            <div className="bg-gradient-to-br from-earth-50 to-white p-8 rounded-xl border-2 border-earth-200 hover:shadow-xl transition-shadow">
+            <div className="bg-gradient-to-br from-earth-50 to-white p-8 rounded-2xl border-2 border-earth-200 hover:border-earth-400 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
               <div className="flex items-center gap-4 mb-4">
                 <div className="bg-earth-600 p-3 rounded-full">
                   <Wrench className="w-6 h-6 text-white" />
@@ -326,7 +339,7 @@ export default function Home() {
           <div className="mt-12 text-center">
             <Link
               href="#contact"
-              className="inline-block bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
             >
               Start a Conversation
             </Link>
@@ -335,13 +348,16 @@ export default function Home() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-20 bg-white">
+      <section id="contact" className="py-20 bg-white scroll-mt-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <span className="inline-block text-primary-700 text-xs font-bold tracking-[0.2em] uppercase bg-primary-50 border border-primary-200 rounded-full px-4 py-1.5 mb-4">
+              Contact
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 mb-4">
               Start a Conversation
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
               If you&rsquo;re planning an estate landscape in Granite Bay, Loomis, or the Sacramento foothills, tell me about the property. I&rsquo;ll be in touch.
             </p>
           </div>
@@ -439,7 +455,7 @@ export default function Home() {
 
               <button
                 type="submit"
-                className="w-full bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 text-lg"
+                className="w-full bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 text-lg"
               >
                 Request Free Consultation
                 <ArrowRight className="w-5 h-5" />

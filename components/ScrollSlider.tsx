@@ -39,7 +39,7 @@ export default function ScrollSlider() {
 
   return (
     <div
-      className="fixed right-3 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-2 select-none"
+      className="fixed right-3 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col items-center gap-2 select-none"
       style={{ height: "260px" }}
     >
       {/* Up button */}

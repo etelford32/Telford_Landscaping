@@ -3,8 +3,7 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Sky, Environment, Lightformer } from "@react-three/drei";
 import { Suspense, useState, useRef, useEffect } from "react";
-import { ZoomIn, ZoomOut, Palette, Sprout, TreePine, Layers, ChevronRight, Play, Pause } from "lucide-react";
-import Link from "next/link";
+import { ZoomIn, ZoomOut, Play, Pause } from "lucide-react";
 import House3D from "./House3D";
 import { FlowerBed, Rock } from "./Landscaping";
 import SampleLandscapePlants from "./SampleLandscapePlants";
@@ -21,8 +20,16 @@ function Ground() {
       {/* Main lawn */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[50, 50]} />
-        <meshStandardMaterial color="#4E8035" roughness={0.85} />
+        <meshStandardMaterial color="#578A3C" roughness={0.85} />
       </mesh>
+
+      {/* Mowing stripes — alternating translucent bands read as a kept estate lawn */}
+      {Array.from({ length: 5 }).map((_, i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[-11 + i * 5.5, 0.006, -1]}>
+          <planeGeometry args={[2.75, 30]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.045} depthWrite={false} />
+        </mesh>
+      ))}
 
       {/* Driveway - curved approach */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[5.5, 0.01, 4]} receiveShadow>
@@ -98,8 +105,8 @@ function Lighting() {
       {/* Golden hour sun — low angle from south-west */}
       <directionalLight
         position={[18, 8, 10]}
-        intensity={1.35}
-        color="#FFF8EE"
+        intensity={1.5}
+        color="#FFEDD2"
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -124,6 +131,10 @@ function Scene({ age }: { age: number }) {
   return (
     <>
       <Sky sunPosition={[18, 4, 10]} turbidity={4} rayleigh={0.8} />
+
+      {/* Soft atmospheric haze — gives the scene depth so distant trees
+          recede instead of reading as hard silhouettes */}
+      <fog attach="fog" args={["#dde8dd", 34, 95]} />
 
       {/* Local image-based lighting — baked once from in-scene light shapes
           (no CDN/HDRI fetch). Gives leaves, bark, pool, and glass something
@@ -331,8 +342,8 @@ export default function LandscapeScene() {
         </div>
       </div>
 
-      {/* ── ZOOM CONTROLS — bottom left ── */}
-      <div className="absolute bottom-6 left-5 z-20 flex flex-col gap-2">
+      {/* ── ZOOM CONTROLS — bottom right, desktop only, clear of the hero copy ── */}
+      <div className="absolute bottom-6 right-5 z-20 hidden sm:flex flex-col gap-2">
         <button
           onClick={handleZoomIn}
           className="bg-black/40 backdrop-blur-md hover:bg-black/60 text-white p-2.5 rounded-lg border border-white/20 hover:border-white/40 transition-all active:scale-95 shadow-lg"
@@ -356,54 +367,6 @@ export default function LandscapeScene() {
         </button>
       </div>
 
-      {/* ── DESIGN APP PORTAL PANEL — right side ── */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-52 hidden md:flex flex-col gap-2.5">
-        {/* Panel header */}
-        <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-center">
-          <div className="flex items-center justify-center gap-1.5 mb-0.5">
-            <Palette className="w-3.5 h-3.5 text-primary-300" />
-            <span className="text-white text-xs font-bold tracking-widest uppercase">Design Studio</span>
-          </div>
-          <p className="text-white/50 text-xs">Live 3D Preview</p>
-        </div>
-
-        {/* Feature pills */}
-        {[
-          { icon: TreePine, label: "30-Yr Growth Sim", sub: "Watch plants mature" },
-          { icon: Sprout,   label: "Plant Library",    sub: "80+ CA species" },
-          { icon: Layers,   label: "Hardscape Tools",  sub: "Paths, walls & more" },
-        ].map(({ icon: Icon, label, sub }) => (
-          <div
-            key={label}
-            className="bg-black/40 backdrop-blur-md border border-white/15 rounded-xl px-3.5 py-2.5 flex items-center gap-3 hover:bg-black/55 hover:border-white/30 transition-all"
-          >
-            <div className="p-1.5 bg-primary-600/30 rounded-lg flex-shrink-0">
-              <Icon className="w-3.5 h-3.5 text-primary-300" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-white text-xs font-semibold leading-tight">{label}</div>
-              <div className="text-white/45 text-xs leading-tight truncate">{sub}</div>
-            </div>
-          </div>
-        ))}
-
-        {/* CTA button */}
-        <Link
-          href="/app"
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-bold text-sm py-3 px-4 rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-200 border border-primary-400/30"
-        >
-          <Palette className="w-4 h-4" />
-          Open Design Tool
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      {/* ── INTERACTION HINT ── */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-        <div className="bg-black/35 backdrop-blur-sm border border-white/15 text-white/60 text-xs px-3 py-1.5 rounded-full">
-          Drag to rotate
-        </div>
-      </div>
     </div>
   );
 }
