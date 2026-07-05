@@ -4,12 +4,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { PlacedPlant, calculatePlantSize } from "@/lib/plantData";
 import {
+  generateBoxwood,
   generateDecurrentTree,
   generateExcurrentTree,
-  generateShrubShell,
   generateTree,
   leafCountForLAI,
+  type BoxwoodParams,
   type BranchSegment,
+  type CanopyCore,
   type LeafPlacement,
   type PlantSkeleton,
 } from "@/lib/procedural/treeGen";
@@ -36,6 +38,9 @@ import {
 export const PROCEDURAL_SPECIES = new Set<string>([
   "acer-palmatum-sango-kaku",
   "buxus-sempervirens-suffruticosa",
+  "buxus-sempervirens",
+  "buxus-microphylla-winter-gem",
+  "buxus-green-mountain",
   "quercus-agrifolia",
   "quercus-lobata",
   "quercus-douglasii",
@@ -67,6 +72,8 @@ interface Preset {
   // When set, dimensions come from this scientific allometric model instead of
   // the hand-authored size arrays, and the decurrent generator is used.
   allometry?: TreeAllometry;
+  // Solid fill color for shrubs that return a canopy core (boxwood mounds).
+  coreColor?: string;
 }
 
 // Maple leans green with a scatter of amber/copper for the Sango-kaku turn;
@@ -75,7 +82,20 @@ const MAPLE_PALETTE = [
   "#4F7E2A", "#5E9636", "#6CA63E", "#7DB54A", "#5A8C32",
   "#4F7E2A", "#6CA63E", "#C8922E", "#D98E3A", "#B5642F",
 ];
-const BOXWOOD_PALETTE = ["#2E5A2E", "#356731", "#274E28", "#3C6E36", "#2A572B"];
+// Boxwood: layered greens — dark shaded interior, mid body, and lighter
+// yellow-green new growth on the sunlit outer surface. Repeated mids keep the
+// mass reading as solid, dense evergreen.
+const BOXWOOD_PALETTE = [
+  "#24471F", "#2A542A", "#315E2E", "#356731", "#3C6E36", "#315E2E", "#4C7A35", "#5A8A3A",
+];
+// American boxwood: darker, glossier, blue-green (larger, more vigorous).
+const BOXWOOD_AMERICAN_PALETTE = [
+  "#1F4020", "#274B26", "#2D562C", "#325E30", "#2D562C", "#3B6A38", "#47773F",
+];
+// Japanese/'Winter Gem' boxwood: brighter light-green, bronzes at the tips.
+const BOXWOOD_WINTERGEM_PALETTE = [
+  "#325E2C", "#3C6C33", "#47793B", "#548742", "#47793B", "#6A9848", "#8A6B34",
+];
 // Coast live oak: dark, glossy, evergreen greens.
 const OAK_PALETTE = ["#2F4A22", "#365A28", "#3E6B2E", "#2A4420", "#436F30", "#314E24"];
 // Coast redwood: deep blue-greens.
@@ -125,22 +145,9 @@ const PRESETS: Record<string, Preset> = {
         phyllo: { pattern: "opposite", petioleAngle: 0.9, lad: 0.6 }, // Acer: decussate
       }),
   },
-  "buxus-sempervirens-suffruticosa": {
-    leafKind: "boxwood",
-    formMaturityAge: 14,
-    leafSize: 0.045,
-    leafPalette: BOXWOOD_PALETTE,
-    barkThin: "#5A4636",
-    barkThick: "#4A3826",
-    generate: (seed, m) =>
-      generateShrubShell(seed, m, {
-        height: 1,
-        width: 1.05,
-        trunkRadius: 0.06,
-        leafCount: 1100, // already a dense, sheared shell — LAI factor N/A here
-        clip: 0.42,
-      }),
-  },
+  // Boxwoods share one detailed mound generator, tuned per cultivar for form
+  // (aspect, taper), density, and leaf palette. See BOXWOOD_PRESETS below —
+  // spread into PRESETS after this literal.
   "quercus-agrifolia": {
     leafKind: "oak",
     formMaturityAge: 25,
@@ -441,6 +448,65 @@ const PRESETS: Record<string, Preset> = {
   },
 };
 
+// ── Boxwood cultivars ──────────────────────────────────────────────────────────
+// All share generateBoxwood; params encode each cultivar's form and colour.
+// Dimensions still come from each species' growth arrays (calculatePlantSize),
+// so the slow 30-year fill is driven by the data, not baked here.
+function boxwoodPreset(opts: {
+  palette: string[];
+  coreColor: string;
+  formMaturityAge: number;
+  leafSize: number;
+  params: BoxwoodParams;
+}): Preset {
+  return {
+    leafKind: "boxwood",
+    formMaturityAge: opts.formMaturityAge,
+    leafSize: opts.leafSize,
+    leafPalette: opts.palette,
+    coreColor: opts.coreColor,
+    barkThin: "#5A4636",
+    barkThick: "#4A3826",
+    generate: (seed, m) => generateBoxwood(seed, m, opts.params),
+  };
+}
+
+const BOXWOOD_PRESETS: Record<string, Preset> = {
+  // Dwarf English — the slowest boxwood: tight, fine-textured, billows wider
+  // than tall over decades. Densest leaf count, gentle lobes.
+  "buxus-sempervirens-suffruticosa": boxwoodPreset({
+    palette: BOXWOOD_PALETTE,
+    coreColor: "#2A542A",
+    formMaturityAge: 20,
+    leafSize: 0.085,
+    params: { width: 1.2, clip: 0.44, leafCount: 1500, lobes: 6, lobeDepth: 0.11, taper: 0, trunkRadius: 0.05 },
+  }),
+  // American boxwood — larger, more vigorous, broad rounded mound, bigger leaf.
+  "buxus-sempervirens": boxwoodPreset({
+    palette: BOXWOOD_AMERICAN_PALETTE,
+    coreColor: "#274B26",
+    formMaturityAge: 22,
+    leafSize: 0.095,
+    params: { width: 1.05, clip: 0.4, leafCount: 1600, lobes: 5, lobeDepth: 0.13, taper: 0.08, trunkRadius: 0.06 },
+  }),
+  // 'Winter Gem' (littleleaf) — fast, dense, tidy rounded mound.
+  "buxus-microphylla-winter-gem": boxwoodPreset({
+    palette: BOXWOOD_WINTERGEM_PALETTE,
+    coreColor: "#325E2C",
+    formMaturityAge: 14,
+    leafSize: 0.08,
+    params: { width: 1.15, clip: 0.42, leafCount: 1400, lobes: 6, lobeDepth: 0.1, taper: 0, trunkRadius: 0.05 },
+  }),
+  // 'Green Mountain' — upright, cone/egg form for pyramids and vertical accents.
+  "buxus-green-mountain": boxwoodPreset({
+    palette: BOXWOOD_PALETTE,
+    coreColor: "#2A542A",
+    formMaturityAge: 16,
+    leafSize: 0.08,
+    params: { width: 0.78, clip: 0.32, leafCount: 1500, lobes: 5, lobeDepth: 0.09, taper: 0.5, trunkRadius: 0.05 },
+  }),
+};
+
 const DEFAULT_PRESET: Preset = {
   leafKind: "maple",
   formMaturityAge: 20,
@@ -465,6 +531,9 @@ const DEFAULT_PRESET: Preset = {
       leavesPerTwig: 5,
     }),
 };
+
+// Boxwood cultivars fold into the preset table here so lookups stay a single map.
+Object.assign(PRESETS, BOXWOOD_PRESETS);
 
 export default function ProceduralPlant({
   plant,
@@ -525,10 +594,10 @@ export default function ProceduralPlant({
       });
       const d = treeDimensions(preset.allometry, plant.age, plant.scale);
       const radiusScale = d.dbh / 24 / Math.max(1, d.height); // DBH -> normalized trunk radius
-      return { segments, leaves, height: oakFull.height, radiusScale };
+      return { segments, leaves, height: oakFull.height, radiusScale, core: undefined };
     }
     const sk = otherSkeleton!;
-    return { segments: sk.segments, leaves: sk.leaves, height: sk.height, radiusScale: 1 };
+    return { segments: sk.segments, leaves: sk.leaves, height: sk.height, radiusScale: 1, core: sk.core };
   }, [preset, oakFull, otherSkeleton, maturity, plant.age, plant.scale]);
 
   const leafTex = useMemo(() => getLeafTexture(preset.leafKind), [preset.leafKind]);
@@ -626,6 +695,9 @@ export default function ProceduralPlant({
           barkThick={preset.barkThick}
           radiusScale={branchRadiusScale}
         />
+        {draw.core && preset.coreColor && (
+          <CanopyCoreMesh core={draw.core} color={preset.coreColor} />
+        )}
         <LeafInstances
           leaves={draw.leaves}
           geom={leafGeo}
@@ -712,6 +784,37 @@ function BranchInstances({
       castShadow
       receiveShadow
       frustumCulled={false}
+    />
+  );
+}
+
+// ── Canopy core ────────────────────────────────────────────────────────────────
+// A solid, slightly lumpy blob just inside the leaf shell so a dense shrub reads
+// as filled foliage rather than a see-through cage of leaf cards. Shared unit
+// icosphere; the per-plant material is disposed on unmount.
+const CORE_GEO = new THREE.IcosahedronGeometry(1, 2);
+
+function CanopyCoreMesh({ core, color }: { core: CanopyCore; color: string }) {
+  const mat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: new THREE.Color(color),
+        roughness: 0.9,
+        metalness: 0,
+        flatShading: true,
+        envMapIntensity: 0.4,
+      }),
+    [color]
+  );
+  useEffect(() => () => mat.dispose(), [mat]);
+  return (
+    <mesh
+      geometry={CORE_GEO}
+      material={mat}
+      position={[0, core.cy, 0]}
+      scale={[core.rx, core.ry, core.rx]}
+      castShadow
+      receiveShadow
     />
   );
 }

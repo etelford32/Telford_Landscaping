@@ -54,12 +54,23 @@ export interface LeafNode {
   azimuth: number; // radians around the shoot axis
 }
 
+// An opaque canopy blob under the leaf layer, so densely-packed shrubs read as
+// a solid mass instead of a hollow shell of leaf cards with the ground showing
+// through the gaps. Normalized to the skeleton's unit height.
+export interface CanopyCore {
+  rx: number; // horizontal radius
+  ry: number; // vertical radius
+  cy: number; // center height
+  taper: number; // 0 mound .. →1 pinched top (cone)
+}
+
 export interface PlantSkeleton {
   segments: BranchSegment[];
   leaves: LeafPlacement[];
   height: number; // normalized height of the generated skeleton
   spread: number; // normalized horizontal radius
   maxOrder?: number; // deepest branch order present (for growth reveal)
+  core?: CanopyCore; // optional solid canopy fill (shrub mounds)
 }
 
 export interface TreeParams {
@@ -85,6 +96,16 @@ export interface ShellParams {
   trunkRadius: number;
   leafCount: number; // leaves at full maturity
   clip: number; // 0..1 fraction of lower sphere removed (flat bottom)
+}
+
+export interface BoxwoodParams {
+  width: number; // full width at model height 1 (the width:height aspect)
+  clip: number; // 0..1 lower fraction removed → flat, grounded base
+  leafCount: number; // dense leaf target at full maturity
+  lobes: number; // number of billows around the mound (surface undulation)
+  lobeDepth: number; // 0..1 amplitude of the billows
+  taper: number; // 0 = mound, →0.6 pinches the top into an egg/cone (upright cultivars)
+  trunkRadius: number;
 }
 
 export interface DecurrentParams {
@@ -409,6 +430,103 @@ export function generateShrubShell(seed: number, maturity: number, p: ShellParam
   }
 
   return { segments, leaves, height: Math.max(p.height, 1e-3), spread: Math.max(rx, 1e-3) };
+}
+
+// ── boxwood (dense sheared/informal mound) ─────────────────────────────────────
+// Buxus reads nothing like the generic leaf-sphere: it's a billowing, densely
+// packed mound of tiny leaves over a hidden twiggy interior, broadening with age
+// and (for upright cultivars) able to pinch into an egg/cone. This generator
+// builds that: a lobed ellipsoid surface, a layered leaf shell so shear gaps
+// reveal depth instead of a hollow skin, short interior stubs that read at the
+// base, and a form that widens as the plant matures. Normalized to height 1.
+export function generateBoxwood(seed: number, maturity: number, p: BoxwoodParams): PlantSkeleton {
+  const rng = mulberry32(seed);
+  const segments: BranchSegment[] = [];
+  const leaves: LeafPlacement[] = [];
+
+  const m = Math.max(0, Math.min(1, maturity));
+  // Young plants sit rounder and narrower; the crown billows wider with age.
+  const aspect = p.width * (0.82 + 0.18 * smoothstep(m));
+  const rx = aspect * 0.5;
+  const ry = 0.5;
+  const centerY = ry;
+
+  // Per-plant lobe phases so no two mounds share a silhouette.
+  const phA = rng() * Math.PI * 2;
+  const phB = rng() * Math.PI * 2;
+  const phC = rng() * Math.PI * 2;
+
+  // Interior woody structure: a short central stem plus a few low radiating
+  // stubs, kept well inside the crown so they stay hidden under the foliage and
+  // solid core (they only peek out on a very young, open plant).
+  segments.push({ p0: [0, 0, 0], p1: [0, ry * 0.6, 0], r0: p.trunkRadius, r1: p.trunkRadius * 0.7 });
+  const stubs = 3;
+  for (let i = 0; i < stubs; i++) {
+    const a = (i / stubs) * Math.PI * 2 + rng() * 0.6;
+    const reach = rx * (0.15 + rng() * 0.18);
+    const h = ry * (0.35 + rng() * 0.4);
+    segments.push({
+      p0: [0, ry * 0.1, 0],
+      p1: [Math.cos(a) * reach, h, Math.sin(a) * reach],
+      r0: p.trunkRadius * 0.6,
+      r1: p.trunkRadius * 0.35,
+    });
+  }
+
+  // Billowing surface: layered sinusoids in azimuth and height give the cloud
+  // its gentle lobes rather than a smooth sphere.
+  const lobe = (nx: number, ny: number, nz: number): number => {
+    const theta = Math.atan2(nz, nx);
+    return (
+      1 +
+      p.lobeDepth * Math.sin(p.lobes * theta + phA) +
+      p.lobeDepth * 0.6 * Math.sin(p.lobes * 0.5 * theta - 2 * ny + phB) +
+      p.lobeDepth * 0.5 * Math.sin(3 * ny * Math.PI + phC)
+    );
+  };
+
+  const count = Math.round((0.3 + 0.7 * smoothstep(m)) * p.leafCount);
+
+  for (let i = 0; i < count && leaves.length < MAX_LEAVES; i++) {
+    // Fibonacci-sphere distribution for even coverage.
+    const phi = Math.acos(1 - (2 * (i + 0.5)) / count);
+    const theta = i * GOLDEN_ANGLE;
+    const nx = Math.sin(phi) * Math.cos(theta);
+    const ny = Math.cos(phi);
+    const nz = Math.sin(phi) * Math.sin(theta);
+    if (ny < -1 + 2 * p.clip) continue; // flatten the base
+
+    const hf = (ny + 1) / 2; // 0 bottom .. 1 top
+    const horiz = 1 - p.taper * smoothstep(hf); // pinch the top for cone cultivars
+    const L = lobe(nx, ny, nz);
+    // Leaves ride the outer surface (the solid core fills the interior), with a
+    // little jitter so the skin looks ragged, not shrink-wrapped.
+    const shell = 0.98 + rng() * 0.07;
+    const wob = 0.96 + rng() * 0.08;
+
+    const px = nx * rx * L * horiz * shell * wob;
+    const pz = nz * rx * L * horiz * shell * wob;
+    const py = centerY + ny * ry * L * shell * wob;
+    if (py < 0.05) continue; // keep leaves off the ground
+
+    // Small blades lie mostly upright and tangent to the surface, facing
+    // outward — overlapping into a dense leafy skin rather than radial spikes.
+    // Blades near the equator are tucked smaller so the dome edge stays clean.
+    const edgeFade = 0.82 + 0.18 * Math.abs(ny); // smaller mid-height, fuller top
+    const dir: Vec = norm([nx * 0.2, 0.94, nz * 0.2]);
+    const face: Vec = norm([nx, ny * 0.5 + 0.35, nz]);
+    leaves.push({ pos: [px, py, pz], dir, face, roll: rng() * Math.PI * 2, scale: (0.8 + rng() * 0.4) * edgeFade });
+  }
+
+  // Solid canopy fill sits just inside the leaf shell so the mound reads dense.
+  const core: CanopyCore = {
+    rx: rx * (1 - 0.32 * p.taper) * 0.9,
+    ry: ry * 0.92,
+    cy: centerY * (1 - 0.12 * p.taper),
+    taper: p.taper,
+  };
+
+  return { segments, leaves, height: 1, spread: Math.max(rx, 1e-3), core };
 }
 
 // ── decurrent tree (oaks) ──────────────────────────────────────────────────────
