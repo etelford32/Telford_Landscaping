@@ -3,9 +3,28 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, type CSSProperties } from "react";
-import { Menu, X, TreePine, LogOut, User, Palette, Camera, Mail, Shield, Sparkles, Sprout, Droplets, BookOpen } from "lucide-react";
+import {
+  Menu,
+  X,
+  TreePine,
+  LogOut,
+  User,
+  Palette,
+  Camera,
+  Mail,
+  Shield,
+  Sparkles,
+  Sprout,
+  Droplets,
+  BookOpen,
+  Phone,
+  ChevronDown,
+  Flame,
+  Leaf,
+} from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
+import { siteConfig } from "@/lib/siteConfig";
 
 /* Engraved-style bird silhouette, matching the logo artwork's palette */
 function Bird({ delay = "0s" }: { delay?: string }) {
@@ -28,8 +47,20 @@ const BURST_LEAVES = [
   { leaf: "🍂", dx: "-12px", dy: "34px", rot: "-40deg", delay: "0.04s" },
 ];
 
+// Specialty / lead pages, grouped under a "Services" dropdown on desktop.
+const serviceLinks = [
+  { href: "/fire-wise-landscaping", label: "Fire-Wise Landscaping", icon: Flame },
+  { href: "/water-smart-landscaping", label: "Water-Smart Landscaping", icon: Droplets },
+  { href: "/native-low-maintenance", label: "Low-Maintenance Native", icon: Leaf },
+  { href: "/fertilization", label: "Fertilization", icon: Droplets },
+  { href: "/irrigation", label: "Irrigation", icon: Droplets },
+  { href: "/plant-care", label: "Plant Care", icon: Sprout },
+];
+
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [burstId, setBurstId] = useState(0);
   const { user, logout, isAuthenticated } = useAuth();
@@ -40,12 +71,9 @@ export default function Navigation() {
     router.push("/");
   };
 
-  const navLinks = [
-    { href: "/", label: "Home", icon: TreePine, color: "from-green-500 to-emerald-600" },
-    { href: "/plant-care", label: "Plant Care", icon: Sprout, color: "from-emerald-500 to-green-600" },
+  // Primary top-level links (Services is rendered separately as a dropdown).
+  const primaryLinks = [
     { href: "/plants", label: "Plant Library", icon: BookOpen, color: "from-green-500 to-teal-600" },
-    { href: "/fertilization", label: "Fertilization", icon: Droplets, color: "from-blue-500 to-cyan-600" },
-    { href: "/irrigation", label: "Irrigation", icon: Droplets, color: "from-cyan-500 to-blue-600" },
     { href: "/app", label: "Design Tool", icon: Palette, color: "from-primary-500 to-primary-700", featured: true },
     { href: "/portfolio", label: "Portfolio", icon: Camera, color: "from-earth-500 to-earth-700" },
     { href: "/#contact", label: "Contact", icon: Mail, color: "from-sky-500 to-blue-600" },
@@ -272,7 +300,45 @@ export default function Navigation() {
             {/* Desktop Navigation with Nature Animations.
                 Home is omitted here — the logo links home; it stays in the mobile menu. */}
             <div className="hidden xl:flex items-center gap-0.5">
-              {navLinks.filter((link) => link.href !== "/").map((link) => {
+              {/* Services dropdown */}
+              <div
+                className="relative"
+                onMouseEnter={() => setServicesOpen(true)}
+                onMouseLeave={() => setServicesOpen(false)}
+              >
+                <button
+                  onClick={() => setServicesOpen((v) => !v)}
+                  aria-expanded={servicesOpen}
+                  aria-haspopup="true"
+                  className="relative px-2 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-300 nav-link-hover flex items-center gap-1 text-gray-800 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700"
+                >
+                  <span className="relative z-10">Services</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${servicesOpen ? "rotate-180" : ""}`} />
+                </button>
+                {servicesOpen && (
+                  <div className="absolute left-0 top-full pt-2 w-64 z-50">
+                    <div className="bg-white rounded-2xl shadow-xl border-2 border-primary-100 p-2 animate-fade-in">
+                      {serviceLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700 transition-all"
+                          >
+                            <span className="p-1.5 rounded-lg bg-primary-50 text-primary-600">
+                              <Icon className="w-4 h-4" />
+                            </span>
+                            {link.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {primaryLinks.map((link) => {
                 const isHovered = hoveredLink === link.href;
                 const isFeatured = link.featured;
                 const isAdmin = link.admin;
@@ -308,6 +374,15 @@ export default function Navigation() {
                   </Link>
                 );
               })}
+
+              {/* Phone CTA */}
+              <a
+                href={siteConfig.phoneHref}
+                className="ml-1.5 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold whitespace-nowrap text-primary-800 bg-primary-50 border border-primary-200 hover:bg-primary-100 transition-all"
+              >
+                <Phone className="w-4 h-4" />
+                {siteConfig.phone}
+              </a>
 
               {/* User Section with Nature Theme */}
               <div className="ml-1.5 pl-2 border-l-2 border-green-200 flex items-center gap-1.5">
@@ -368,7 +443,65 @@ export default function Navigation() {
           {isOpen && (
             <div className="xl:hidden py-6 border-t-2 border-green-100 bg-gradient-to-b from-green-50/50 to-white rounded-b-2xl">
               <div className="flex flex-col gap-3">
-                {navLinks.map((link, index) => {
+                {/* Home */}
+                <Link
+                  href="/"
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600">
+                    <TreePine className="w-5 h-5 text-white" />
+                  </div>
+                  <span>Home</span>
+                </Link>
+
+                {/* Phone CTA */}
+                <a
+                  href={siteConfig.phoneHref}
+                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-bold text-primary-800 bg-primary-50 border border-primary-200"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary-600 to-green-600">
+                    <Phone className="w-5 h-5 text-white" />
+                  </div>
+                  <span>Call or Text {siteConfig.phone}</span>
+                </a>
+
+                {/* Services group */}
+                <div className="mx-2">
+                  <button
+                    onClick={() => setMobileServicesOpen((v) => !v)}
+                    aria-expanded={mobileServicesOpen}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all"
+                  >
+                    <div className="p-2 rounded-lg bg-gradient-to-br from-primary-500 to-emerald-600">
+                      <Sprout className="w-5 h-5 text-white" />
+                    </div>
+                    <span>Services</span>
+                    <ChevronDown className={`w-5 h-5 ml-auto transition-transform ${mobileServicesOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {mobileServicesOpen && (
+                    <div className="mt-1 ml-4 flex flex-col gap-1 border-l-2 border-primary-100 pl-3">
+                      {serviceLinks.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-primary-700 transition-all"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <Icon className="w-4 h-4 text-primary-600" />
+                            <span>{link.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Primary links */}
+                {primaryLinks.map((link, index) => {
                   const Icon = link.icon;
                   const isFeatured = link.featured;
                   const isAdmin = link.admin;
