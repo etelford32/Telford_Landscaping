@@ -26,6 +26,21 @@ body {
   }
 }
 
+/* ── Earth-toned photo frame — the matted, framed look from the homepage design.
+   A cream mat, a warm earth border, and a soft drop shadow around the image. */
+.frame-earth {
+  background: #fff;
+  border: 2px solid #dbc8a2; /* earth-300 */
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 0 0 1px #fff inset, 0 16px 36px -18px rgba(20, 26, 18, 0.35);
+}
+.frame-earth > * {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px #e8dcc4; /* earth-200 */
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
