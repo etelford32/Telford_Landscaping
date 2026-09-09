@@ -87,9 +87,13 @@ export default function PortfolioCarousel({ slides }: { slides: Slide[] }) {
                   className="aspect-[4/3] w-full object-cover"
                 />
               </div>
-              <figcaption className="flex justify-between items-baseline px-1.5 pt-3.5 pb-3">
+              {/* Stacks on phones — project titles are too long to sit beside
+                  the meta line at a single-column slide width. */}
+              <figcaption className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-0.5 sm:gap-4 px-1.5 pt-3.5 pb-3">
                 <span className="text-[15px] font-semibold text-gray-900">{s.title}</span>
-                <span className="text-[12.5px] font-medium text-gray-500">{s.meta}</span>
+                <span className="text-[12.5px] font-medium text-gray-500 sm:whitespace-nowrap">
+                  {s.meta}
+                </span>
               </figcaption>
             </div>
           </figure>

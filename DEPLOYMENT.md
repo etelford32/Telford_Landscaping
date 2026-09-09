@@ -22,7 +22,7 @@ Vercel is the fastest and easiest way to deploy this Next.js application.
 3. **Custom Domain** (Optional)
    - In Vercel dashboard, go to your project settings
    - Click "Domains"
-   - Add your custom domain (e.g., telfordlandscapes.com)
+   - Add your custom domain (e.g., telfordlandscaping.com)
    - Follow DNS configuration instructions
 
 ### Option 2: Deploy via CLI
@@ -166,7 +166,7 @@ Vercel automatically deploys:
 1. **Buy a domain** (e.g., from Namecheap, GoDaddy, etc.)
 2. **Add to Vercel**:
    - Project Settings → Domains
-   - Add `telfordlandscapes.com` and `www.telfordlandscapes.com`
+   - Add `telfordlandscaping.com` and `www.telfordlandscaping.com`
 3. **Update DNS**:
    - Add A record: `76.76.21.21` (Vercel's IP)
    - Or CNAME: `cname.vercel-dns.com`
