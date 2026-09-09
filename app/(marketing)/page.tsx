@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, CheckCircle2, Phone, Mail } from "lucide-react";
 import { siteConfig } from "@/lib/siteConfig";
+import { projects } from "@/lib/portfolio";
 import BeforeAfterSlider from "@/components/home/BeforeAfterSlider";
 import CaliforniaTabs from "@/components/home/CaliforniaTabs";
 import PortfolioCarousel from "@/components/home/PortfolioCarousel";
@@ -46,44 +47,14 @@ const services = [
   },
 ];
 
-const portfolioSlides = [
-  {
-    src: "/home/portfolio-hillside-stairs.jpg",
-    alt: "Redwood hillside stairs with block retaining wall",
-    title: "Hillside stairs & wall",
-    meta: "Redwood · block",
-  },
-  {
-    src: "/home/portfolio-garden-arch.jpg",
-    alt: "Custom redwood garden arch and gate",
-    title: "Garden arch & gate",
-    meta: "Custom redwood",
-  },
-  {
-    src: "/home/portfolio-nature-gate.jpg",
-    alt: "Rustic timber nature gate",
-    title: "Nature gate",
-    meta: "Rustic timber",
-  },
-  {
-    src: "/home/portfolio-cedar-fence.jpg",
-    alt: "Cedar privacy fence along slope",
-    title: "Cedar fence",
-    meta: "Milled long, joined tight",
-  },
-  {
-    src: "/home/portfolio-fence-clearing.jpg",
-    alt: "Cedar fence line enclosing cleared yard",
-    title: "Fence & clearing",
-    meta: "Full enclosure",
-  },
-  {
-    src: "/home/portfolio-timber-carport.jpg",
-    alt: "Timber-frame carport built into hillside",
-    title: "Timber carport",
-    meta: "Built into the hillside",
-  },
-];
+// Same photos and titles the /portfolio page shows — sourced from one place so
+// the carousel can't drift from the gallery. Leading spec doubles as the caption.
+const portfolioSlides = projects.map((p) => ({
+  src: p.image,
+  alt: p.alt,
+  title: p.title,
+  meta: p.specs[0],
+}));
 
 export default function Home() {
   return (

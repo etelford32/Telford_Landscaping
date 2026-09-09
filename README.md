@@ -156,7 +156,9 @@ The site is optimized for:
 ## Contact
 
 For more information about services, visit the website or contact:
-- Email: info@telfordlandscapes.com
+- Phone: (279) 227-6372
+- Email: etelford32@gmail.com
+- Website: https://telfordlandscaping.com
 - Service Area: Greater Sacramento Area, California
 
 ## License

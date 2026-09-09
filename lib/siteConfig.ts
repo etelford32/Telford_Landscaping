@@ -17,4 +17,11 @@ export const siteConfig = {
   cities: ["Granite Bay", "Loomis", "Auburn", "Roseville", "Lincoln"],
 } as const;
 
+/**
+ * Canonical origin, used for metadataBase, canonical URLs, and structured
+ * data. NEXT_PUBLIC_SITE_URL overrides it on preview deployments; nothing
+ * else should hard-code the domain.
+ */
+export const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? `https://${siteConfig.domain}`;
+
 export type SiteConfig = typeof siteConfig;

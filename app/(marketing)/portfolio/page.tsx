@@ -11,15 +11,13 @@ import {
   ArrowRight,
   MapPin,
 } from "lucide-react";
-import { siteConfig } from "@/lib/siteConfig";
+import { siteConfig, siteUrl } from "@/lib/siteConfig";
 import { projects } from "@/lib/portfolio";
 import { CallLink, EmailLink } from "@/components/ContactActions";
 import PortfolioGallery from "@/components/portfolio/PortfolioGallery";
 import StickyContactBar from "@/components/portfolio/StickyContactBar";
 import BeforeAfterSlider from "@/components/home/BeforeAfterSlider";
 import LeadForm from "@/components/LeadForm";
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://telfordlandscapes.com";
 
 export const metadata: Metadata = {
   title: `Portfolio | Redwood Fences, Decks, Retaining Walls & Patios — ${siteConfig.name}`,
