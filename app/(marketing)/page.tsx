@@ -25,7 +25,7 @@ const services = [
     img: "/home/service-hardscape.jpg",
     alt: "Engineered block retaining wall on a graded slope",
     title: "Heavy Hardscape",
-    body: "Retaining walls, grading, and stonework in Sierra granite and cast block. Forged iron gates and cedar fences milled long and joined tight. Built once, to last.",
+    body: "Retaining walls, grading, and stonework in Sierra granite and cast block. Forged iron gates and redwood fences milled long and joined tight. Built once, to last.",
     points: [
       "Engineered retaining walls",
       "Custom gates and fencing",
