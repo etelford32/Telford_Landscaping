@@ -74,9 +74,9 @@ export default function Navigation() {
   // Primary top-level links (Services is rendered separately as a dropdown).
   const primaryLinks = [
     { href: "/plants", label: "Plant Library", icon: BookOpen, color: "from-green-500 to-teal-600" },
-    { href: "/app", label: "Design Tool", icon: Palette, color: "from-primary-500 to-primary-700", featured: true },
+    { href: "/app", label: "Design Tool", icon: Palette, color: "from-primary-500 to-primary-700", featured: true, cta: "open-design-tool" },
     { href: "/portfolio", label: "Portfolio", icon: Camera, color: "from-earth-500 to-earth-700" },
-    { href: "/#contact", label: "Contact", icon: Mail, color: "from-sky-500 to-blue-600" },
+    { href: "/#contact", label: "Contact", icon: Mail, color: "from-sky-500 to-blue-600", cta: "nav-contact" },
     ...(isAuthenticated ? [{ href: "/admin", label: "Admin", icon: Shield, color: "from-purple-500 to-indigo-600", admin: true }] : []),
   ];
 
@@ -234,7 +234,7 @@ export default function Navigation() {
         }
       `}</style>
 
-      <nav className="bg-gradient-to-r from-white via-green-50/30 to-white backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b-2 border-primary-100">
+      <nav data-cta-location="nav" className="bg-gradient-to-r from-white via-green-50/30 to-white backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b-2 border-primary-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo: grows from the ground on load, sways in the breeze,
@@ -347,6 +347,7 @@ export default function Navigation() {
                   <Link
                     key={link.href}
                     href={link.href}
+                    data-cta={link.cta}
                     onMouseEnter={() => setHoveredLink(link.href)}
                     onMouseLeave={() => setHoveredLink(null)}
                     className={`
@@ -510,6 +511,7 @@ export default function Navigation() {
                     <Link
                       key={link.href}
                       href={link.href}
+                      data-cta={link.cta}
                       className={`
                         flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-semibold transition-all duration-300
                         ${isFeatured

@@ -7,7 +7,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-white">
+    <footer data-cta-location="footer" className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
@@ -78,7 +78,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/#contact" className="text-gray-400 hover:text-primary-400 transition-colors">
+                <Link href="/#contact" data-cta="request-bid" className="text-gray-400 hover:text-primary-400 transition-colors">
                   Request a Bid
                 </Link>
               </li>

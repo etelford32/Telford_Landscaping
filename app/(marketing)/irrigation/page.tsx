@@ -563,7 +563,7 @@ export default function IrrigationPage() {
       </section>
 
       {/* Final CTA */}
-      <section id="contact" className="py-20 bg-gradient-to-br from-blue-950 via-cyan-900 to-blue-950 text-white relative overflow-hidden">
+      <section id="contact" data-cta-location="page-cta" className="py-20 bg-gradient-to-br from-blue-950 via-cyan-900 to-blue-950 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-300 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
@@ -598,6 +598,7 @@ export default function IrrigationPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
             <Link
               href="/#contact"
+              data-cta="request-assessment"
               className="bg-gradient-to-r from-cyan-400 to-blue-500 text-gray-900 px-10 py-5 rounded-xl font-bold hover:from-cyan-500 hover:to-blue-600 transition-all shadow-2xl hover:shadow-cyan-500/50 flex items-center gap-3 text-xl border-2 border-cyan-300 hover:scale-105 transform"
             >
               <Phone className="w-6 h-6" />

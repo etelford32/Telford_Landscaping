@@ -457,7 +457,7 @@ export default function FertilizationPage() {
       </section>
 
       {/* CTA Section */}
-      <section id="contact" className="py-20 bg-gradient-to-br from-green-900 via-emerald-900 to-green-900 text-white relative overflow-hidden">
+      <section id="contact" data-cta-location="page-cta" className="py-20 bg-gradient-to-br from-green-900 via-emerald-900 to-green-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-96 h-96 bg-green-300 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
@@ -492,6 +492,7 @@ export default function FertilizationPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
             <Link
               href="/#contact"
+              data-cta="request-assessment"
               className="bg-gradient-to-r from-green-400 to-emerald-500 text-gray-900 px-10 py-5 rounded-xl font-bold hover:from-green-500 hover:to-emerald-600 transition-all shadow-2xl hover:shadow-3xl flex items-center gap-3 text-xl border-2 border-green-300 hover:scale-105 transform"
             >
               <Phone className="w-6 h-6" />

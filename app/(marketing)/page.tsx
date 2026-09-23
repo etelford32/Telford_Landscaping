@@ -19,7 +19,7 @@ const services = [
       'Mature tree installation (up to 60" box)',
       "Native and drought-tolerant palettes",
     ],
-    link: { label: "Start a design", href: "#contact" },
+    link: { label: "Start a design", href: "#contact", cta: "service-design-build" },
   },
   {
     img: "/home/service-hardscape.jpg",
@@ -31,7 +31,7 @@ const services = [
       "Custom gates and fencing",
       "Stone, steel, and masonry work",
     ],
-    link: { label: "Get a bid", href: "#contact" },
+    link: { label: "Get a bid", href: "#contact", cta: "service-hardscape" },
   },
   {
     img: "/home/service-stewardship.jpg",
@@ -43,7 +43,7 @@ const services = [
       "Irrigation tuning and soil health",
       "Long-term relationship contracts",
     ],
-    link: { label: "Ask about care", href: "#contact" },
+    link: { label: "Ask about care", href: "#contact", cta: "service-stewardship" },
   },
 ];
 
@@ -60,7 +60,7 @@ export default function Home() {
   return (
     <>
       {/* ── HERO ── */}
-      <header className="border-b border-earth-200 bg-gradient-to-b from-white via-primary-50 to-earth-50">
+      <header data-cta-location="hero" className="border-b border-earth-200 bg-gradient-to-b from-white via-primary-50 to-earth-50">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1fr_1.05fr] gap-12 lg:gap-16 items-center pt-16 pb-20 lg:pt-24 lg:pb-28">
           <div>
             <div className="text-[12.5px] font-semibold tracking-[0.22em] uppercase text-primary-700 mb-5">
@@ -77,6 +77,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="#contact"
+                data-cta="request-consultation"
                 className="btn-3d inline-flex items-center gap-2.5 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-semibold px-7 py-3.5 rounded-xl"
               >
                 Request Free Consultation <ArrowRight className="w-4 h-4" />
@@ -118,7 +119,7 @@ export default function Home() {
       </header>
 
       {/* ── WHITNEY OAKS before / after ── */}
-      <section className="py-20 lg:py-24 bg-gradient-to-b from-white via-primary-50 to-earth-50">
+      <section data-cta-location="before-after" className="py-20 lg:py-24 bg-gradient-to-b from-white via-primary-50 to-earth-50">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-[clamp(27px,3.2vw,38px)] font-extrabold tracking-tight text-gray-900 mb-4">
             Whitney Oaks, Rocklin — two growing seasons apart
@@ -152,7 +153,7 @@ export default function Home() {
                 <b className="text-gray-900 font-semibold">Horizon</b> — designed for year thirty
               </div>
               <p className="mt-5">
-                <Link href="#contact" className="text-primary-700 font-semibold hover:underline">
+                <Link href="#contact" data-cta="request-bid" className="text-primary-700 font-semibold hover:underline">
                   Want this result? Request a bid →
                 </Link>
               </p>
@@ -162,7 +163,7 @@ export default function Home() {
       </section>
 
       {/* ── BUILT FOR CALIFORNIA — Fire-Wise / Water-Smart / Native ── */}
-      <section className="pb-20 lg:pb-24 pt-4">
+      <section data-cta-location="california-tabs" className="pb-20 lg:pb-24 pt-4">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto">
             <div className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-primary-700 mb-3.5">
@@ -181,7 +182,7 @@ export default function Home() {
       </section>
 
       {/* ── SERVICES ── */}
-      <section id="services" className="py-20 lg:py-24 scroll-mt-20">
+      <section id="services" data-cta-location="services" className="py-20 lg:py-24 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <div className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-primary-700 mb-3.5">
@@ -219,7 +220,7 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
-                  <Link href={s.link.href} className="text-primary-700 font-semibold text-sm hover:underline">
+                  <Link href={s.link.href} data-cta={s.link.cta} className="text-primary-700 font-semibold text-sm hover:underline">
                     {s.link.label} →
                   </Link>
                 </div>
@@ -230,7 +231,7 @@ export default function Home() {
       </section>
 
       {/* ── RECENT WORK carousel ── */}
-      <section className="py-20 lg:py-24 bg-gradient-to-b from-white via-primary-50 to-earth-50">
+      <section data-cta-location="recent-work" className="py-20 lg:py-24 bg-gradient-to-b from-white via-primary-50 to-earth-50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto">
             <div className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-primary-700 mb-3.5">
@@ -248,6 +249,7 @@ export default function Home() {
           <div className="mt-10 flex justify-center">
             <Link
               href="/portfolio"
+              data-cta="view-portfolio"
               className="btn-3d btn-3d-dark inline-flex items-center gap-2 bg-white text-primary-800 font-semibold px-7 py-3.5 rounded-xl border-[1.5px] border-earth-200"
             >
               See the Full Portfolio <ArrowRight className="w-4 h-4" />
@@ -287,7 +289,7 @@ export default function Home() {
       </section>
 
       {/* ── DESIGN TOOL ── */}
-      <section className="py-20 lg:py-24">
+      <section data-cta-location="design-tool-band" className="py-20 lg:py-24">
         <div className="max-w-6xl mx-auto px-6">
           <div className="bg-gradient-to-br from-primary-800 to-primary-900 text-white rounded-3xl px-8 py-12 md:px-14 md:py-[52px] flex flex-col md:flex-row gap-9 items-start md:items-center justify-between shadow-[0_26px_52px_-22px_rgba(20,83,45,0.5)]">
             <div className="max-w-2xl">
@@ -303,6 +305,7 @@ export default function Home() {
             </div>
             <Link
               href="/app"
+              data-cta="open-design-tool"
               className="btn-3d btn-3d-dark inline-flex items-center gap-2 bg-white text-primary-900 font-bold px-8 py-4 rounded-xl whitespace-nowrap hover:bg-primary-50"
             >
               Open the Design Tool <ArrowRight className="w-4 h-4" />
@@ -312,7 +315,7 @@ export default function Home() {
       </section>
 
       {/* ── CONTACT ── */}
-      <section id="contact" className="pb-24 scroll-mt-20">
+      <section id="contact" data-cta-location="contact-section" className="pb-24 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-primary-700 mb-3.5">
             Contact

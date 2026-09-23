@@ -79,7 +79,7 @@ The app is already optimized for production:
 
 ### 2. SEO Configuration
 - Submit sitemap to Google Search Console
-- Set up Google Analytics (optional)
+- Set up Google Analytics and lead emails ([ANALYTICS.md](./ANALYTICS.md))
 - Verify Open Graph tags for social sharing
 
 ### 3. Monitor Performance
@@ -180,12 +180,9 @@ Vercel automatically deploys:
 - Real User Monitoring (RUM)
 - Core Web Vitals tracking
 
-### Google Analytics
-Add to `app/layout.tsx`:
-```typescript
-// Add Google Analytics script
-<Script src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID" />
-```
+### Google Analytics & lead emails
+Already wired in — it only needs environment variables (`NEXT_PUBLIC_GA_MEASUREMENT_ID`,
+`RESEND_API_KEY`). See [ANALYTICS.md](./ANALYTICS.md) for setup and the funnel definition.
 
 ## Support
 

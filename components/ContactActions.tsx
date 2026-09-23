@@ -1,10 +1,7 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { Phone, Mail } from "lucide-react";
 import { siteConfig } from "@/lib/siteConfig";
 import { callHref, bidRequestMailto } from "@/lib/contactLinks";
-import { trackContact } from "@/lib/analytics";
 
 type Variant = "solid" | "light" | "outline" | "bare";
 
@@ -26,7 +23,10 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 interface ActionProps {
-  /** Where on the page this CTA lives, e.g. "hero" — reported to analytics. */
+  /**
+   * Where on the page this CTA lives, e.g. "hero" — reported to analytics as
+   * cta_location by the site-wide click listener (lib/analytics.ts).
+   */
   context: string;
   variant?: Variant;
   className?: string;
@@ -39,9 +39,9 @@ export function CallLink({ context, variant = "solid", className = "", children 
   return (
     <a
       href={callHref}
-      onClick={() => trackContact("phone", context)}
       className={`${VARIANTS[variant]} ${className}`.trim()}
       data-contact="phone"
+      data-cta-location={context}
     >
       {children ?? (
         <>
@@ -68,9 +68,9 @@ export function EmailLink({
   return (
     <a
       href={bidRequestMailto(project)}
-      onClick={() => trackContact("email", context)}
       className={`${VARIANTS[variant]} ${className}`.trim()}
       data-contact="email"
+      data-cta-location={context}
     >
       {children ?? (
         <>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { trackEvent } from "@/lib/analytics";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 interface TabData {
@@ -92,7 +93,10 @@ export default function CaliforniaTabs() {
               key={t.id}
               role="tab"
               aria-selected={on}
-              onClick={() => setActive(t.id)}
+              onClick={() => {
+                setActive(t.id);
+                trackEvent("select_content", { content_type: "california_tab", content_id: t.id });
+              }}
               className={`text-left rounded-2xl border-2 p-5 transition ${
                 on
                   ? "border-primary-600 bg-primary-50 shadow-[0_12px_26px_-16px_rgba(20,83,45,0.4)]"
@@ -130,6 +134,7 @@ export default function CaliforniaTabs() {
           ))}
           <Link
             href={activeTab.href}
+            data-cta={`explore-${activeTab.id}`}
             className="btn-3d inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-semibold text-[15px] px-6 py-3.5 rounded-xl"
           >
             {activeTab.cta}
