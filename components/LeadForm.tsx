@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { siteConfig } from "@/lib/siteConfig";
+import { getAttribution, trackEvent } from "@/lib/analytics";
+import { MESSAGE_MAX } from "@/lib/leads";
 
 interface LeadFormProps {
   /** Pre-fills the hidden "service" field so we know which page the lead came from. */
@@ -14,9 +16,14 @@ interface LeadFormProps {
 }
 
 /**
- * Reusable "request a bid" form. Posts to /api/contact/lead and reports
- * success / failure inline. Shared by the homepage contact section and each
- * of the fire-wise / water-smart / native lead pages.
+ * Reusable "request a bid" form. Posts to /api/contact/lead, which emails the
+ * lead to the inbox, and reports success / failure inline. Shared by the
+ * homepage contact section, the portfolio, and each of the fire-wise /
+ * water-smart / native lead pages.
+ *
+ * Reports each funnel step to GA — lead_form_view → lead_form_start →
+ * lead_form_submit → generate_lead (or lead_form_error) — tagged with
+ * `service` so every placement can be compared (see lib/analytics.ts).
  */
 export default function LeadForm({
   service = "General inquiry",
@@ -25,11 +32,37 @@ export default function LeadForm({
 }: LeadFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const startedRef = useRef(false);
+
+  // lead_form_view: once, when the form is mostly on screen.
+  useEffect(() => {
+    const el = formRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        trackEvent("lead_form_view", { service });
+        io.disconnect();
+      },
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [service]);
+
+  // lead_form_start: once, on the first field focus.
+  function handleFocus() {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    trackEvent("lead_form_start", { service });
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("submitting");
     setError("");
+    trackEvent("lead_form_submit", { service });
 
     const form = e.currentTarget;
     const fd = new FormData(form);
@@ -40,6 +73,9 @@ export default function LeadForm({
       city: String(fd.get("city") ?? ""),
       service,
       message: String(fd.get("message") ?? ""),
+      website: String(fd.get("website") ?? ""),
+      page: window.location.pathname,
+      attribution: getAttribution(),
     };
 
     try {
@@ -52,13 +88,16 @@ export default function LeadForm({
       if (!res.ok) {
         setError(json.error || "Something went wrong. Please call or email us instead.");
         setStatus("error");
+        trackEvent("lead_form_error", { service, error_type: res.status >= 500 ? "server" : "validation" });
         return;
       }
       setStatus("success");
+      trackEvent("generate_lead", { service, lead_city: payload.city || undefined });
       form.reset();
     } catch {
       setError("Network error. Please call or email us instead.");
       setStatus("error");
+      trackEvent("lead_form_error", { service, error_type: "network" });
     }
   }
 
@@ -83,7 +122,19 @@ export default function LeadForm({
     "focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/15 transition";
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      onFocus={handleFocus}
+      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+    >
+      {/* Honeypot: invisible to people, tempting to form-filling bots. */}
+      <div aria-hidden="true" className="absolute -left-[10000px] w-px h-px overflow-hidden">
+        <label>
+          Leave this field empty
+          <input name="website" type="text" tabIndex={-1} autoComplete="off" />
+        </label>
+      </div>
       <input
         name="name"
         type="text"
@@ -122,6 +173,7 @@ export default function LeadForm({
         placeholder="Tell us about the property and what you have in mind"
         aria-label="Project details"
         rows={4}
+        maxLength={MESSAGE_MAX}
         className={`${fieldCls} sm:col-span-2 resize-y min-h-[110px]`}
       />
 

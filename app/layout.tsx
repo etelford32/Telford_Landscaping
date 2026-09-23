@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/authContext";
 import { siteUrl } from "@/lib/siteConfig";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import FunnelTracker from "@/components/FunnelTracker";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -26,7 +27,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <GoogleAnalytics GA_MEASUREMENT_ID={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        <GoogleAnalytics />
+        <FunnelTracker />
         <AuthProvider>
           {children}
         </AuthProvider>

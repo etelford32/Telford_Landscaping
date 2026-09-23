@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/authContext';
+import { trackEvent } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import {
   Leaf,
@@ -88,20 +89,23 @@ export default function PlantCarePage() {
 
       if (response.ok) {
         setFormStatus('success');
-        // Track conversion with Google Analytics
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-          (window as any).gtag('event', 'form_submission', {
-            form_name: 'plant_care_contact',
-            location: formData.location,
-            service: formData.service
-          });
-        }
+        trackEvent('generate_lead', {
+          service: `Plant care — ${formData.service}`,
+          lead_city: formData.location,
+        });
       } else {
-        throw new Error('Failed to submit form');
+        const json = await response.json().catch(() => ({}));
+        setFormStatus('error');
+        setErrorMessage(json.error || 'Failed to submit form. Please try again.');
+        trackEvent('lead_form_error', {
+          service: `Plant care — ${formData.service}`,
+          error_type: response.status >= 500 ? 'server' : 'validation',
+        });
       }
     } catch (error) {
       setFormStatus('error');
       setErrorMessage('Failed to submit form. Please try again.');
+      trackEvent('lead_form_error', { service: `Plant care — ${formData.service}`, error_type: 'network' });
       console.error('Form submission error:', error);
     }
   };

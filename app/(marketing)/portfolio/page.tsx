@@ -396,7 +396,7 @@ export default function PortfolioPage() {
 
               <p className="mt-6 text-[14.5px] text-gray-600">
                 Curious what your yard could look like first?{" "}
-                <Link href="/app" className="text-primary-700 font-semibold hover:underline">
+                <Link href="/app" data-cta="open-design-tool" className="text-primary-700 font-semibold hover:underline">
                   Try the free design tool
                   <ArrowRight className="inline w-4 h-4 ml-0.5 align-[-2px]" />
                 </Link>
