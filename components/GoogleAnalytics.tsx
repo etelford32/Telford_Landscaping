@@ -1,9 +1,13 @@
 import Script from "next/script";
-
-const MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]{4,}$/;
+import { siteConfig } from "@/lib/siteConfig";
 
 /**
- * Loads GA4 (gtag.js) when NEXT_PUBLIC_GA_MEASUREMENT_ID is set.
+ * Loads GA4 (gtag.js) for siteConfig.gaMeasurementId.
+ *
+ * Hits are only sent from the live domain. On preview deployments,
+ * *.vercel.app, and local builds the tag loads but is never configured, so
+ * nothing reaches GA — while funnel events still collect in window.dataLayer,
+ * which is handy for checking them in the browser console.
  *
  * Only the initial config is sent here. Client-side route changes are
  * recorded by GA4's enhanced measurement ("Page changes based on browser
@@ -14,14 +18,9 @@ const MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]{4,}$/;
  * e.g. the lead form already in view on a /#contact deep link — queue in
  * dataLayer instead of being dropped while gtag.js is still downloading.
  */
-export default function GoogleAnalytics({ measurementId }: { measurementId?: string }) {
-  if (!measurementId) return null;
-  if (!MEASUREMENT_ID_PATTERN.test(measurementId)) {
-    console.warn(
-      `[analytics] NEXT_PUBLIC_GA_MEASUREMENT_ID "${measurementId}" is not a GA4 measurement ID (G-XXXXXXX); GA is disabled.`
-    );
-    return null;
-  }
+export default function GoogleAnalytics() {
+  const id = siteConfig.gaMeasurementId;
+  const liveHosts = JSON.stringify([siteConfig.domain, `www.${siteConfig.domain}`]);
 
   return (
     <>
@@ -29,12 +28,9 @@ export default function GoogleAnalytics({ measurementId }: { measurementId?: str
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', '${measurementId}');`}
+if (${liveHosts}.indexOf(location.hostname) !== -1) gtag('config', '${id}');`}
       </Script>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
-        strategy="afterInteractive"
-      />
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${id}`} strategy="afterInteractive" />
     </>
   );
 }

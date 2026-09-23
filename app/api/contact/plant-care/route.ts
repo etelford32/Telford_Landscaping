@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { siteConfig } from '@/lib/siteConfig';
 import { parseLead, leadEmail, leadInbox } from '@/lib/leads';
 import { sendEmail } from '@/lib/email';
 
+// Must match the cookie name and secret that /api/auth/login and /signup issue.
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+  process.env.JWT_SECRET || 'telford-landscapes-secret-change-in-production'
 );
 
 interface ContactFormData {
@@ -24,8 +24,7 @@ interface ContactFormData {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const token = request.cookies.get('auth-token')?.value;
 
     if (!token) {
       return NextResponse.json(

@@ -181,8 +181,8 @@ Vercel automatically deploys:
 - Core Web Vitals tracking
 
 ### Google Analytics & lead emails
-Already wired in — it only needs environment variables (`NEXT_PUBLIC_GA_MEASUREMENT_ID`,
-`RESEND_API_KEY`). See [ANALYTICS.md](./ANALYTICS.md) for setup and the funnel definition.
+Already wired in. GA needs no configuration; lead emails need `RESEND_API_KEY`.
+See [ANALYTICS.md](./ANALYTICS.md) for setup and the funnel definition.
 
 ## Support
 

@@ -2,12 +2,11 @@
 
 How visitors are measured on their way to a consultation request, and how each request reaches the inbox.
 
-Both depend on environment variables in Vercel (Project → Settings → Environment Variables). **Until they are set, GA does not load and the lead forms can't send.** When a form can't send, it asks the visitor to call or email instead of pretending the request went through.
+Google Analytics needs no configuration: the measurement ID (`G-GMYQFMRVWS`) is in `lib/siteConfig.ts`. Lead emails need a Resend key in Vercel (Project → Settings → Environment Variables). **Without it the lead forms can't send.** When a form can't send, it asks the visitor to call or email instead of pretending the request went through.
 
 | Variable | Environments | Purpose |
 | --- | --- | --- |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Production only | GA4 measurement ID (`G-…`). Baked in at build, so redeploy after setting it. |
-| `RESEND_API_KEY` | Production + Preview | Sends each lead by email through Resend. |
+| `RESEND_API_KEY` | Production + Preview | Sends each lead by email through Resend. A team-level shared variable works too, as long as it is linked to this project. |
 | `LEAD_EMAIL_TO` | optional | Inbox for leads. Default: `siteConfig.email` (etelford32@gmail.com). |
 | `LEAD_EMAIL_FROM` | optional | Sender. Default `Telford Landscaping <onboarding@resend.dev>`. |
 
@@ -39,16 +38,19 @@ Local dev without a key prints the email to the terminal instead of sending it.
 
 ## 2. Google Analytics 4
 
-`components/GoogleAnalytics.tsx` loads gtag.js. GA4's enhanced measurement records page views, including client-side navigations. The site sends no page views of its own, because that would double count.
+`components/GoogleAnalytics.tsx` loads gtag.js for the measurement ID in `lib/siteConfig.ts`. It only sends data from `telfordlandscaping.com` and `www.telfordlandscaping.com`. Previews, `*.vercel.app`, and local builds load the tag but never configure it, so test traffic never reaches your reports. Funnel events still collect in `window.dataLayer` there, so you can inspect them in the browser console.
+
+GA4's enhanced measurement records page views, including client-side navigations. The site sends no page views of its own, because that would double count.
 
 ### Setup
 
-1. **Create a GA4 property for this site.** Keep it separate from the Explore the Universe 2175 property so the reports don't mix. Add a **Web** data stream for `https://www.telfordlandscaping.com` and copy its Measurement ID (`G-…`).
-2. **Set `NEXT_PUBLIC_GA_MEASUREMENT_ID`** in Vercel (Production only) and redeploy. To check it: view the page source on the live site and look for `googletagmanager.com/gtag/js?id=G-…`, then watch **Reports → Realtime** while you click around.
+1. **Property:** the site's GA4 property has its own Web data stream (`G-GMYQFMRVWS`), separate from Explore the Universe 2175. To change the ID, edit `gaMeasurementId` in `lib/siteConfig.ts`.
+2. **Check it's live:** after a production deploy, open the live site and watch **Reports → Realtime** while you click around.
 3. **Enhanced measurement** (Data stream → Enhanced measurement): keep *Page views → page changes based on browser history events* **on**. Turn *Form interactions* **off**, since the site's own `lead_form_*` events replace it.
 4. **Key events** (Admin → Key events → New key event): add `generate_lead` and `contact_click`.
 5. **Custom dimensions** (Admin → Custom definitions → Create, all event-scoped): `cta_id`, `cta_location`, `method`, `service`, `error_type`, `lead_city`. Without these, the parameters are collected but can't be used in reports.
 6. **Exclude your own visits** (Admin → Data streams → Configure tag settings → Define internal traffic): add your home IP, then activate the *Internal Traffic* filter under Admin → Data filters.
+7. **Keep it in line with the privacy policy** (`/privacy`): set Admin → Data retention to 14 months, and leave **Google signals** and advertising features **off**. The policy says GA is used for measurement only. If you turn those on, update the policy first.
 
 ### Events
 

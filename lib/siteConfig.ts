@@ -8,6 +8,10 @@ export const siteConfig = {
   license: "CA C-27 Lic. #1156976",
   domain: "telfordlandscaping.com",
 
+  // Google Analytics 4 web stream. Public by design — it ships in every page's
+  // HTML. Hits are only sent from the live domain (components/GoogleAnalytics.tsx).
+  gaMeasurementId: "G-GMYQFMRVWS",
+
   // Contact — displayed across the homepage, lead pages, nav, and footer.
   phone: "(279) 227-6372",
   phoneHref: "tel:+12792276372",

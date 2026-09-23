@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans">
-        <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        <GoogleAnalytics />
         <FunnelTracker />
         <AuthProvider>
           {children}
