@@ -89,7 +89,8 @@ A landscape design app featuring a symbiosis of technology and nature, offering 
 
 - **Initial Plant Collection**
   - Acer Palmatum (Japanese Maple)
-  - Chamaecyparis pisifera (Cedar)
+  - Chamaecyparis pisifera (Sawara false cypress — not a true cedar)
+  - Chamaecyparis obtusa (Hinoki cypress) + dwarf cultivars — modeled, see PROCEDURAL_PLANTS.md §8
   - Cedrus atlantica 'Glauca Pendula' (Blue Atlas Cedar)
   - Expanding library of native California plants
   - Drought-tolerant species

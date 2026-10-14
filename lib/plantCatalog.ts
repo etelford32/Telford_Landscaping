@@ -1,6 +1,19 @@
 // Plant Catalog - Extended database for the Plant Library page
 // Rich metadata for filtering, seasonal info, companion plants, etc.
 
+import {
+  HINOKI_CYPRESS,
+  HINOKI_GOLDEN_SPRITE,
+  HINOKI_NANA,
+  HINOKI_NANA_GRACILIS,
+  HINOKI_NANA_LUTEA,
+  HINOKI_NANA_PYRAMIDALIS,
+  acsClassFromRate,
+  meanEarlyRateInches,
+  sizeAt,
+  type ConiferGrowthModel,
+} from "./growth/dwarfConiferGrowth";
+
 export type PlantType = "tree" | "shrub" | "groundcover" | "grass" | "perennial" | "succulent";
 export type WaterNeeds = "none" | "low" | "moderate" | "high";
 export type MaintenanceLevel = "none" | "low" | "moderate" | "high";
@@ -50,6 +63,8 @@ export interface PlantCatalogEntry {
   color: string;
   estimatedCostRange: [number, number];
   usdaZones: string[];
+  /** When set, heights come from this anchored growth curve instead of growthParam. */
+  growthModel?: ConiferGrowthModel;
 }
 
 /** Interpolate growth fraction at a given year */
@@ -70,9 +85,38 @@ export function getGrowthFraction(plant: PlantCatalogEntry, year: number): numbe
 
 /** Estimated height in feet at a given year */
 export function getHeightAtYear(plant: PlantCatalogEntry, year: number): number {
+  if (plant.growthModel) {
+    return Math.round(sizeAt(plant.growthModel.height, Math.max(1, Math.min(30, year))) * 100) / 100;
+  }
   const t = getGrowthFraction(plant, year);
   const mid = (plant.matureHeight[0] + plant.matureHeight[1]) / 2;
   return Math.round(mid * t * 10) / 10;
+}
+
+/** Height for display: inches for the miniatures, feet otherwise. */
+export function formatHeight(ft: number): string {
+  if (ft < 2) return `${Math.round(ft * 12)} in`;
+  return `${ft < 10 ? ft.toFixed(1) : ft.toFixed(0)} ft`;
+}
+
+/** ACS size class + early growth rate, e.g. "Miniature · ~½ in/yr". */
+export function growthClassLabel(plant: PlantCatalogEntry): string | null {
+  if (!plant.growthModel) return null;
+  const r = meanEarlyRateInches(plant.growthModel);
+  const cls = acsClassFromRate(r);
+  const rate = r < 1 ? `~${Math.round(r * 4) / 4} in/yr` : r < 12 ? `~${Math.round(r)} in/yr` : `~${(r / 12).toFixed(1)} ft/yr`;
+  return `${cls[0].toUpperCase()}${cls.slice(1)} conifer · ${rate}`;
+}
+
+// growthParam for a model-backed entry: the curve's height at the key years as
+// a fraction of the mid mature height (kept for anything that reads it directly).
+function growthParamFromModel(
+  m: ConiferGrowthModel,
+  matureHeight: [number, number]
+): PlantCatalogEntry["growthParam"] {
+  const mid = (matureHeight[0] + matureHeight[1]) / 2;
+  const f = (t: number) => Math.round((sizeAt(m.height, t) / mid) * 1000) / 1000;
+  return { 1: f(1), 5: f(5), 10: f(10), 20: f(20), 30: f(30) };
 }
 
 export const PLANT_CATALOG: PlantCatalogEntry[] = [
@@ -1245,6 +1289,246 @@ export const PLANT_CATALOG: PlantCatalogEntry[] = [
     color: "#8E44AD",
     estimatedCostRange: [8, 30],
     usdaZones: ["3a", "4a", "5a", "6a", "7a", "8a", "9a"]
+  },
+  {
+    id: "hinoki-nana-gracilis",
+    name: "Dwarf Hinoki Cypress",
+    scientific: "Chamaecyparis obtusa 'Nana Gracilis'",
+    family: "Cupressaceae",
+    type: "shrub",
+    nativeCalifornia: false,
+    deerResistant: true,
+    fireResistant: false,
+    form: "Broadly pyramidal, irregular tiers of cupped shell-shaped fans",
+    matureHeight: [6, 11],
+    matureWidth: [3, 6],
+    growthRate: "slow",
+    growthParam: growthParamFromModel(HINOKI_NANA_GRACILIS, [6, 11]),
+    growthModel: HINOKI_NANA_GRACILIS,
+    sunlight: ["Partial Shade", "Morning Sun"],
+    waterNeeds: "moderate",
+    soilTypes: ["Well-drained", "Loam", "Slightly Acidic"],
+    windTolerance: "low",
+    heatTolerance: "low",
+    situations: ["Entry", "Japanese Garden", "Container", "Foundation"],
+    goals: ["Statement Plant", "Four-Season Interest", "Small Space", "Formal Structure"],
+    companionPlants: ["japanese-maple", "hinoki-nana", "festuca", "heavenly-bamboo"],
+    maintenanceLevel: "low",
+    pruningNeeds: "None needed — remove only dead interior foliage",
+    flowerColor: [],
+    flowerSeason: [],
+    foliageColor: ["Dark Green"],
+    fallColor: null,
+    seasons: {
+      spring: { foliage: "Bright new growth at the fan tips", interest: "Fresh green edges on every layer" },
+      summer: { foliage: "Deep glossy green", interest: "Layered shell-shaped fans catch the light" },
+      fall: { foliage: "Evergreen", interest: "Rich texture against fall color" },
+      winter: { foliage: "Evergreen, may bronze slightly in cold", interest: "Sculptural form when the garden is bare" }
+    },
+    why: "Decades of slow, sculptural growth — about 4 ft in ten years, never outgrowing its spot. Keep it out of hot afternoon sun and away from the house in fire-prone areas.",
+    color: "#234628",
+    estimatedCostRange: [45, 350],
+    usdaZones: ["4b", "5a", "5b", "6a", "6b", "7a", "7b", "8a", "8b"]
+  },
+  {
+    id: "hinoki-nana-lutea",
+    name: "Golden Dwarf Hinoki",
+    scientific: "Chamaecyparis obtusa 'Nana Lutea'",
+    family: "Cupressaceae",
+    type: "shrub",
+    nativeCalifornia: false,
+    deerResistant: true,
+    fireResistant: false,
+    form: "Compact pyramid of golden shell-shaped fans",
+    matureHeight: [6, 8],
+    matureWidth: [3, 4.5],
+    growthRate: "slow",
+    growthParam: growthParamFromModel(HINOKI_NANA_LUTEA, [6, 8]),
+    growthModel: HINOKI_NANA_LUTEA,
+    sunlight: ["Partial Shade", "Morning Sun"],
+    waterNeeds: "moderate",
+    soilTypes: ["Well-drained", "Loam", "Slightly Acidic"],
+    windTolerance: "low",
+    heatTolerance: "low",
+    situations: ["Entry", "Japanese Garden", "Container", "Shade Garden"],
+    goals: ["Four-Season Interest", "Small Space", "Color Accent"],
+    companionPlants: ["hinoki-nana-gracilis", "japanese-maple", "heavenly-bamboo"],
+    maintenanceLevel: "low",
+    pruningNeeds: "None needed",
+    flowerColor: [],
+    flowerSeason: [],
+    foliageColor: ["Gold", "Yellow-Green"],
+    fallColor: null,
+    seasons: {
+      spring: { foliage: "Brightest gold on new growth", interest: "Glows against dark stone and moss" },
+      summer: { foliage: "Gold over green-gold interior", interest: "Lights up shady corners" },
+      fall: { foliage: "Golden, evergreen", interest: "Warm accent beside maples" },
+      winter: { foliage: "Deeper gold", interest: "Color when everything else is dormant" }
+    },
+    why: "Year-round gold in a slow, tidy dwarf — the best way to light up a shady corner. Morning sun only: the gold scorches in valley afternoons.",
+    color: "#D9B53C",
+    estimatedCostRange: [50, 300],
+    usdaZones: ["5a", "5b", "6a", "6b", "7a", "7b", "8a", "8b"]
+  },
+  {
+    id: "hinoki-nana",
+    name: "Miniature Hinoki",
+    scientific: "Chamaecyparis obtusa 'Nana'",
+    family: "Cupressaceae",
+    type: "shrub",
+    nativeCalifornia: false,
+    deerResistant: true,
+    fireResistant: false,
+    form: "Flat-topped bun of tightly stacked dark green fans",
+    matureHeight: [2, 3],
+    matureWidth: [3, 4],
+    growthRate: "slow",
+    growthParam: growthParamFromModel(HINOKI_NANA, [2, 3]),
+    growthModel: HINOKI_NANA,
+    sunlight: ["Partial Shade", "Morning Sun"],
+    waterNeeds: "moderate",
+    soilTypes: ["Well-drained", "Loam", "Slightly Acidic"],
+    windTolerance: "low",
+    heatTolerance: "low",
+    situations: ["Rock Garden", "Container", "Trough", "Japanese Garden"],
+    goals: ["Small Space", "Four-Season Interest", "Collector Plant"],
+    companionPlants: ["hinoki-golden-sprite", "hinoki-nana-pyramidalis", "festuca"],
+    maintenanceLevel: "low",
+    pruningNeeds: "None — it grows about half an inch a year",
+    flowerColor: [],
+    flowerSeason: [],
+    foliageColor: ["Dark Green"],
+    fallColor: null,
+    seasons: {
+      spring: { foliage: "Bright new growth at the fan tips", interest: "Fresh green edges on every layer" },
+      summer: { foliage: "Deep glossy green", interest: "Layered shell-shaped fans catch the light" },
+      fall: { foliage: "Evergreen", interest: "Rich texture against fall color" },
+      winter: { foliage: "Evergreen, may bronze slightly in cold", interest: "Sculptural form when the garden is bare" }
+    },
+    why: "A living bonsai without the work: 6–8 inches tall after ten years. The true miniature — buy from a conifer specialist, as many plants sold under this name are faster clones.",
+    color: "#204026",
+    estimatedCostRange: [40, 250],
+    usdaZones: ["5a", "5b", "6a", "6b", "7a", "7b", "8a", "8b"]
+  },
+  {
+    id: "hinoki-nana-pyramidalis",
+    name: "Pyramidal Miniature Hinoki",
+    scientific: "Chamaecyparis obtusa 'Nana Pyramidalis'",
+    family: "Cupressaceae",
+    type: "shrub",
+    nativeCalifornia: false,
+    deerResistant: true,
+    fireResistant: false,
+    form: "Miniature cone of stacked cupped fans",
+    matureHeight: [3, 4],
+    matureWidth: [2, 2.5],
+    growthRate: "slow",
+    growthParam: growthParamFromModel(HINOKI_NANA_PYRAMIDALIS, [3, 4]),
+    growthModel: HINOKI_NANA_PYRAMIDALIS,
+    sunlight: ["Partial Shade", "Morning Sun"],
+    waterNeeds: "moderate",
+    soilTypes: ["Well-drained", "Loam", "Slightly Acidic"],
+    windTolerance: "low",
+    heatTolerance: "low",
+    situations: ["Rock Garden", "Container", "Trough"],
+    goals: ["Small Space", "Formal Structure", "Collector Plant"],
+    companionPlants: ["hinoki-nana", "hinoki-golden-sprite", "festuca"],
+    maintenanceLevel: "low",
+    pruningNeeds: "None — holds its cone naturally",
+    flowerColor: [],
+    flowerSeason: [],
+    foliageColor: ["Dark Green"],
+    fallColor: null,
+    seasons: {
+      spring: { foliage: "Bright new growth at the fan tips", interest: "Fresh green edges on every layer" },
+      summer: { foliage: "Deep glossy green", interest: "Layered shell-shaped fans catch the light" },
+      fall: { foliage: "Evergreen", interest: "Rich texture against fall color" },
+      winter: { foliage: "Evergreen, may bronze slightly in cold", interest: "Sculptural form when the garden is bare" }
+    },
+    why: "A tiny formal pyramid that never needs shearing — under a foot tall after a decade.",
+    color: "#25492A",
+    estimatedCostRange: [40, 220],
+    usdaZones: ["5a", "5b", "6a", "6b", "7a", "7b", "8a", "8b"]
+  },
+  {
+    id: "hinoki-golden-sprite",
+    name: "Golden Sprite Hinoki",
+    scientific: "Chamaecyparis obtusa 'Golden Sprite'",
+    family: "Cupressaceae",
+    type: "shrub",
+    nativeCalifornia: false,
+    deerResistant: true,
+    fireResistant: false,
+    form: "Tight rounded gold bun",
+    matureHeight: [1, 1.5],
+    matureWidth: [1.5, 2],
+    growthRate: "slow",
+    growthParam: growthParamFromModel(HINOKI_GOLDEN_SPRITE, [1, 1.5]),
+    growthModel: HINOKI_GOLDEN_SPRITE,
+    sunlight: ["Partial Shade", "Morning Sun"],
+    waterNeeds: "moderate",
+    soilTypes: ["Well-drained", "Loam", "Slightly Acidic"],
+    windTolerance: "low",
+    heatTolerance: "low",
+    situations: ["Rock Garden", "Container", "Trough"],
+    goals: ["Small Space", "Color Accent", "Collector Plant"],
+    companionPlants: ["hinoki-nana", "hinoki-nana-pyramidalis", "festuca"],
+    maintenanceLevel: "low",
+    pruningNeeds: "None",
+    flowerColor: [],
+    flowerSeason: [],
+    foliageColor: ["Gold"],
+    fallColor: null,
+    seasons: {
+      spring: { foliage: "Brightest gold on new growth", interest: "Glows against dark stone and moss" },
+      summer: { foliage: "Gold over green-gold interior", interest: "Lights up shady corners" },
+      fall: { foliage: "Golden, evergreen", interest: "Warm accent beside maples" },
+      winter: { foliage: "Deeper gold", interest: "Color when everything else is dormant" }
+    },
+    why: "A pocket of sunshine 4–6 inches across after ten years — one of the smallest golden conifers there is.",
+    color: "#E6C447",
+    estimatedCostRange: [35, 150],
+    usdaZones: ["5a", "5b", "6a", "6b", "7a", "7b", "8a", "8b"]
+  },
+  {
+    id: "hinoki-cypress",
+    name: "Hinoki Cypress",
+    scientific: "Chamaecyparis obtusa",
+    family: "Cupressaceae",
+    type: "tree",
+    nativeCalifornia: false,
+    deerResistant: true,
+    fireResistant: false,
+    form: "Narrow pyramidal tree with drooping fans of scale leaves",
+    matureHeight: [50, 75],
+    matureWidth: [10, 20],
+    growthRate: "moderate",
+    growthParam: growthParamFromModel(HINOKI_CYPRESS, [50, 75]),
+    growthModel: HINOKI_CYPRESS,
+    sunlight: ["Full Sun", "Partial Shade"],
+    waterNeeds: "moderate",
+    soilTypes: ["Well-drained", "Loam", "Slightly Acidic"],
+    windTolerance: "low",
+    heatTolerance: "moderate",
+    situations: ["Large Lot", "Screening", "Japanese Garden"],
+    goals: ["Privacy", "Statement Tree", "Four-Season Interest"],
+    companionPlants: ["japanese-maple", "hinoki-nana-gracilis", "heavenly-bamboo"],
+    maintenanceLevel: "low",
+    pruningNeeds: "None — remove dead lower limbs",
+    flowerColor: [],
+    flowerSeason: [],
+    foliageColor: ["Dark Green"],
+    fallColor: null,
+    seasons: {
+      spring: { foliage: "Bright new growth at the fan tips", interest: "Fresh green edges on every layer" },
+      summer: { foliage: "Deep glossy green", interest: "Layered shell-shaped fans catch the light" },
+      fall: { foliage: "Evergreen", interest: "Rich texture against fall color" },
+      winter: { foliage: "Evergreen, may bronze slightly in cold", interest: "Sculptural form when the garden is bare" }
+    },
+    why: "Japan's temple timber: about 25 ft in 20 years, with peeling red-brown bark. Plant well away from structures — Cupressaceae foliage is flammable.",
+    color: "#29502D",
+    estimatedCostRange: [80, 600],
+    usdaZones: ["5a", "5b", "6a", "6b", "7a", "7b", "8a", "8b"]
   }
 ];
 

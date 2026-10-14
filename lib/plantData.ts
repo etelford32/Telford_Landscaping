@@ -1,3 +1,14 @@
+import {
+  HINOKI_CYPRESS,
+  HINOKI_GOLDEN_SPRITE,
+  HINOKI_NANA,
+  HINOKI_NANA_GRACILIS,
+  HINOKI_NANA_LUTEA,
+  HINOKI_NANA_PYRAMIDALIS,
+  growthSeries,
+  type ConiferGrowthModel,
+} from './growth/dwarfConiferGrowth';
+
 // Plant species definitions
 export interface PlantSpecies {
   id: string;
@@ -1281,7 +1292,139 @@ export const PLANT_LIBRARY: PlantSpecies[] = [
       maintenanceLevel: 'low',
     },
   },
+
+  // ===== HINOKI CYPRESS (Chamaecyparis obtusa) =====
+  // Growth arrays are generated from the anchored Chapman-Richards curves in
+  // lib/growth/dwarfConiferGrowth.ts (planted size → ACS 10-year size →
+  // ultimate size), so the design tool and the 3D renderer share one model.
+  {
+    id: 'chamaecyparis-obtusa-nana-gracilis',
+    commonName: 'Dwarf Hinoki Cypress',
+    scientificName: "Chamaecyparis obtusa 'Nana Gracilis'",
+    description: "The classic dwarf Hinoki: a broadly pyramidal, slightly irregular evergreen built from tiers of glossy, deep green foliage held in cupped, shell-shaped fans. Grows about 3–6 in a year — roughly 4 ft tall in ten years — and only slowly reaches 10 ft or more over many decades. A specimen for Japanese gardens, entries, and large containers.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#234628',
+    growthData: coniferGrowthData(HINOKI_NANA_GRACILIS, 'slow', 'pyramidal', 200),
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Moist, well-drained, slightly acidic',
+      hardiness: 'USDA Zones 4-8',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'chamaecyparis-obtusa-nana-lutea',
+    commonName: 'Golden Dwarf Hinoki',
+    scientificName: "Chamaecyparis obtusa 'Nana Lutea'",
+    description: "A golden sport of 'Nana Gracilis' with the same layered, shell-fan habit: bright yellow on the sunlit outer fans over a green-gold interior. About 3–4 ft tall in ten years, eventually 6–8 ft. Best color with morning sun and afternoon shade in our valley heat.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#D9B53C',
+    growthData: coniferGrowthData(HINOKI_NANA_LUTEA, 'slow', 'pyramidal', 150),
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Moist, well-drained, slightly acidic',
+      hardiness: 'USDA Zones 5-8',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'chamaecyparis-obtusa-nana',
+    commonName: 'Miniature Hinoki',
+    scientificName: "Chamaecyparis obtusa 'Nana'",
+    description: "The true miniature Hinoki — a flat-topped bun of tightly stacked, dark green fans that grows only about half an inch a year: 6–8 in tall after a decade, and perhaps 3 ft after many decades. A treasure for troughs, rock gardens, bonsai-style containers, and the front of a stone path.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#204026',
+    growthData: coniferGrowthData(HINOKI_NANA, 'slow', 'rounded', 200),
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Gritty, well-drained',
+      hardiness: 'USDA Zones 5-8',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'chamaecyparis-obtusa-nana-pyramidalis',
+    commonName: 'Pyramidal Miniature Hinoki',
+    scientificName: "Chamaecyparis obtusa 'Nana Pyramidalis'",
+    description: "A miniature cone of stacked, cupped fans — under a foot tall after ten years, growing well under an inch a year. Holds a neat pyramid with no shearing; a living sculpture for troughs and rock gardens.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#25492A',
+    growthData: coniferGrowthData(HINOKI_NANA_PYRAMIDALIS, 'slow', 'pyramidal', 150),
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Gritty, well-drained',
+      hardiness: 'USDA Zones 5-8',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'chamaecyparis-obtusa-golden-sprite',
+    commonName: 'Golden Sprite Hinoki',
+    scientificName: "Chamaecyparis obtusa 'Golden Sprite'",
+    description: "One of the smallest golden Hinokis: a tight, butter-gold bun only 4–6 in tall and wide after ten years. Glows against dark stone and moss. Give it bright shade in the afternoon — the gold scorches in full valley sun.",
+    category: 'shrub',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#E6C447',
+    growthData: coniferGrowthData(HINOKI_GOLDEN_SPRITE, 'slow', 'rounded', 120),
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'partial-shade',
+      soilType: 'Gritty, well-drained',
+      hardiness: 'USDA Zones 5-8',
+      maintenanceLevel: 'low',
+    },
+  },
+  {
+    id: 'chamaecyparis-obtusa',
+    commonName: 'Hinoki Cypress',
+    scientificName: 'Chamaecyparis obtusa',
+    description: "The full-size Hinoki: Japan's sacred temple timber, a narrow, pyramidal evergreen tree with drooping fans of glossy scale leaves and red-brown bark that peels in long strips. Grows 1–2 ft a year to about 25 ft in 20 years, eventually 50–75 ft. For large lots — the dwarf cultivars carry its look into a garden.",
+    category: 'tree',
+    nativeToCA: false,
+    droughtTolerant: false,
+    color: '#29502D',
+    growthData: coniferGrowthData(HINOKI_CYPRESS, 'moderate', 'pyramidal', 300),
+    care: {
+      waterNeeds: 'moderate',
+      sunExposure: 'full-sun',
+      soilType: 'Moist, well-drained, neutral to acidic',
+      hardiness: 'USDA Zones 5-8',
+      maintenanceLevel: 'low',
+    },
+  },
 ];
+
+// Growth data for a conifer from its anchored growth curve: 30 yearly sizes
+// plus the old-age size the curve approaches.
+function coniferGrowthData(
+  m: ConiferGrowthModel,
+  growthRate: GrowthData['growthRate'],
+  shapeType: GrowthData['shapeType'],
+  lifespan: number
+): GrowthData {
+  return {
+    baseHeightGrowth: growthSeries(m.height),
+    baseWidthGrowth: growthSeries(m.width),
+    maxHeight: m.height.ultimate,
+    maxWidth: m.width.ultimate,
+    growthRate,
+    lifespan,
+    shapeType,
+  };
+}
 
 // Helper to get species by ID
 export function getPlantSpecies(id: string): PlantSpecies | undefined {

@@ -6,10 +6,12 @@ import { PlacedPlant, calculatePlantSize } from "@/lib/plantData";
 import {
   generateBoxwood,
   generateDecurrentTree,
+  generateDwarfConifer,
   generateExcurrentTree,
   generateTree,
   leafCountForLAI,
   type BoxwoodParams,
+  type DwarfConiferParams,
   type BranchSegment,
   type CanopyCore,
   type LeafPlacement,
@@ -31,6 +33,16 @@ import {
   treeDimensions,
   type TreeAllometry,
 } from "@/lib/growth/treeAllometry";
+import {
+  HINOKI_CYPRESS,
+  HINOKI_GOLDEN_SPRITE,
+  HINOKI_NANA,
+  HINOKI_NANA_GRACILIS,
+  HINOKI_NANA_LUTEA,
+  HINOKI_NANA_PYRAMIDALIS,
+  coniferDimensions,
+  type ConiferGrowthModel,
+} from "@/lib/growth/dwarfConiferGrowth";
 
 // Species that opt into the procedural branches-and-leaves renderer. Everything
 // else stays on the clustered models in PlantModels.tsx — this is the phased
@@ -52,6 +64,12 @@ export const PROCEDURAL_SPECIES = new Set<string>([
   "heteromeles-arbutifolia",
   "carpenteria-californica",
   "rhamnus-californica",
+  "chamaecyparis-obtusa",
+  "chamaecyparis-obtusa-nana-gracilis",
+  "chamaecyparis-obtusa-nana-lutea",
+  "chamaecyparis-obtusa-nana",
+  "chamaecyparis-obtusa-nana-pyramidalis",
+  "chamaecyparis-obtusa-golden-sprite",
 ]);
 
 // Shape ratios handed to the decurrent/excurrent generators, derived per-age
@@ -74,6 +92,13 @@ interface Preset {
   allometry?: TreeAllometry;
   // Solid fill color for shrubs that return a canopy core (boxwood mounds).
   coreColor?: string;
+  // Dwarf conifers: height and width come from this anchored growth curve
+  // (lib/growth/dwarfConiferGrowth.ts). The generator is handed the year's
+  // width:height so the form tracks the measured proportions.
+  growthModel?: ConiferGrowthModel;
+  // Trunk radius as a fraction of height, for a growth-model tree whose
+  // generator stores radii as trunk fractions (excurrent) and has no DBH model.
+  trunkRadiusFrac?: number;
 }
 
 // Maple leans green with a scatter of amber/copper for the Sango-kaku turn;
@@ -118,6 +143,15 @@ const TOYON_PALETTE = ["#2E4A24", "#365A2A", "#3E6B30", "#2A4420", "#43702E", "#
 const BUSH_ANEMONE_PALETTE = ["#F2F2EC", "#EAEAE0", "#F6F4EE", "#E6E6DC", "#E8D77A", "#3E6B30"];
 // Coffeeberry: dense glossy deep greens, one dark tone for ripening berries.
 const COFFEEBERRY_PALETTE = ["#2C4A26", "#33572C", "#3C6633", "#284322", "#37602F", "#243A20"];
+// Hinoki 'Nana Gracilis' / species: deep, glossy, almost black-green fans with a
+// little brighter new growth.
+const HINOKI_PALETTE = ["#2F5A35", "#36663B", "#3E7142", "#467C48", "#36663B", "#508A4E", "#64A05A"];
+// 'Nana': darker still and very fine — the densest of the buns.
+const HINOKI_NANA_PALETTE = ["#2B5233", "#315C38", "#38673D", "#3F7143", "#315C38", "#4A7E4A"];
+// 'Nana Lutea': gold on the sunlit fans over a green-gold interior.
+const HINOKI_LUTEA_PALETTE = ["#D9B53C", "#E4C553", "#C9A22C", "#EFD66E", "#B08F2A", "#8C8A30", "#6C7A2E"];
+// 'Golden Sprite': bright butter-gold, scarcely any green.
+const HINOKI_SPRITE_PALETTE = ["#E6C447", "#EED45E", "#D9B23A", "#F3DE7A", "#C9A532", "#A8962E"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -507,6 +541,110 @@ const BOXWOOD_PRESETS: Record<string, Preset> = {
   }),
 };
 
+// ── Hinoki cypress (Chamaecyparis obtusa) ────────────────────────────────────
+// The dwarfs share generateDwarfConifer, tuned per cultivar for form (cone vs
+// bun), layering, and gold vs green. Sizes come from the anchored growth curves.
+function hinokiPreset(opts: {
+  model: ConiferGrowthModel;
+  palette: string[];
+  coreColor: string;
+  formMaturityAge: number;
+  leafSize: number;
+  params: Omit<DwarfConiferParams, "aspect">;
+}): Preset {
+  return {
+    leafKind: "hinoki-fan",
+    formMaturityAge: opts.formMaturityAge,
+    leafSize: opts.leafSize,
+    leafPalette: opts.palette,
+    coreColor: opts.coreColor,
+    barkThin: "#5A4232",
+    barkThick: "#5E3826", // reddish-brown, shredding in strips
+    growthModel: opts.model,
+    generate: (seed, m, shape) =>
+      generateDwarfConifer(seed, m, { ...opts.params, aspect: shape?.crownWidthRatio ?? 0.6 }),
+  };
+}
+
+const HINOKI_PRESETS: Record<string, Preset> = {
+  // 'Nana Gracilis' — broadly pyramidal, irregular, tiers of cupped shell fans.
+  "chamaecyparis-obtusa-nana-gracilis": hinokiPreset({
+    model: HINOKI_NANA_GRACILIS,
+    palette: HINOKI_PALETTE,
+    coreColor: "#22422A",
+    formMaturityAge: 20,
+    leafSize: 0.17,
+    params: { taper: 0.75, flatTop: 0, tiers: 16, fansPerTier: 28, irregularity: 0.6, leaders: 5, trunkRadius: 0.04, cup: 0.6 },
+  }),
+  // 'Nana Lutea' — the golden form of the same habit, a touch tidier.
+  "chamaecyparis-obtusa-nana-lutea": hinokiPreset({
+    model: HINOKI_NANA_LUTEA,
+    palette: HINOKI_LUTEA_PALETTE,
+    coreColor: "#4E4E20",
+    formMaturityAge: 20,
+    leafSize: 0.17,
+    params: { taper: 0.7, flatTop: 0, tiers: 15, fansPerTier: 28, irregularity: 0.45, leaders: 5, trunkRadius: 0.04, cup: 0.55 },
+  }),
+  // 'Nana' — miniature flat-topped bun of tightly stacked fans.
+  "chamaecyparis-obtusa-nana": hinokiPreset({
+    model: HINOKI_NANA,
+    palette: HINOKI_NANA_PALETTE,
+    coreColor: "#1B3420",
+    formMaturityAge: 12,
+    leafSize: 0.16,
+    params: { taper: 0.2, flatTop: 0.4, tiers: 10, fansPerTier: 36, irregularity: 0.25, leaders: 4, trunkRadius: 0.05, cup: 0.4 },
+  }),
+  // 'Nana Pyramidalis' — a miniature cone of stacked fans.
+  "chamaecyparis-obtusa-nana-pyramidalis": hinokiPreset({
+    model: HINOKI_NANA_PYRAMIDALIS,
+    palette: HINOKI_NANA_PALETTE,
+    coreColor: "#1B3420",
+    formMaturityAge: 12,
+    leafSize: 0.19,
+    params: { taper: 0.8, flatTop: 0, tiers: 12, fansPerTier: 20, irregularity: 0.2, leaders: 3, trunkRadius: 0.05, cup: 0.5 },
+  }),
+  // 'Golden Sprite' — a tiny rounded gold bun.
+  "chamaecyparis-obtusa-golden-sprite": hinokiPreset({
+    model: HINOKI_GOLDEN_SPRITE,
+    palette: HINOKI_SPRITE_PALETTE,
+    coreColor: "#6A5E22",
+    formMaturityAge: 12,
+    leafSize: 0.22,
+    params: { taper: 0.1, flatTop: 0.3, tiers: 9, fansPerTier: 32, irregularity: 0.2, leaders: 3, trunkRadius: 0.05, cup: 0.4 },
+  }),
+  // The species — a single-leader forest tree with drooping fan-tipped sprays.
+  "chamaecyparis-obtusa": {
+    leafKind: "hinoki-fan",
+    formMaturityAge: 30,
+    leafSize: 0.06,
+    leafPalette: HINOKI_PALETTE,
+    barkThin: "#7A4E36",
+    barkThick: "#6A3A26", // red-brown, peeling in long strips
+    growthModel: HINOKI_CYPRESS,
+    trunkRadiusFrac: 0.016, // ~9 in DBH on a 25 ft tree
+    generate: (seed, _m, shape) =>
+      generateExcurrentTree(seed, 1, {
+        trunkSegments: 12,
+        crownBase: shape?.crownBase ?? 0.08,
+        tiers: 11,
+        branchesPerTier: 5,
+        maxBranchLen: 0.14,
+        branchDroop: 0.3, // branch tips nod downward
+        apexFullness: 0.2,
+        subDepth: 2,
+        branchMin: 2,
+        branchMax: 3,
+        lengthFalloff: 0.6,
+        radiusFalloff: 0.6,
+        segmentsPerBranch: 3,
+        // Dense conifer (LAI ≈ 6), carried as fewer, larger fans so the leaf
+        // budget (MAX_LEAVES) reaches the top tiers instead of running out low.
+        leavesPerTwig: leafCountForLAI(3, 6),
+        phyllo: { pattern: "distichous", petioleAngle: 1.4, lad: 0.9, internode: 0.015 }, // flat fans
+      }),
+  },
+};
+
 const DEFAULT_PRESET: Preset = {
   leafKind: "maple",
   formMaturityAge: 20,
@@ -533,7 +671,7 @@ const DEFAULT_PRESET: Preset = {
 };
 
 // Boxwood cultivars fold into the preset table here so lookups stay a single map.
-Object.assign(PRESETS, BOXWOOD_PRESETS);
+Object.assign(PRESETS, BOXWOOD_PRESETS, HINOKI_PRESETS);
 
 export default function ProceduralPlant({
   plant,
@@ -551,6 +689,7 @@ export default function ProceduralPlant({
       const d = treeDimensions(preset.allometry, plant.age, plant.scale);
       return { height: d.height, width: d.crownWidth };
     }
+    if (preset.growthModel) return coniferDimensions(preset.growthModel, plant.age, plant.scale);
     return calculatePlantSize(plant.speciesId, plant.age, plant.scale);
   }, [preset, plant.speciesId, plant.age, plant.scale]);
 
@@ -574,11 +713,20 @@ export default function ProceduralPlant({
     return preset.generate(seed, 1, shape);
   }, [preset, seed, plant.scale]);
 
+  // Dwarf conifers take the year's measured width:height (quantized so the
+  // skeleton still rebuilds at most once per year).
+  const aspect = preset.growthModel
+    ? Math.round((coniferDimensions(preset.growthModel, year).width /
+        coniferDimensions(preset.growthModel, year).height) * 100) / 100
+    : 0;
   const otherSkeleton = useMemo(
-    () => (preset.allometry ? null : preset.generate(seed, maturity)),
+    () =>
+      preset.allometry
+        ? null
+        : preset.generate(seed, maturity, preset.growthModel ? { crownWidthRatio: aspect, crownBase: 0.08 } : undefined),
     // maturity is derived from year
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [preset, seed, year]
+    [preset, seed, year, aspect]
   );
 
   // Resolve what to draw this frame: revealed branches + their foliage, and the
@@ -597,7 +745,7 @@ export default function ProceduralPlant({
       return { segments, leaves, height: oakFull.height, radiusScale, core: undefined };
     }
     const sk = otherSkeleton!;
-    return { segments: sk.segments, leaves: sk.leaves, height: sk.height, radiusScale: 1, core: sk.core };
+    return { segments: sk.segments, leaves: sk.leaves, height: sk.height, radiusScale: preset.trunkRadiusFrac ?? 1, core: sk.core };
   }, [preset, oakFull, otherSkeleton, maturity, plant.age, plant.scale]);
 
   const leafTex = useMemo(() => getLeafTexture(preset.leafKind), [preset.leafKind]);
@@ -673,7 +821,9 @@ export default function ProceduralPlant({
   const widthScale =
     preset.allometry && oakFull
       ? (size.width / 5 / 2) / Math.max(0.05, oakFull.spread)
-      : heightScale;
+      : preset.growthModel && otherSkeleton
+        ? (size.width / 5 / 2) / Math.max(0.02, otherSkeleton.spread)
+        : heightScale;
   const scaleVec: [number, number, number] = [widthScale, heightScale, widthScale];
   // The group scales trunk radius by widthScale (radii live in x/z); correct it
   // so the DBH-derived thickness is preserved under the non-uniform scale.

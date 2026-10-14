@@ -5,6 +5,8 @@ import {
   generateBoxwood,
   generateDecurrentTree,
   generateExcurrentTree,
+  generateDwarfConifer,
+  dwarfConiferProfile,
   phyllotaxisLayout,
   laiFactor,
   leafCountForLAI,
@@ -322,5 +324,69 @@ describe("leaf orientation data", () => {
         )
       ).toBe(true);
     }
+  });
+});
+
+describe("generateDwarfConifer (Hinoki)", () => {
+  const nanaGracilis = {
+    aspect: 0.6,
+    taper: 0.55,
+    flatTop: 0,
+    tiers: 16,
+    fansPerTier: 24,
+    irregularity: 0.7,
+    leaders: 5,
+    trunkRadius: 0.04,
+    cup: 0.6,
+  };
+  const nana = { ...nanaGracilis, aspect: 0.9, taper: 0.1, flatTop: 0.7, tiers: 9, irregularity: 0.25 };
+
+  it("builds a finite, grounded skeleton normalized to unit height", () => {
+    const s = generateDwarfConifer(7, 1, nanaGracilis);
+    expect(s.height).toBe(1);
+    expect(s.leaves.length).toBeGreaterThan(200);
+    expect(s.leaves.length).toBeLessThanOrEqual(3000);
+    for (const l of s.leaves) {
+      for (const v of [...l.pos, ...l.dir, ...(l.face ?? [])]) expect(Number.isFinite(v)).toBe(true);
+      expect(l.pos[1]).toBeGreaterThan(0);
+      expect(l.pos[1]).toBeLessThanOrEqual(1.05);
+    }
+    expect(s.core).toBeDefined();
+  });
+
+  it("spread follows the growth model's width:height", () => {
+    expect(generateDwarfConifer(7, 1, nanaGracilis).spread).toBeCloseTo(0.3, 5);
+    expect(generateDwarfConifer(7, 1, nana).spread).toBeCloseTo(0.45, 5);
+  });
+
+  it("is deterministic and fills in with maturity", () => {
+    const a = generateDwarfConifer(11, 0.5, nanaGracilis);
+    const b = generateDwarfConifer(11, 0.5, nanaGracilis);
+    expect(a.leaves).toEqual(b.leaves);
+    const young = generateDwarfConifer(11, 0.05, nanaGracilis);
+    const old = generateDwarfConifer(11, 1, nanaGracilis);
+    expect(old.leaves.length).toBeGreaterThan(young.leaves.length * 2);
+  });
+
+  it("fans shingle the surface: rising, splayed outward, faces turned out", () => {
+    const s = generateDwarfConifer(3, 1, nanaGracilis);
+    let outward = 0;
+    let rising = 0;
+    for (const l of s.leaves) {
+      const rl = Math.hypot(l.pos[0], l.pos[2]) || 1;
+      const f = l.face!;
+      if ((f[0] * l.pos[0] + f[2] * l.pos[2]) / rl > 0.5) outward++;
+      if (l.dir[1] > 0.5) rising++;
+    }
+    expect(outward / s.leaves.length).toBeGreaterThan(0.9);
+    expect(rising / s.leaves.length).toBeGreaterThan(0.9);
+  });
+
+  it("a cone (taper) is narrower near the top than a bun", () => {
+    expect(dwarfConiferProfile({ taper: 0.8, flatTop: 0 }, 0.8)).toBeLessThan(
+      dwarfConiferProfile({ taper: 0.1, flatTop: 0.7 }, 0.8)
+    );
+    // flat top: the bun keeps most of its width high up
+    expect(dwarfConiferProfile({ taper: 0, flatTop: 0.7 }, 0.8)).toBeGreaterThan(0.75);
   });
 });

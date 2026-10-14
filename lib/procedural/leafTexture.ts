@@ -16,7 +16,8 @@ export type LeafKind =
   | "redwood"
   | "manzanita"
   | "redbud-flower"
-  | "pine";
+  | "pine"
+  | "hinoki-fan";
 
 const leafCache = new Map<LeafKind, THREE.Texture>();
 let barkBump: THREE.Texture | null = null;
@@ -31,6 +32,7 @@ export function getLeafTexture(kind: LeafKind): THREE.Texture {
   else if (kind === "manzanita") tex = drawManzanitaLeaf();
   else if (kind === "redbud-flower") tex = drawRedbudFlower();
   else if (kind === "pine") tex = drawPineTuft();
+  else if (kind === "hinoki-fan") tex = drawHinokiFan();
   else tex = drawMapleLeaf();
   leafCache.set(kind, tex);
   return tex;
@@ -351,6 +353,74 @@ function drawRedwoodSpray(): THREE.CanvasTexture {
     ctx.moveTo(cx, y);
     ctx.lineTo(cx - nlen, y + dy);
     ctx.stroke();
+  }
+
+  return makeTexture(c);
+}
+
+// A Hinoki cypress fan: a flattened spray of scale-leaf branchlets that forks
+// repeatedly in one plane into a rounded, shell-shaped fan. The scale leaves
+// press flat to the twigs, so each branchlet reads as a thick, beaded cord; the
+// beads are drawn as overlapping round scales. Neutral mask; color comes from
+// the per-instance palette. The fan opens from the stem at the bottom (+Y up).
+function drawHinokiFan(): THREE.CanvasTexture {
+  const w = 64;
+  const h = 80;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  ctx.clearRect(0, 0, w, h);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Deterministic jitter so the texture is identical every load.
+  let s = 7;
+  const rnd = () => {
+    s = (s * 16807) % 2147483647;
+    return s / 2147483647;
+  };
+
+  const beads = (x0: number, y0: number, x1: number, y1: number, r: number, tone: string) => {
+    const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / (r * 1.3)));
+    ctx.fillStyle = tone;
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      ctx.beginPath();
+      ctx.arc(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r * (1 - 0.25 * t), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  };
+
+  // Recursive planar fork: each branchlet splits in two, spreading into a fan.
+  const fork = (x: number, y: number, ang: number, len: number, r: number, depth: number) => {
+    const x1 = x + Math.sin(ang) * len;
+    const y1 = y - Math.cos(ang) * len;
+    ctx.strokeStyle = "#8e8e8e";
+    ctx.lineWidth = r * 1.6;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+    beads(x, y, x1, y1, r, depth === 0 ? "#bdbdbd" : "#ababab");
+    if (depth === 0) return;
+    const spread = 0.42 + rnd() * 0.12;
+    fork(x1, y1, ang - spread, len * (0.68 + rnd() * 0.08), r * 0.82, depth - 1);
+    fork(x1, y1, ang + spread, len * (0.68 + rnd() * 0.08), r * 0.82, depth - 1);
+  };
+
+  const baseX = w / 2;
+  const baseY = h * 0.97;
+  // Short stalk, then three primary branchlets fanning out.
+  ctx.strokeStyle = "#8a8a8a";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(baseX, baseY);
+  ctx.lineTo(baseX, baseY - h * 0.14);
+  ctx.stroke();
+  const hubY = baseY - h * 0.14;
+  for (const a of [-0.62, 0, 0.62]) {
+    fork(baseX, hubY, a, h * (a === 0 ? 0.26 : 0.22), 3.2, 3);
   }
 
   return makeTexture(c);

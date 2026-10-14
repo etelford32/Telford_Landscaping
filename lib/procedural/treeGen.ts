@@ -740,3 +740,183 @@ export function generateExcurrentTree(
 
   return { segments, leaves, height: 1, spread: maxR, maxOrder };
 }
+
+// ── dwarf conifer (Hinoki cypress cultivars and kin) ───────────────────────────
+// Chamaecyparis obtusa dwarfs don't branch like a tree you can see into: short
+// ascending leaders carry horizontal branchlets that end in flattened, cupped,
+// shell-shaped fans of scale leaves, stacked in layers so the plant reads as
+// tiers of overlapping shelves ('Nana Gracilis'), a flat-topped bun ('Nana'), or
+// a tight cone ('Nana Pyramidalis'). This generator builds that:
+//
+//   • an envelope (dome ↔ cone via `taper`, flattened crown via `flatTop`,
+//     tucked in at the soil line) whose width:height comes from the growth model
+//     each year, so form tracks the measured dimensions;
+//   • horizontal tiers of fans on nested rings — an outer shell and inner layers
+//     so gaps show depth, not ground — each fan held near-horizontal with its rim
+//     tipped up (`cup`) and a per-fan twist, which gives the whorled,
+//     shell-like texture;
+//   • a few hidden leaders and tier branchlets, plus a solid dark core.
+//
+// Young plants carry fewer tiers of relatively larger fans; with maturity the
+// layers multiply and each fan is a smaller fraction of the plant — the way a
+// real dwarf conifer fills in. Normalized to height 1.
+export interface DwarfConiferParams {
+  aspect: number; // envelope width:height (from the growth model)
+  taper: number; // 0 = globe/bun .. 1 = pointed cone
+  flatTop: number; // 0..1 flattening of the crown top and squaring of the sides
+  tiers: number; // layers of fans at full maturity
+  fansPerTier: number; // fans on the outer ring of the widest tier at full maturity
+  irregularity: number; // 0..1 lobing of the outline (Nana Gracilis is irregular)
+  leaders: number; // ascending main shoots from the base
+  trunkRadius: number;
+  cup: number; // 0..1 how much each fan's tip lifts above horizontal (shell-like cupping)
+}
+
+export function dwarfConiferProfile(p: Pick<DwarfConiferParams, "taper" | "flatTop">, h: number): number {
+  const x = Math.max(0, Math.min(1, h));
+  // Dome: a superellipse — higher exponent → flatter top and straighter sides.
+  const q = 2 + 6 * p.flatTop;
+  const dome = Math.pow(Math.max(0, 1 - Math.pow(x, q)), 1 / 2);
+  const cone = Math.pow(1 - x, 0.9);
+  // Tuck in at the soil line so the lowest fans skirt the ground, not bury in it.
+  const base = 0.62 + 0.38 * smoothstep(x / 0.18);
+  return (dome * (1 - p.taper) + cone * p.taper) * base;
+}
+
+export function generateDwarfConifer(seed: number, maturity: number, p: DwarfConiferParams): PlantSkeleton {
+  const rng = mulberry32(seed);
+  const segments: BranchSegment[] = [];
+  const leaves: LeafPlacement[] = [];
+  const m = Math.max(0, Math.min(1, maturity));
+  const sm = smoothstep(m);
+
+  const rMax = Math.max(0.05, p.aspect * 0.5);
+  const phA = rng() * Math.PI * 2;
+  const phB = rng() * Math.PI * 2;
+  const lobe = (theta: number, h: number) =>
+    1 +
+    p.irregularity * (0.16 * Math.sin(3 * theta + phA) + 0.1 * Math.sin(5 * theta + 4 * h + phB)) +
+    p.irregularity * 0.08 * Math.sin(7 * Math.PI * h + phA);
+
+  // Leaders: a central stem plus ascending shoots splayed out to the tiers.
+  segments.push({ p0: [0, 0, 0], p1: [0, 0.4, 0], r0: p.trunkRadius, r1: p.trunkRadius * 0.55, order: 0 });
+  const leaderTips: Vec[] = [[0, 0.4, 0]];
+  for (let i = 0; i < p.leaders; i++) {
+    const a = (i / p.leaders) * Math.PI * 2 + rng() * 0.7;
+    const h = 0.3 + rng() * 0.25;
+    const reach = rMax * dwarfConiferProfile(p, h) * (0.2 + rng() * 0.15);
+    const tip: Vec = [Math.cos(a) * reach, h, Math.sin(a) * reach];
+    segments.push({
+      p0: [0, 0.03 + rng() * 0.05, 0],
+      p1: tip,
+      r0: p.trunkRadius * 0.7,
+      r1: p.trunkRadius * 0.3,
+      order: 1,
+    });
+    leaderTips.push(tip);
+  }
+
+  // Fan size relative to the plant: big on a young plant, finer as it fills in.
+  const fanScale = 1.3 - 0.5 * sm;
+  const tiers = Math.max(3, Math.round(p.tiers * (0.45 + 0.55 * sm)));
+  const fill = 0.35 + 0.65 * sm;
+  // Rings per tier: outer shell plus inner layers (show depth through the gaps).
+  const rings = [
+    { frac: 0.97, share: 1.0 },
+    { frac: 0.72, share: 0.55 },
+    { frac: 0.45, share: 0.3 },
+  ];
+
+  for (let j = 0; j < tiers && leaves.length < MAX_LEAVES; j++) {
+    const h = 0.05 + 0.9 * ((j + 0.5) / tiers) + (rng() - 0.5) * (0.5 / tiers);
+    const prof = dwarfConiferProfile(p, h);
+    const R = rMax * prof;
+    if (R < 0.01) continue;
+    const tierPhase = rng() * Math.PI * 2;
+
+    // Branchlets from the axis out toward this tier's ring (mostly hidden).
+    const nb = Math.max(2, Math.round(3 + 3 * prof));
+    for (let b = 0; b < nb && segments.length < MAX_SEGMENTS; b++) {
+      const a = tierPhase + (b / nb) * Math.PI * 2;
+      const from = leaderTips[Math.floor(rng() * leaderTips.length)];
+      const y0 = Math.min(from[1], h);
+      segments.push({
+        p0: [from[0] * (y0 / Math.max(1e-3, from[1])), y0 - 0.04, from[2] * (y0 / Math.max(1e-3, from[1]))],
+        p1: [Math.cos(a) * R * 0.45, h, Math.sin(a) * R * 0.45],
+        r0: p.trunkRadius * 0.28,
+        r1: p.trunkRadius * 0.1,
+        order: 2,
+      });
+    }
+
+    for (const ring of rings) {
+      const count = Math.max(
+        ring.frac > 0.9 ? 3 : 1,
+        Math.round(p.fansPerTier * ring.share * fill * (R / rMax) * (0.9 + rng() * 0.2))
+      );
+      for (let f = 0; f < count && leaves.length < MAX_LEAVES; f++) {
+        const theta = tierPhase + (f / count) * Math.PI * 2 + (rng() - 0.5) * (Math.PI / count);
+        const r = R * ring.frac * lobe(theta, h) * (0.92 + rng() * 0.12);
+        const y = h + (rng() - 0.5) * (0.35 / tiers);
+        const radial: Vec = [Math.cos(theta), 0, Math.sin(theta)];
+        const tangent: Vec = [-radial[2], 0, radial[0]];
+        // Fans shingle the surface like overlapping shells: each rises from its
+        // seat and splays outward (more so with `cup`), its face turned out to
+        // the light. A random sideways lean gives the twisted, whorled texture.
+        const lean = (rng() - 0.5) * 0.9;
+        const splay = 0.35 + 0.45 * p.cup + (rng() - 0.5) * 0.25; // outward vs upward
+        const dir = norm([
+          radial[0] * splay + tangent[0] * lean,
+          1,
+          radial[2] * splay + tangent[2] * lean,
+        ]);
+        const face = norm([radial[0], 0.35 + (rng() - 0.5) * 0.3, radial[2]]);
+        // Inner rings are shaded, smaller growth.
+        const sc = fanScale * (0.75 + rng() * 0.4) * (0.7 + 0.3 * ring.frac);
+        // Seat the fan's base inside the envelope so its tip, not its stalk, makes
+        // the silhouette.
+        const seat = 0.78;
+        leaves.push({
+          pos: [radial[0] * r * seat, Math.max(0.02, y - 0.5 / tiers), radial[2] * r * seat],
+          dir,
+          face,
+          roll: rng() * Math.PI * 2,
+          scale: sc,
+          order: 3,
+        });
+      }
+    }
+  }
+
+  // Crown: fans standing up across the top so it isn't a hole. A cone needs a
+  // few at the tip; a dome or flat-topped bun needs its whole crown covered.
+  const apexH = 0.97;
+  const apexR = rMax * Math.max(dwarfConiferProfile(p, 0.9), 0.15);
+  const apexFans = Math.round((3 + 3 * sm) + p.fansPerTier * 0.5 * (1 - p.taper) * fill);
+  for (let i = 0; i < apexFans && leaves.length < MAX_LEAVES; i++) {
+    // Fibonacci disc: even coverage of the crown.
+    const a = i * GOLDEN_ANGLE + rng() * 0.3;
+    const rr = apexR * 0.85 * Math.sqrt((i + 0.5) / apexFans);
+    const radial: Vec = [Math.cos(a), 0, Math.sin(a)];
+    leaves.push({
+      pos: [radial[0] * rr, apexH - 0.08 - 0.1 * (rr / Math.max(1e-3, apexR)) * p.taper, radial[2] * rr],
+      dir: norm([radial[0] * 0.5, 1, radial[2] * 0.5]),
+      face: norm([radial[0], 0.6, radial[2]]),
+      roll: rng() * Math.PI * 2,
+      scale: fanScale * 0.8,
+      order: 3,
+    });
+  }
+
+  // Solid dark core well inside the fans: dense Hinoki foliage never shows sky
+  // (or soil) through the middle.
+  const cy = 0.4;
+  const core: CanopyCore = {
+    rx: rMax * dwarfConiferProfile(p, cy) * 0.5,
+    ry: 0.33,
+    cy,
+    taper: p.taper,
+  };
+
+  return { segments, leaves, height: 1, spread: rMax, maxOrder: 3, core };
+}

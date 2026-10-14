@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronUp, ArrowRight, Palette, Star, Wind, Flame,
   Shield, Flower, Maximize2, Clock
 } from "lucide-react";
-import { PLANT_CATALOG, PlantCatalogEntry, getHeightAtYear, ALL_SITUATIONS, ALL_GOALS } from "@/lib/plantCatalog";
+import { PLANT_CATALOG, PlantCatalogEntry, getHeightAtYear, formatHeight, growthClassLabel, ALL_SITUATIONS, ALL_GOALS } from "@/lib/plantCatalog";
 
 const TYPE_LABELS: Record<string, string> = {
   tree: "Trees",
@@ -176,6 +176,11 @@ function DetailModal({ plant, previewYear, onClose }: DetailModalProps) {
               <TreePine className="w-4 h-4 text-primary-400" />
               30-Year Growth Preview
             </h3>
+            {growthClassLabel(plant) && (
+              <p className="text-primary-300 text-xs mb-3">
+                {growthClassLabel(plant)} — American Conifer Society size class, modeled from published 10-year sizes
+              </p>
+            )}
             <div className="flex items-center gap-3 mb-3">
               <span className="text-primary-400 text-xs">Year 1</span>
               <input
@@ -191,7 +196,7 @@ function DetailModal({ plant, previewYear, onClose }: DetailModalProps) {
             <div className="flex items-center justify-between">
               <span className="text-primary-200 text-sm">
                 Year <span className="text-white font-bold">{localYear}</span>: approximately{" "}
-                <span className="text-primary-300 font-bold">{height.toFixed(1)} ft</span> tall
+                <span className="text-primary-300 font-bold">{formatHeight(height)}</span> tall
               </span>
               <span className="text-primary-400 text-xs">
                 Max: {plant.matureHeight[0]}–{plant.matureHeight[1]} ft
@@ -214,7 +219,7 @@ function DetailModal({ plant, previewYear, onClose }: DetailModalProps) {
                       />
                     </div>
                     <div className="text-primary-400 text-xs mt-1">yr{yr}</div>
-                    <div className="text-white text-xs">{h.toFixed(0)}ft</div>
+                    <div className="text-white text-xs">{formatHeight(h)}</div>
                   </div>
                 );
               })}
@@ -368,7 +373,7 @@ function PlantCard({ plant, previewYear, onClick }: PlantCardProps) {
       <div className="px-4 pb-2">
         <div className="flex items-center justify-between text-xs text-primary-400 mb-1">
           <span>Year {previewYear}</span>
-          <span>~{height.toFixed(0)} ft tall</span>
+          <span>~{formatHeight(height)} tall</span>
         </div>
         <GrowthBar value={height} max={heightMax || 1} />
       </div>
