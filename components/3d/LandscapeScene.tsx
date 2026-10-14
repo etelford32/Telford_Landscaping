@@ -115,6 +115,9 @@ function Lighting() {
         shadow-camera-right={22}
         shadow-camera-top={22}
         shadow-camera-bottom={-22}
+        // Offset along the surface normal so alpha-cut foliage that both casts
+        // and receives shadows (dense conifers) doesn't stripe with acne.
+        shadow-normalBias={0.02}
       />
       {/* Fill light — cool sky bounce */}
       <directionalLight position={[-8, 12, -5]} intensity={0.4} color="#C8DFF0" />

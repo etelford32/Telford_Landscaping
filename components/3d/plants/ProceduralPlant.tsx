@@ -99,6 +99,15 @@ interface Preset {
   // Trunk radius as a fraction of height, for a growth-model tree whose
   // generator stores radii as trunk fractions (excurrent) and has no DBH model.
   trunkRadiusFrac?: number;
+  // Leaf card shape: "fold" (default — a blade creased along its midrib) or
+  // "shell" (a square card cupped in both directions: a Hinoki fan spray).
+  leafShape?: "fold" | "shell";
+  // Palette is ordered dark → light and each leaf's `exposure` picks its tone:
+  // sunlit outer foliage light (gold cultivars: gold), shaded interior dark.
+  paletteByExposure?: boolean;
+  // Leaves cast and receive (alpha-cut) shadows — canopy self-shadowing. Worth
+  // its cost on dense, compact plants where the depth is the whole look.
+  leafShadows?: boolean;
 }
 
 // Maple leans green with a scatter of amber/copper for the Sango-kaku turn;
@@ -145,13 +154,16 @@ const BUSH_ANEMONE_PALETTE = ["#F2F2EC", "#EAEAE0", "#F6F4EE", "#E6E6DC", "#E8D7
 const COFFEEBERRY_PALETTE = ["#2C4A26", "#33572C", "#3C6633", "#284322", "#37602F", "#243A20"];
 // Hinoki 'Nana Gracilis' / species: deep, glossy, almost black-green fans with a
 // little brighter new growth.
-const HINOKI_PALETTE = ["#2F5A35", "#36663B", "#3E7142", "#467C48", "#36663B", "#508A4E", "#64A05A"];
+// Exposure-ordered (dark interior → sunlit new growth) for the Hinoki presets.
+const HINOKI_PALETTE = ["#21452A", "#2B5533", "#35643C", "#3F7345", "#4B844F", "#5A985A", "#74B26A"];
 // 'Nana': darker still and very fine — the densest of the buns.
-const HINOKI_NANA_PALETTE = ["#2B5233", "#315C38", "#38673D", "#3F7143", "#315C38", "#4A7E4A"];
+const HINOKI_NANA_PALETTE = ["#1E3E26", "#274C2F", "#305A37", "#39683F", "#447748", "#538A55"];
 // 'Nana Lutea': gold on the sunlit fans over a green-gold interior.
-const HINOKI_LUTEA_PALETTE = ["#D9B53C", "#E4C553", "#C9A22C", "#EFD66E", "#B08F2A", "#8C8A30", "#6C7A2E"];
+// Gold forms are only gold where the sun reaches; the shaded interior stays
+// green — exposure ordering paints exactly that.
+const HINOKI_LUTEA_PALETTE = ["#3E5E2A", "#62782E", "#9A9632", "#C4A630", "#DDB83A", "#EBCB52", "#F5DE74"];
 // 'Golden Sprite': bright butter-gold, scarcely any green.
-const HINOKI_SPRITE_PALETTE = ["#E6C447", "#EED45E", "#D9B23A", "#F3DE7A", "#C9A532", "#A8962E"];
+const HINOKI_SPRITE_PALETTE = ["#7A7A2C", "#A8962E", "#C9A532", "#D9B23A", "#E6C447", "#EED45E", "#F5E28A"];
 
 const PRESETS: Record<string, Preset> = {
   "acer-palmatum-sango-kaku": {
@@ -554,12 +566,15 @@ function hinokiPreset(opts: {
 }): Preset {
   return {
     leafKind: "hinoki-fan",
+    leafShape: "shell",
+    paletteByExposure: true,
+    leafShadows: true,
     formMaturityAge: opts.formMaturityAge,
     leafSize: opts.leafSize,
     leafPalette: opts.palette,
     coreColor: opts.coreColor,
-    barkThin: "#5A4232",
-    barkThick: "#5E3826", // reddish-brown, shredding in strips
+    barkThin: "#4A3628",
+    barkThick: "#4E3324", // reddish-brown, shredding in strips — mostly hidden
     growthModel: opts.model,
     generate: (seed, m, shape) =>
       generateDwarfConifer(seed, m, { ...opts.params, aspect: shape?.crownWidthRatio ?? 0.6 }),
@@ -574,7 +589,7 @@ const HINOKI_PRESETS: Record<string, Preset> = {
     coreColor: "#22422A",
     formMaturityAge: 20,
     leafSize: 0.17,
-    params: { taper: 0.75, flatTop: 0, tiers: 16, fansPerTier: 28, irregularity: 0.6, leaders: 5, trunkRadius: 0.04, cup: 0.6 },
+    params: { taper: 0.75, flatTop: 0, tiers: 18, fansPerTier: 30, irregularity: 0.6, leaders: 5, trunkRadius: 0.025, cup: 0.6, layers: 6, layering: 0.9 },
   }),
   // 'Nana Lutea' — the golden form of the same habit, a touch tidier.
   "chamaecyparis-obtusa-nana-lutea": hinokiPreset({
@@ -583,7 +598,7 @@ const HINOKI_PRESETS: Record<string, Preset> = {
     coreColor: "#4E4E20",
     formMaturityAge: 20,
     leafSize: 0.17,
-    params: { taper: 0.7, flatTop: 0, tiers: 15, fansPerTier: 28, irregularity: 0.45, leaders: 5, trunkRadius: 0.04, cup: 0.55 },
+    params: { taper: 0.7, flatTop: 0, tiers: 16, fansPerTier: 28, layers: 5, layering: 0.6, irregularity: 0.45, leaders: 5, trunkRadius: 0.04, cup: 0.55 },
   }),
   // 'Nana' — miniature flat-topped bun of tightly stacked fans.
   "chamaecyparis-obtusa-nana": hinokiPreset({
@@ -591,8 +606,8 @@ const HINOKI_PRESETS: Record<string, Preset> = {
     palette: HINOKI_NANA_PALETTE,
     coreColor: "#1B3420",
     formMaturityAge: 12,
-    leafSize: 0.16,
-    params: { taper: 0.2, flatTop: 0.4, tiers: 10, fansPerTier: 36, irregularity: 0.25, leaders: 4, trunkRadius: 0.05, cup: 0.4 },
+    leafSize: 0.12, // fine-textured: many small fans
+    params: { taper: 0.2, flatTop: 0.4, tiers: 14, fansPerTier: 52, irregularity: 0.25, leaders: 4, trunkRadius: 0.05, cup: 0.4 },
   }),
   // 'Nana Pyramidalis' — a miniature cone of stacked fans.
   "chamaecyparis-obtusa-nana-pyramidalis": hinokiPreset({
@@ -600,8 +615,8 @@ const HINOKI_PRESETS: Record<string, Preset> = {
     palette: HINOKI_NANA_PALETTE,
     coreColor: "#1B3420",
     formMaturityAge: 12,
-    leafSize: 0.19,
-    params: { taper: 0.8, flatTop: 0, tiers: 12, fansPerTier: 20, irregularity: 0.2, leaders: 3, trunkRadius: 0.05, cup: 0.5 },
+    leafSize: 0.13,
+    params: { taper: 0.8, flatTop: 0, tiers: 16, fansPerTier: 32, layers: 4, layering: 0.5, irregularity: 0.2, leaders: 3, trunkRadius: 0.05, cup: 0.5 },
   }),
   // 'Golden Sprite' — a tiny rounded gold bun.
   "chamaecyparis-obtusa-golden-sprite": hinokiPreset({
@@ -609,14 +624,16 @@ const HINOKI_PRESETS: Record<string, Preset> = {
     palette: HINOKI_SPRITE_PALETTE,
     coreColor: "#6A5E22",
     formMaturityAge: 12,
-    leafSize: 0.22,
-    params: { taper: 0.1, flatTop: 0.3, tiers: 9, fansPerTier: 32, irregularity: 0.2, leaders: 3, trunkRadius: 0.05, cup: 0.4 },
+    leafSize: 0.15,
+    params: { taper: 0.1, flatTop: 0.3, tiers: 13, fansPerTier: 48, irregularity: 0.2, leaders: 3, trunkRadius: 0.05, cup: 0.4 },
   }),
   // The species — a single-leader forest tree with drooping fan-tipped sprays.
   "chamaecyparis-obtusa": {
     leafKind: "hinoki-fan",
+    leafShape: "shell",
+    leafShadows: true,
     formMaturityAge: 30,
-    leafSize: 0.06,
+    leafSize: 0.085,
     leafPalette: HINOKI_PALETTE,
     barkThin: "#7A4E36",
     barkThick: "#6A3A26", // red-brown, peeling in long strips
@@ -640,7 +657,7 @@ const HINOKI_PRESETS: Record<string, Preset> = {
         // Dense conifer (LAI ≈ 6), carried as fewer, larger fans so the leaf
         // budget (MAX_LEAVES) reaches the top tiers instead of running out low.
         leavesPerTwig: leafCountForLAI(3, 6),
-        phyllo: { pattern: "distichous", petioleAngle: 1.4, lad: 0.9, internode: 0.015 }, // flat fans
+        phyllo: { pattern: "distichous", petioleAngle: 1.25, lad: 0.7, internode: 0.02 }, // flat fans, tips nodding
       }),
   },
 };
@@ -752,7 +769,24 @@ export default function ProceduralPlant({
 
   // Shared, stable geometry/material — only instance transforms change.
   const branchGeo = useMemo(() => new THREE.CylinderGeometry(1, 1, 1, 6, 1), []);
+  const leafShape = preset.leafShape ?? "fold";
   const leafGeo = useMemo(() => {
+    if (leafShape === "shell") {
+      // A cupped shell: a square card whose sides and tip curl up toward its
+      // face, like a Hinoki fan spray — it catches light in the bowl and throws
+      // a crescent of shade at the rim instead of reading as a flat sticker.
+      const g = new THREE.PlaneGeometry(1, 1, 6, 6);
+      g.translate(0, 0.5, 0); // pivot at the stalk (bottom edge)
+      const pa = g.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < pa.count; i++) {
+        const xn = pa.getX(i) / 0.5; // -1..1 across
+        const yn = pa.getY(i); // 0..1 along
+        pa.setZ(i, 0.2 * xn * xn * (0.4 + 0.6 * yn) + 0.12 * yn * yn);
+      }
+      pa.needsUpdate = true;
+      g.computeVertexNormals();
+      return g;
+    }
     // A leaf card folded along its midrib: the center column (x=0) rides a small
     // ridge in +Z while the two edges fall away, so the blade catches light and
     // self-shades like a real leaf instead of reading as a flat sheet.
@@ -767,7 +801,7 @@ export default function ProceduralPlant({
     g.translate(0, 0.6, 0); // pivot at the stem base so leaves splay from the twig
     g.computeVertexNormals();
     return g;
-  }, []);
+  }, [leafShape]);
   const branchMat = useMemo(() => {
     const bump = getBarkBumpTexture();
     return new THREE.MeshStandardMaterial({
@@ -811,6 +845,20 @@ export default function ProceduralPlant({
     [branchGeo, leafGeo, branchMat]
   );
   useEffect(() => () => leafMat.dispose(), [leafMat]);
+  // Shadow depth pass that honours the leaf's alpha cut-out — without it a
+  // shadow-casting card throws a solid square shadow.
+  const leafDepthMat = useMemo(
+    () =>
+      preset.leafShadows
+        ? new THREE.MeshDepthMaterial({
+            depthPacking: THREE.RGBADepthPacking,
+            map: leafTex,
+            alphaTest: 0.45,
+          })
+        : undefined,
+    [preset.leafShadows, leafTex]
+  );
+  useEffect(() => () => leafDepthMat?.dispose(), [leafDepthMat]);
 
   const worldScale = (size.height / 5) / draw.height;
   // Height scales uniformly to the allometric height. For allometric species
@@ -854,6 +902,8 @@ export default function ProceduralPlant({
           material={leafMat}
           leafSize={preset.leafSize}
           palette={preset.leafPalette}
+          byExposure={preset.paletteByExposure}
+          depthMaterial={leafDepthMat}
         />
       </group>
 
@@ -976,12 +1026,16 @@ function LeafInstances({
   material,
   leafSize,
   palette,
+  byExposure = false,
+  depthMaterial,
 }: {
   leaves: LeafPlacement[];
   geom: THREE.PlaneGeometry;
   material: THREE.Material;
   leafSize: number;
   palette: string[];
+  byExposure?: boolean; // palette ordered dark → light, indexed by leaf exposure
+  depthMaterial?: THREE.Material; // set → leaves cast/receive alpha-cut shadows
 }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const colors = useMemo(() => palette.map((c) => new THREE.Color(c)), [palette]);
@@ -1039,7 +1093,14 @@ function LeafInstances({
       m.compose(pos, q, scl);
       mesh.setMatrixAt(i, m);
       // pick a palette color, then vary lightness a touch per leaf
-      const pick = colors[Math.floor(frac(Math.sin((i + 1) * 78.233) * 43758.5453) * colors.length) % colors.length];
+      const noise = frac(Math.sin((i + 1) * 78.233) * 43758.5453);
+      const pickIdx =
+        byExposure && lf.exposure !== undefined
+          ? Math.round(
+              THREE.MathUtils.clamp(lf.exposure * 0.85 + (noise - 0.5) * 0.35, 0, 1) * (colors.length - 1)
+            )
+          : Math.floor(noise * colors.length) % colors.length;
+      const pick = colors[pickIdx];
       const v = 0.85 + 0.28 * frac(Math.sin((i + 1) * 12.9898) * 43758.5453);
       // Sun/shade: brighter toward the top of the canopy, dimmer in the interior.
       const sun = 0.82 + 0.26 * ((lf.pos[1] - botY) / canopySpan);
@@ -1048,14 +1109,16 @@ function LeafInstances({
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [leaves, leafSize, colors]);
+  }, [leaves, leafSize, colors, byExposure]);
 
   if (leaves.length === 0) return null;
   return (
     <instancedMesh
       ref={ref}
       args={[geom, material, leaves.length]}
-      castShadow={false}
+      castShadow={!!depthMaterial}
+      receiveShadow={!!depthMaterial}
+      customDepthMaterial={depthMaterial}
       frustumCulled={false}
     />
   );

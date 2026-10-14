@@ -358,14 +358,19 @@ function drawRedwoodSpray(): THREE.CanvasTexture {
   return makeTexture(c);
 }
 
-// A Hinoki cypress fan: a flattened spray of scale-leaf branchlets that forks
-// repeatedly in one plane into a rounded, shell-shaped fan. The scale leaves
-// press flat to the twigs, so each branchlet reads as a thick, beaded cord; the
-// beads are drawn as overlapping round scales. Neutral mask; color comes from
-// the per-instance palette. The fan opens from the stem at the bottom (+Y up).
+// A Hinoki cypress fan. Chamaecyparis obtusa carries its foliage in flattened,
+// pinnately branched sprays: a rachis with alternate side branchlets, each with
+// its own alternate branchlets, all clothed in tightly pressed blunt scale
+// leaves. Packed together they form a near-solid, scalloped, shell-shaped fan.
+// Drawn in passes so every branchlet keeps a dark outline (the shadowed gaps
+// between cords that give a real spray its texture), a light body, a row of
+// scale-leaf highlights, and a rounded blunt tip. Neutral mask; color comes from
+// the per-instance palette. The fan opens from the stalk at the bottom (+Y up).
 function drawHinokiFan(): THREE.CanvasTexture {
-  const w = 64;
-  const h = 80;
+  // Square: a Hinoki spray is about as wide as it is long (the renderer pairs
+  // it with a square, cupped shell card — see leafShape "shell").
+  const w = 144;
+  const h = 144;
   const c = document.createElement("canvas");
   c.width = w;
   c.height = h;
@@ -375,52 +380,113 @@ function drawHinokiFan(): THREE.CanvasTexture {
   ctx.lineJoin = "round";
 
   // Deterministic jitter so the texture is identical every load.
-  let s = 7;
+  let seed = 11;
   const rnd = () => {
-    s = (s * 16807) % 2147483647;
-    return s / 2147483647;
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
   };
 
-  const beads = (x0: number, y0: number, x1: number, y1: number, r: number, tone: string) => {
-    const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / (r * 1.3)));
-    ctx.fillStyle = tone;
-    for (let i = 0; i <= n; i++) {
-      const t = i / n;
+  type Cord = { x0: number; y0: number; x1: number; y1: number; w: number };
+  const cords: Cord[] = [];
+  const tips: { x: number; y: number; r: number }[] = [];
+
+  // Pinnate frond: rachis plus alternate side branchlets that shorten toward
+  // the tip, recursing one level. Angles are measured from +Y (up the card).
+  const frond = (x: number, y: number, ang: number, len: number, width: number, depth: number) => {
+    const steps = depth > 0 ? 7 : 4;
+    let px = x;
+    let py = y;
+    let a = ang;
+    for (let i = 0; i < steps; i++) {
+      const t = i / steps;
+      const segLen = len / steps;
+      a += (rnd() - 0.5) * 0.06;
+      const nx = px + Math.sin(a) * segLen;
+      const ny = py - Math.cos(a) * segLen;
+      const wseg = width * (1 - 0.45 * t);
+      cords.push({ x0: px, y0: py, x1: nx, y1: ny, w: wseg });
+      if (depth > 0 && i > 0) {
+        const side = i % 2 === 0 ? 1 : -1;
+        const childLen = len * (0.5 - 0.32 * t) * (0.85 + rnd() * 0.3);
+        frond(nx, ny, a + side * (0.62 + rnd() * 0.12), childLen, wseg * 0.86, depth - 1);
+      }
+      px = nx;
+      py = ny;
+    }
+    tips.push({ x: px, y: py, r: width * 0.62 });
+  };
+
+  const baseX = w / 2;
+  const baseY = h * 0.98;
+  const hubY = h * 0.88;
+  cords.push({ x0: baseX, y0: baseY, x1: baseX, y1: hubY, w: 6 });
+  // Five primary fronds splayed into a fan; the middle ones longest.
+  const primaries = [-0.9, -0.45, 0, 0.45, 0.9];
+  for (const a of primaries) {
+    const L = h * (0.66 - 0.17 * Math.abs(a));
+    frond(baseX, hubY, a, L, 8.5, 2);
+  }
+
+  // Fit the spray to the card (about the stalk base) so no frond is clipped.
+  const m = 3;
+  let maxDx = 1;
+  let maxDy = 1;
+  for (const cd of cords) {
+    maxDx = Math.max(maxDx, Math.abs(cd.x0 - baseX) + cd.w, Math.abs(cd.x1 - baseX) + cd.w);
+    maxDy = Math.max(maxDy, baseY - cd.y0 + cd.w, baseY - cd.y1 + cd.w);
+  }
+  const fit = Math.min((w / 2 - m) / maxDx, (baseY - m) / maxDy);
+  for (const cd of cords) {
+    cd.x0 = baseX + (cd.x0 - baseX) * fit;
+    cd.x1 = baseX + (cd.x1 - baseX) * fit;
+    cd.y0 = baseY + (cd.y0 - baseY) * fit;
+    cd.y1 = baseY + (cd.y1 - baseY) * fit;
+    cd.w *= fit;
+  }
+  for (const tp of tips) {
+    tp.x = baseX + (tp.x - baseX) * fit;
+    tp.y = baseY + (tp.y - baseY) * fit;
+    tp.r *= fit;
+  }
+
+  const drawCords = (extra: number, tone: string) => {
+    ctx.strokeStyle = tone;
+    for (const cd of cords) {
+      ctx.lineWidth = cd.w + extra;
       ctx.beginPath();
-      ctx.arc(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r * (1 - 0.25 * t), 0, Math.PI * 2);
+      ctx.moveTo(cd.x0, cd.y0);
+      ctx.lineTo(cd.x1, cd.y1);
+      ctx.stroke();
+    }
+    ctx.fillStyle = tone;
+    for (const tp of tips) {
+      ctx.beginPath();
+      ctx.arc(tp.x, tp.y, tp.r + extra / 2, 0, Math.PI * 2);
       ctx.fill();
     }
   };
 
-  // Recursive planar fork: each branchlet splits in two, spreading into a fan.
-  const fork = (x: number, y: number, ang: number, len: number, r: number, depth: number) => {
-    const x1 = x + Math.sin(ang) * len;
-    const y1 = y - Math.cos(ang) * len;
-    ctx.strokeStyle = "#8e8e8e";
-    ctx.lineWidth = r * 1.6;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
-    beads(x, y, x1, y1, r, depth === 0 ? "#bdbdbd" : "#ababab");
-    if (depth === 0) return;
-    const spread = 0.42 + rnd() * 0.12;
-    fork(x1, y1, ang - spread, len * (0.68 + rnd() * 0.08), r * 0.82, depth - 1);
-    fork(x1, y1, ang + spread, len * (0.68 + rnd() * 0.08), r * 0.82, depth - 1);
-  };
-
-  const baseX = w / 2;
-  const baseY = h * 0.97;
-  // Short stalk, then three primary branchlets fanning out.
-  ctx.strokeStyle = "#8a8a8a";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(baseX, baseY);
-  ctx.lineTo(baseX, baseY - h * 0.14);
-  ctx.stroke();
-  const hubY = baseY - h * 0.14;
-  for (const a of [-0.62, 0, 0.62]) {
-    fork(baseX, hubY, a, h * (a === 0 ? 0.26 : 0.22), 3.2, 3);
+  drawCords(2.2, "#7a7a7a"); // outline: shadowed gaps between cords
+  drawCords(0, "#cfcfcf"); // body
+  // Scale-leaf highlights: a row of small lighter facets down each cord.
+  ctx.fillStyle = "#ececec";
+  for (const cd of cords) {
+    const L = Math.hypot(cd.x1 - cd.x0, cd.y1 - cd.y0);
+    const n = Math.max(1, Math.round(L / (cd.w * 0.9)));
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n;
+      ctx.beginPath();
+      ctx.ellipse(
+        cd.x0 + (cd.x1 - cd.x0) * t,
+        cd.y0 + (cd.y1 - cd.y0) * t,
+        cd.w * 0.26,
+        cd.w * 0.18,
+        Math.atan2(cd.y1 - cd.y0, cd.x1 - cd.x0),
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
   }
 
   return makeTexture(c);

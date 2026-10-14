@@ -185,6 +185,9 @@ function Scene({
         shadow-camera-right={20}
         shadow-camera-top={20}
         shadow-camera-bottom={-20}
+        // Offset along the surface normal so alpha-cut foliage that both casts
+        // and receives shadows (dense conifers) doesn't stripe with acne.
+        shadow-normalBias={0.02}
       />
       <ambientLight intensity={0.6} />
       <hemisphereLight args={["#87CEEB", "#4a7c2f", 0.5]} />

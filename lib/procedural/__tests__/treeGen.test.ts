@@ -382,6 +382,58 @@ describe("generateDwarfConifer (Hinoki)", () => {
     expect(rising / s.leaves.length).toBeGreaterThan(0.9);
   });
 
+  it("clumps the outer shell into rosette sprays", () => {
+    // Fans in a spray share a seat: most outer fans have 2+ siblings within a
+    // whisker, which evenly shingled single fans would not.
+    const s = generateDwarfConifer(5, 1, nanaGracilis);
+    const near = (i: number) =>
+      s.leaves.filter((l, j) => j !== i && Math.hypot(
+        l.pos[0] - s.leaves[i].pos[0], l.pos[1] - s.leaves[i].pos[1], l.pos[2] - s.leaves[i].pos[2]
+      ) < 0.022).length; // rosette fans sit within ±0.01 of their seat
+    // Outer shell only (inner layers are deliberately single shaded fans).
+    const outerIdx = s.leaves
+      .map((l, i) => ({ i, rel: (l.exposure ?? 0) }))
+      .filter((x) => x.rel > 0.45)
+      .map((x) => x.i);
+    const sample = outerIdx.filter((_, k) => k % 5 === 0).map(near);
+    const clustered = sample.filter((n) => n >= 2).length / sample.length;
+    expect(clustered).toBeGreaterThan(0.6);
+  });
+
+  it("tags every fan with exposure: sunlit outer growth brighter than the shaded interior", () => {
+    const s = generateDwarfConifer(9, 1, nanaGracilis);
+    for (const l of s.leaves) {
+      expect(l.exposure).toBeGreaterThanOrEqual(0);
+      expect(l.exposure).toBeLessThanOrEqual(1);
+    }
+    // Radius relative to the outermost fan at the same height band.
+    const band = (l: { pos: number[] }) => Math.min(19, Math.floor(l.pos[1] * 20));
+    const r = (l: { pos: number[] }) => Math.hypot(l.pos[0], l.pos[2]);
+    const maxR = new Array(20).fill(1e-6);
+    for (const l of s.leaves) maxR[band(l)] = Math.max(maxR[band(l)], r(l));
+    const rel = (l: { pos: number[] }) => r(l) / maxR[band(l)];
+    const mean = (xs: typeof s.leaves) => xs.reduce((t, l) => t + (l.exposure ?? 0), 0) / xs.length;
+    const outer = s.leaves.filter((l) => rel(l) > 0.85);
+    const inner = s.leaves.filter((l) => rel(l) < 0.6);
+    expect(mean(outer)).toBeGreaterThan(mean(inner) + 0.2);
+  });
+
+  it("layering stacks shelves: the outline steps in and out up the plant", () => {
+    const count = (layering: number) => {
+      const s = generateDwarfConifer(4, 1, { ...nanaGracilis, irregularity: 0, layers: 6, layering });
+      // Max seat radius per height band, normalized by the smooth profile.
+      const bands = new Array(24).fill(0);
+      for (const l of s.leaves) {
+        const b = Math.min(23, Math.floor(l.pos[1] * 24));
+        bands[b] = Math.max(bands[b], Math.hypot(l.pos[0], l.pos[2]));
+      }
+      let reversals = 0;
+      for (let i = 2; i < 22; i++) if (bands[i] > bands[i - 1] * 1.04) reversals++;
+      return reversals;
+    };
+    expect(count(0.9)).toBeGreaterThan(count(0));
+  });
+
   it("a cone (taper) is narrower near the top than a bun", () => {
     expect(dwarfConiferProfile({ taper: 0.8, flatTop: 0 }, 0.8)).toBeLessThan(
       dwarfConiferProfile({ taper: 0.1, flatTop: 0.7 }, 0.8)

@@ -315,16 +315,34 @@ miniature heights in inches.
 
 **Form — `generateDwarfConifer`.** A Hinoki dwarf is layers of flattened, cupped,
 shell-shaped fans of scale leaves on short hidden leaders. The generator builds
-an envelope (dome ↔ cone via `taper`, flattened crown via `flatTop`, tucked in at
-the soil line) at the year's measured width:height, then fills horizontal tiers
-of fans on nested rings (outer shell plus inner layers, so gaps show depth). Fans
-**shingle the surface**: each rises from a seat inside the envelope, splays
-outward (`cup`), and turns its face out to the light, with a random sideways lean
-for the twisted texture. Domes and buns get their crown covered by a Fibonacci
-disc of fans. Young plants have fewer tiers of relatively larger fans; layers
-multiply with maturity. The `hinoki-fan` leaf card is a recursively forking
-planar spray of beaded scale-leaf cords. The species tree reuses
-`generateExcurrentTree` with the same fan card; since it has no DBH model, its
+an envelope (dome ↔ cone via `taper`, flattened crown via `flatTop`, tucked in
+briefly at the soil line) at the year's measured width:height, then:
+
+- **Shelves** (`layers`, `layering`): the envelope juts out at the base of each
+  layer and tucks in beneath the next, with per-plant jittered boundaries, so
+  'Nana Gracilis' reads as irregular stacked tiers with shaded undersides.
+- **Rosette sprays**: the outer shell grows as clumps, each branchlet ending in
+  3–5 fans splayed like a hand of cards and standing proud of the envelope by a
+  random amount. Clumping gives the tufted outline and the dark pockets between
+  tufts; inner layers are single shaded fans so gaps show depth, not soil.
+- **Exposure**: every fan carries `exposure` (0 shaded interior … 1 sunlit),
+  from how proud and how high it sits, whether it is on a shelf's lit rim, and
+  whether it is outer or inner growth. Presets with `paletteByExposure` order
+  their palette dark → light and index it by exposure. That's what makes gold
+  cultivars correct: 'Nana Lutea' and 'Golden Sprite' are only gold where light
+  reaches, green-gold to green inside.
+- The crown of domes and buns is covered by a Fibonacci disc of fans; young
+  plants have fewer layers of relatively larger fans.
+
+**Rendering.** The `hinoki-fan` card is a pinnately branched spray (rachis →
+alternate branchlets → alternate branchlets) with dark outlines between cords,
+scale-leaf highlights, and blunt rounded tips, fitted to a square card. Hinoki
+presets use `leafShape: "shell"`, a square card cupped in both directions so a
+fan holds light in its bowl and shades its rim, and `leafShadows`: fans cast and
+receive alpha-cut shadows via a `MeshDepthMaterial` with the leaf map, giving
+real self-shadowing in the pockets. The hero and design-tool suns use
+`shadow-normalBias` to keep that self-shadowing free of acne. The species tree
+reuses `generateExcurrentTree` with the same card; it has no DBH model, so its
 preset sets `trunkRadiusFrac`.
 
 ## Worked examples
