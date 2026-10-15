@@ -126,6 +126,8 @@ Four forms, picked to match real architecture:
   droop, the top lifts. *(Coast redwood, most conifers.)*
 - **`generateShrubShell`** — dense Fibonacci-sphere leaf shell over a stub.
   *(Boxwood and other sheared evergreens.)*
+- **`generateDwarfConifer`** — tiered, shingled fan sprays over hidden leaders
+  and a dark core. *(Hinoki cypress dwarfs — see §8.)*
 
 Common conventions:
 
@@ -267,6 +269,81 @@ self-shade and read 3D. The leaf material adds a dim, species-hued emissive
 (masked by the leaf texture) that fakes subsurface translucency — backlit and
 shadowed leaves keep their colour instead of going black — plus a per-leaf
 sun/shade tint that brightens the top of the canopy and dims the interior.
+
+## 8. Dwarf conifers — Hinoki cypress (`dwarfConiferGrowth.ts`)
+
+UTD allometry assumes a trunk worth measuring; a 6-inch bun of *Chamaecyparis
+obtusa* 'Nana' has none. Dwarf conifers are measured differently: growth per year
+and size after ten years in the ground, the basis of the **American Conifer
+Society size classes**:
+
+| class | growth | size at 10 yr |
+|---|---|---|
+| miniature | < 1 in/yr | < 1 ft |
+| dwarf | 1–6 in/yr | 1–5 ft |
+| intermediate | 6–12 in/yr | 5–10 ft |
+| large | ≥ 12 in/yr | ≥ 10 ft |
+
+**Growth model.** Height and width each follow a Chapman-Richards curve with
+p = 1 (monomolecular):
+
+```
+S(t) = Smax − (Smax − S0) · e^(−k t)
+```
+
+Each cultivar is **anchored** to three published numbers (planted size, ACS
+10-year size, ultimate size), and `k` is solved so the curve passes exactly
+through the 10-year anchor: `k = −ln((Smax − S10)/(Smax − S0)) / 10`. The curve
+then grows near-linearly for the first couple of decades (the ACS observes that
+dwarfs keep their stated rate) and bends over toward old-age size. The tests
+check that each cultivar's derived early growth rate falls in its published ACS
+class, that the curve hits the published sizes, and that it never shrinks.
+
+| cultivar | ACS class | rate | 10 yr (H × W) | source |
+|---|---|---|---|---|
+| species *C. obtusa* | large | ~14 in/yr | 15 × 6.5 ft | NC State, Boone Co. Arboretum |
+| 'Nana Gracilis' | dwarf | ~3.3 in/yr | 4 × 2.4 ft | ACS (3–6 in/yr, 4–5 ft), NC State (3–4 ft) |
+| 'Nana Lutea' | dwarf | ~3.3 in/yr | 3.75 × 2.3 ft | ACS (~50 × 30 in), OSU |
+| 'Nana' | miniature | ~0.4 in/yr | 7 × 6 in | ACS (6–8 × 5–6 in), NC State |
+| 'Nana Pyramidalis' | miniature | ~0.8 in/yr | 11 × 7 in | ACS (< 12 in) |
+| 'Golden Sprite' | miniature | ~0.3 in/yr | 5 × 5 in | ACS (4–6 in) |
+
+The same curve drives everything: `PLANT_LIBRARY` growth arrays are sampled from
+it (`growthSeries`), the renderer sizes the plant from it (`coniferDimensions`),
+and the public catalogue reads it directly (`growthModel` on the entry), showing
+miniature heights in inches.
+
+**Form — `generateDwarfConifer`.** A Hinoki dwarf is layers of flattened, cupped,
+shell-shaped fans of scale leaves on short hidden leaders. The generator builds
+an envelope (dome ↔ cone via `taper`, flattened crown via `flatTop`, tucked in
+briefly at the soil line) at the year's measured width:height, then:
+
+- **Shelves** (`layers`, `layering`): the envelope juts out at the base of each
+  layer and tucks in beneath the next, with per-plant jittered boundaries, so
+  'Nana Gracilis' reads as irregular stacked tiers with shaded undersides.
+- **Rosette sprays**: the outer shell grows as clumps, each branchlet ending in
+  3–5 fans splayed like a hand of cards and standing proud of the envelope by a
+  random amount. Clumping gives the tufted outline and the dark pockets between
+  tufts; inner layers are single shaded fans so gaps show depth, not soil.
+- **Exposure**: every fan carries `exposure` (0 shaded interior … 1 sunlit),
+  from how proud and how high it sits, whether it is on a shelf's lit rim, and
+  whether it is outer or inner growth. Presets with `paletteByExposure` order
+  their palette dark → light and index it by exposure. That's what makes gold
+  cultivars correct: 'Nana Lutea' and 'Golden Sprite' are only gold where light
+  reaches, green-gold to green inside.
+- The crown of domes and buns is covered by a Fibonacci disc of fans; young
+  plants have fewer layers of relatively larger fans.
+
+**Rendering.** The `hinoki-fan` card is a pinnately branched spray (rachis →
+alternate branchlets → alternate branchlets) with dark outlines between cords,
+scale-leaf highlights, and blunt rounded tips, fitted to a square card. Hinoki
+presets use `leafShape: "shell"`, a square card cupped in both directions so a
+fan holds light in its bowl and shades its rim, and `leafShadows`: fans cast and
+receive alpha-cut shadows via a `MeshDepthMaterial` with the leaf map, giving
+real self-shadowing in the pockets. The hero and design-tool suns use
+`shadow-normalBias` to keep that self-shadowing free of acne. The species tree
+reuses `generateExcurrentTree` with the same card; it has no DBH model, so its
+preset sets `trunkRadiusFrac`.
 
 ## Worked examples
 
