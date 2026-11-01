@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     "landscape subcontractor Placer County, landscape subcontractor Roseville, irrigation subcontractor, erosion control installation, planting subcontractor, vegetation management contractor, C-27 landscape contractor Auburn, send plans for bid",
   alternates: { canonical: "/for-contractors" },
   openGraph: {
-    title: "For Contractors — Landscape Subcontract Scopes",
+    title: "For Contractors — Landscape Subcontracting",
     description:
       "Installation, planting, irrigation, erosion control, and vegetation management to your plans and schedule. Send plans for a quote.",
     type: "website",
@@ -107,7 +107,7 @@ const scopes: Scope[] = [
 const steps = [
   {
     title: "Send the plans",
-    body: "Use the form or email the set. Tell us the location, the scopes you need priced, rough quantities, and your schedule.",
+    body: "Use the form or email the set. Tell us the location, which work you need priced, rough quantities, and your schedule.",
   },
   {
     title: "We take off and clarify",
@@ -115,7 +115,7 @@ const steps = [
   },
   {
     title: "Itemized quote",
-    body: "You get a line-item number by scope with inclusions, exclusions, and the schedule we can hold.",
+    body: "You get a line-item price for each part of the work, with inclusions, exclusions, and the schedule we can hold.",
   },
   {
     title: "Build and close out",
@@ -125,7 +125,7 @@ const steps = [
 
 const checklist = [
   { label: "Location", detail: "Address or cross streets and city" },
-  { label: "Scope", detail: "Which of the five scopes you want priced" },
+  { label: "Work needed", detail: "Installation, planting, irrigation, erosion control, vegetation management — whichever apply" },
   { label: "Quantities", detail: "SF, LF, plant counts, acres — or point us to the sheets" },
   { label: "Schedule", detail: "Start date, duration, phasing, and bid due date" },
   { label: "Plans", detail: "Landscape, irrigation, and erosion-control sheets plus specs" },
@@ -141,10 +141,10 @@ export default function ForContractorsPage() {
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-12 lg:gap-16 items-center pt-16 pb-20 lg:pt-20 lg:pb-24">
           <div>
             <div className="inline-flex items-center gap-2 text-[12.5px] font-bold tracking-[0.22em] uppercase text-primary-300 mb-5">
-              <HardHat className="w-4 h-4" /> For Contractors · Subcontract Scopes
+              <HardHat className="w-4 h-4" /> For Contractors · Landscape Subcontracting
             </div>
             <h1 className="text-[clamp(30px,3.6vw,46px)] font-extrabold tracking-tight leading-[1.14] mb-5">
-              Your landscape scope, <span className="text-primary-300">built to plan</span> and on schedule.
+              Your landscape package, <span className="text-primary-300">built to plan</span> and on schedule.
             </h1>
             <p className="text-[17px] text-primary-100/90 mb-8 max-w-[50ch] leading-relaxed">
               We work as the landscape subcontractor for general contractors, builders, and developers
@@ -191,7 +191,7 @@ export default function ForContractorsPage() {
         <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
           {[
             { stat: "C-27", label: "California licensed landscape contractor, bonded and insured" },
-            { stat: "5 scopes", label: "priced separately or as one landscape package" },
+            { stat: "One sub", label: "for the whole landscape package, or just the part you need" },
             { stat: "1 business day", label: "to acknowledge your plans and confirm the bid date" },
           ].map((f) => (
             <div key={f.stat}>
@@ -207,10 +207,10 @@ export default function ForContractorsPage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h2 className="text-[clamp(27px,3.2vw,36px)] font-extrabold tracking-tight text-gray-900 mb-3.5">
-              Subcontract scopes we bid
+              What we can do on your job
             </h2>
             <p className="text-[16.5px] text-gray-600">
-              Price one scope or the whole landscape package. We build to your plans and specs, and flag
+              Hire us for one piece — just the irrigation, just the erosion control — or the whole landscape package. We build to your plans and specs, and flag
               conflicts before they become change orders.
             </p>
           </div>
@@ -283,7 +283,7 @@ export default function ForContractorsPage() {
               Send Plans for a Quote
             </div>
             <h2 className="text-[clamp(27px,3.2vw,36px)] font-extrabold tracking-tight text-gray-900 mb-4">
-              Get your landscape scope priced
+              Get a price on your landscape work
             </h2>
             <p className="text-[16.5px] text-gray-600 mb-6 leading-relaxed">
               Fill out the form with a link to the plans, or email the set directly. The more of this we
@@ -316,7 +316,7 @@ export default function ForContractorsPage() {
               </a>
             </div>
             <p className="text-sm text-gray-500 mt-4">
-              The email opens pre-filled with location, scope, quantities, and schedule — just attach the
+              The email opens pre-filled with blanks for location, work needed, quantities, and schedule — just attach the
               PDFs. Sending to{" "}
               <a href={plansMailto} className="text-primary-700 font-semibold hover:underline break-all">
                 {siteConfig.email}
