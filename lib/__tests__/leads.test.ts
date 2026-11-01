@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { parseLead, leadEmail, leadInbox, MESSAGE_MAX, type Lead } from '../leads';
+import { parseLead, leadEmail, leadInbox, MESSAGE_MAX, QUANTITIES_MAX, type Lead } from '../leads';
 
 const RECEIVED = new Date('2026-09-23T16:41:00Z');
 
@@ -141,6 +141,80 @@ describe('leadEmail', () => {
     const { html } = leadEmail(lead({ name: 'Jane', phone: '(916) 555-0100', email: 'jane@example.com' }));
     expect(html).toContain('href="tel:9165550100"');
     expect(html).toContain('href="mailto:jane@example.com"');
+  });
+});
+
+const CONTRACTOR = {
+  name: 'Sam Builder',
+  phone: '916-555-0199',
+  email: 'sam@gcbuilders.example',
+  service: 'Contractor — plans for quote',
+  project: {
+    company: 'GC Builders Inc.',
+    projectName: 'Oak Ridge Phase 2',
+    location: 'Sierra College Blvd & King Rd, Loomis',
+    scope: ['Irrigation', 'Planting', 'Bogus scope'],
+    quantities: '220 shrubs (5 gal)\n3,500 LF drip',
+    schedule: 'Start Jan 12, 6 weeks',
+    bidDue: '2026-11-20',
+    plansLink: 'https://drive.example.com/plans?id=1&v=2',
+  },
+};
+
+describe('contractor quote requests', () => {
+  it('parses the project and keeps only known scopes, in canonical order', () => {
+    const l = lead(CONTRACTOR);
+    expect(l.project?.scope).toEqual(['Planting', 'Irrigation']);
+    expect(l.project?.location).toBe('Sierra College Blvd & King Rd, Loomis');
+    expect(l.project?.company).toBe('GC Builders Inc.');
+  });
+
+  it('leaves ordinary leads without a project', () => {
+    expect(lead({ name: 'Jane', phone: '1' }).project).toBeUndefined();
+  });
+
+  it('requires a project location', () => {
+    expect(parseLead({ ...CONTRACTOR, project: { ...CONTRACTOR.project, location: '  ' } })).toEqual({
+      ok: false,
+      error: 'Please enter the project location.',
+    });
+  });
+
+  it('requires at least one recognised scope', () => {
+    expect(parseLead({ ...CONTRACTOR, project: { ...CONTRACTOR.project, scope: ['Roofing'] } })).toEqual({
+      ok: false,
+      error: 'Please choose at least one scope of work.',
+    });
+    expect(parseLead({ ...CONTRACTOR, project: { ...CONTRACTOR.project, scope: 'Planting' } }).ok).toBe(false);
+  });
+
+  it('rejects over-long quantities and non-object projects', () => {
+    const long = { ...CONTRACTOR, project: { ...CONTRACTOR.project, quantities: 'x'.repeat(QUANTITIES_MAX + 1) } };
+    expect(parseLead(long).ok).toBe(false);
+    expect(parseLead({ ...CONTRACTOR, project: 'plans' }).ok).toBe(false);
+  });
+
+  it('puts company, location, and scope in the subject', () => {
+    expect(leadEmail(lead(CONTRACTOR)).subject).toBe(
+      'Plans for quote: GC Builders Inc. / Sam Builder — Sierra College Blvd & King Rd, Loomis — Planting, Irrigation'
+    );
+  });
+
+  it('includes location, scope, quantities, schedule, and plans in the body', () => {
+    const { text, html } = leadEmail(lead(CONTRACTOR));
+    expect(text).toContain('New subcontract quote request');
+    expect(text).toContain('Company:         GC Builders Inc.');
+    expect(text).toContain('Location:        Sierra College Blvd & King Rd, Loomis');
+    expect(text).toContain('Scope:           Planting, Irrigation');
+    expect(text).toContain('Schedule:        Start Jan 12, 6 weeks');
+    expect(text).toContain('Bid due:         2026-11-20');
+    expect(text).toContain('3,500 LF drip');
+    expect(html).toContain('<a href="https://drive.example.com/plans?id=1&amp;v=2">');
+  });
+
+  it('does not link a plans value that is not an http(s) URL', () => {
+    const l = lead({ ...CONTRACTOR, project: { ...CONTRACTOR.project, plansLink: 'javascript:alert(1)' } });
+    expect(leadEmail(l).html).not.toContain('href="javascript:');
   });
 });
 

@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Flame,
   Leaf,
+  HardHat,
 } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
@@ -55,6 +56,7 @@ const serviceLinks = [
   { href: "/fertilization", label: "Fertilization", icon: Droplets },
   { href: "/irrigation", label: "Irrigation", icon: Droplets },
   { href: "/plant-care", label: "Plant Care", icon: Sprout },
+  { href: "/for-contractors", label: "For Contractors", icon: HardHat },
 ];
 
 export default function Navigation() {
