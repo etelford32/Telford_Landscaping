@@ -47,6 +47,17 @@ const services = [
   },
 ];
 
+// Headline drainage scope for the homepage band; the full detail lives on
+// /drainage-trenching.
+const drainageServices = [
+  { title: "French Drains", body: "Stone-and-pipe trenches that intercept groundwater." },
+  { title: "Surface-Water Collection", body: "Catch basins, channel drains, downspout tie-ins." },
+  { title: "Drain Piping", body: "Solid and perforated lines laid to a steady fall." },
+  { title: "Excavation & Trenching", body: "Machine where there's room, by hand near roots." },
+  { title: "Backfill & Compaction", body: "Compacted lifts, so trench lines never sink." },
+  { title: "Landscape Grading", body: "Positive slope away from the house, laser-checked." },
+];
+
 // Same photos and titles the /portfolio page shows — sourced from one place so
 // the carousel can't drift from the gallery. Leading spec doubles as the caption.
 const portfolioSlides = projects.map((p) => ({
@@ -226,6 +237,59 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── DRAINAGE & TRENCHING feature band ── */}
+      <section data-cta-location="drainage-band" className="pb-20 lg:pb-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-900 via-primary-800 to-sky-950 text-white shadow-[0_26px_52px_-22px_rgba(20,83,45,0.5)]">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-10 px-8 py-12 md:px-14 md:py-[52px] items-center">
+              <div>
+                <div className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-sky-300 mb-3.5">
+                  Drainage &amp; Trenching
+                </div>
+                <h2 className="text-[clamp(25px,3vw,34px)] font-extrabold tracking-tight mb-3.5">
+                  Standing water, soggy lawn, or a slope that washes out?
+                </h2>
+                <p className="text-[15.5px] text-primary-100/90 leading-relaxed mb-7 max-w-[52ch]">
+                  Foothill clay holds water against foundations, walls, and roots all winter. We dig,
+                  pipe, backfill, and regrade so it leaves on its own — then put the landscape back so
+                  you never see the work.
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href="/drainage-trenching"
+                    data-cta="explore-drainage"
+                    className="btn-3d btn-3d-dark inline-flex items-center gap-2 bg-white text-primary-900 font-bold px-7 py-3.5 rounded-xl hover:bg-primary-50"
+                  >
+                    Explore Drainage Solutions <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href="#contact"
+                    data-cta="service-drainage"
+                    className="btn-3d btn-3d-dark inline-flex items-center gap-2 bg-white/10 border-2 border-white/50 hover:bg-white/20 text-white font-semibold px-7 py-3.5 rounded-xl"
+                  >
+                    Get a Bid
+                  </Link>
+                </div>
+              </div>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {drainageServices.map((d) => (
+                  <li
+                    key={d.title}
+                    className="rounded-xl bg-white/[0.07] border border-white/15 px-4 py-3.5"
+                  >
+                    <div className="flex items-center gap-2 font-bold text-[15px] mb-1">
+                      <CheckCircle2 className="w-4 h-4 text-sky-300 flex-shrink-0" />
+                      {d.title}
+                    </div>
+                    <div className="text-[13px] text-primary-100/80 leading-snug">{d.body}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
