@@ -237,6 +237,13 @@ export default function LeadPageTemplate({ content }: { content: LeadPageContent
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <Link
+              href="/drainage-trenching"
+              data-cta="explore-drainage"
+              className="px-5 py-2.5 rounded-xl bg-white/10 border border-white/25 hover:bg-white/20 font-semibold text-sm transition"
+            >
+              Drainage &amp; Trenching
+            </Link>
+            <Link
               href="/fire-wise-landscaping"
               data-cta="explore-fire"
               className="px-5 py-2.5 rounded-xl bg-white/10 border border-white/25 hover:bg-white/20 font-semibold text-sm transition"

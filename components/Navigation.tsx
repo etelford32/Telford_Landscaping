@@ -21,7 +21,9 @@ import {
   ChevronDown,
   Flame,
   Leaf,
+  Waves,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
 import { useRouter } from "next/navigation";
 import { siteConfig } from "@/lib/siteConfig";
@@ -48,7 +50,9 @@ const BURST_LEAVES = [
 ];
 
 // Specialty / lead pages, grouped under a "Services" dropdown on desktop.
-const serviceLinks = [
+// Drainage leads the list and is flagged `featured` so it gets an accent row.
+const serviceLinks: { href: string; label: string; icon: LucideIcon; featured?: boolean }[] = [
+  { href: "/drainage-trenching", label: "Drainage & Trenching", icon: Waves, featured: true },
   { href: "/fire-wise-landscaping", label: "Fire-Wise Landscaping", icon: Flame },
   { href: "/water-smart-landscaping", label: "Water-Smart Landscaping", icon: Droplets },
   { href: "/native-low-maintenance", label: "Low-Maintenance Native", icon: Leaf },
@@ -324,9 +328,13 @@ export default function Navigation() {
                           <Link
                             key={link.href}
                             href={link.href}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700 transition-all"
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                              link.featured
+                                ? "mb-1 bg-gradient-to-r from-sky-50 to-primary-50 border border-sky-200 text-gray-900 hover:border-sky-300 hover:text-primary-800"
+                                : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700"
+                            }`}
                           >
-                            <span className="p-1.5 rounded-lg bg-primary-50 text-primary-600">
+                            <span className={`p-1.5 rounded-lg ${link.featured ? "bg-sky-600 text-white" : "bg-primary-50 text-primary-600"}`}>
                               <Icon className="w-4 h-4" />
                             </span>
                             {link.label}
@@ -489,10 +497,14 @@ export default function Navigation() {
                           <Link
                             key={link.href}
                             href={link.href}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-primary-700 transition-all"
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                              link.featured
+                                ? "bg-sky-50 border border-sky-200 text-gray-900"
+                                : "text-gray-700 hover:bg-green-50 hover:text-primary-700"
+                            }`}
                             onClick={() => setIsOpen(false)}
                           >
-                            <Icon className="w-4 h-4 text-primary-600" />
+                            <Icon className={`w-4 h-4 ${link.featured ? "text-sky-700" : "text-primary-600"}`} />
                             <span>{link.label}</span>
                           </Link>
                         );

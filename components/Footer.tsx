@@ -53,6 +53,11 @@ export default function Footer() {
             <h3 className="text-lg font-semibold mb-4">Services</h3>
             <ul className="space-y-2">
               <li>
+                <Link href="/drainage-trenching" className="text-gray-400 hover:text-primary-400 transition-colors">
+                  Drainage &amp; Trenching
+                </Link>
+              </li>
+              <li>
                 <Link href="/fire-wise-landscaping" className="text-gray-400 hover:text-primary-400 transition-colors">
                   Fire-Wise Landscaping
                 </Link>
