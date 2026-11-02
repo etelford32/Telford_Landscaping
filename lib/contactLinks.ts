@@ -37,3 +37,32 @@ export function bidRequestMailto(projectTitle?: string): string {
 
   return `mailto:${siteConfig.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
+
+/**
+ * mailto: href for a general contractor sending a plan set to bid. Email is
+ * the one channel that carries PDF attachments, so the body scaffolds the
+ * same facts the For Contractors form asks for — location, scope,
+ * quantities, schedule — and reminds them to attach the plans.
+ */
+export function plansForQuoteMailto(): string {
+  const subject = `Plans for quote — subcontract landscape scope`;
+
+  const body = [
+    "Hi Elliot,",
+    "",
+    "Please quote the landscape scope on the attached plans.",
+    "",
+    "Company / contact:",
+    "Project name:",
+    "Project location (address or cross streets, city):",
+    "Scope (installation / planting / irrigation / erosion control / vegetation management):",
+    "Quantities (sq ft, LF, plant counts, acres — or see plan sheets):",
+    "Schedule (start date, duration, phasing):",
+    "Bid due:",
+    "",
+    "Plans: attached / link:",
+    "",
+  ].join("\r\n");
+
+  return `mailto:${siteConfig.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}

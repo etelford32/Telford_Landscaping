@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Flame,
   Leaf,
+  HardHat,
   Waves,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -59,6 +60,7 @@ const serviceLinks: { href: string; label: string; icon: LucideIcon; featured?: 
   { href: "/fertilization", label: "Fertilization", icon: Droplets },
   { href: "/irrigation", label: "Irrigation", icon: Droplets },
   { href: "/plant-care", label: "Plant Care", icon: Sprout },
+  { href: "/for-contractors", label: "For Contractors", icon: HardHat },
 ];
 
 export default function Navigation() {

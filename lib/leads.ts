@@ -19,6 +19,33 @@ export interface Lead {
   /** The hidden honeypot field was filled in — probably a bot. */
   suspectedSpam: boolean;
   receivedAt: Date;
+  /** Present only for subcontract quote requests from the For Contractors page. */
+  project?: ContractorProject;
+}
+
+/** Scopes a general contractor can ask us to bid (For Contractors page). */
+export const CONTRACTOR_SCOPES = [
+  "Landscape installation",
+  "Planting",
+  "Irrigation",
+  "Erosion-control installation",
+  "Vegetation management",
+] as const;
+
+export const QUANTITIES_MAX = 2000;
+
+/** The job a contractor is sending us plans for. */
+export interface ContractorProject {
+  company: string;
+  projectName: string;
+  location: string;
+  /** Subset of CONTRACTOR_SCOPES, in canonical order. */
+  scope: string[];
+  quantities: string;
+  schedule: string;
+  bidDue: string;
+  /** Plan-room / Drive / Dropbox link to the plan set, if given. */
+  plansLink: string;
 }
 
 export type ParseResult = { ok: true; lead: Lead } | { ok: false; error: string };
@@ -58,6 +85,13 @@ export function parseLead(body: unknown, receivedAt = new Date()): ParseResult {
     return { ok: false, error: `Please keep project details under ${MESSAGE_MAX.toLocaleString()} characters.` };
   }
 
+  let project: ContractorProject | undefined;
+  if (data.project !== undefined) {
+    const parsedProject = parseProject(data.project);
+    if (!parsedProject.ok) return parsedProject;
+    project = parsedProject.project;
+  }
+
   const attribution: Partial<Attribution> = {};
   if (data.attribution && typeof data.attribution === "object") {
     const raw = data.attribution as Record<string, unknown>;
@@ -82,6 +116,38 @@ export function parseLead(body: unknown, receivedAt = new Date()): ParseResult {
       // must never cost a real lead.
       suspectedSpam: field(data.website, 500) !== "",
       receivedAt,
+      ...(project ? { project } : {}),
+    },
+  };
+}
+
+function parseProject(raw: unknown): { ok: true; project: ContractorProject } | { ok: false; error: string } {
+  if (!raw || typeof raw !== "object") return { ok: false, error: "Invalid project details." };
+  const p = raw as Record<string, unknown>;
+
+  const location = field(p.location, 200);
+  if (!location) return { ok: false, error: "Please enter the project location." };
+
+  const requested = Array.isArray(p.scope) ? p.scope : [];
+  const scope = CONTRACTOR_SCOPES.filter((s) => requested.includes(s));
+  if (!scope.length) return { ok: false, error: "Please choose at least one scope of work." };
+
+  const quantities = typeof p.quantities === "string" ? p.quantities.trim() : "";
+  if (quantities.length > QUANTITIES_MAX) {
+    return { ok: false, error: `Please keep quantities under ${QUANTITIES_MAX.toLocaleString()} characters.` };
+  }
+
+  return {
+    ok: true,
+    project: {
+      company: field(p.company, 120),
+      projectName: field(p.projectName, 160),
+      location,
+      scope,
+      quantities,
+      schedule: field(p.schedule, 300),
+      bidDue: field(p.bidDue, 40),
+      plansLink: field(p.plansLink, 500),
     },
   };
 }
@@ -126,13 +192,34 @@ function sourceRows(lead: Lead): [string, string][] {
   return rows;
 }
 
+/** Project rows for a contractor quote request, in reading order. */
+function projectRows(p: ContractorProject): [string, string][] {
+  const rows: [string, string][] = [];
+  if (p.projectName) rows.push(["Project", p.projectName]);
+  rows.push(["Location", p.location]);
+  rows.push(["Scope", p.scope.join(", ")]);
+  rows.push(["Schedule", p.schedule || "—"]);
+  if (p.bidDue) rows.push(["Bid due", p.bidDue]);
+  rows.push(["Plans", p.plansLink || "not linked — check for attachments or ask for the set"]);
+  return rows;
+}
+
+function isHttpUrl(s: string): boolean {
+  return /^https?:\/\/\S+$/i.test(s);
+}
+
 export function leadEmail(lead: Lead): { subject: string; text: string; html: string } {
-  const subject = `${lead.suspectedSpam ? "[possible spam] " : ""}New lead: ${lead.name}${
-    lead.city ? ` (${lead.city})` : ""
-  } — ${lead.service}`.replace(/[\r\n]+/g, " ");
+  const p = lead.project;
+  const spamTag = lead.suspectedSpam ? "[possible spam] " : "";
+  const subject = (
+    p
+      ? `${spamTag}Plans for quote: ${p.company ? `${p.company} / ` : ""}${lead.name} — ${p.location} — ${p.scope.join(", ")}`
+      : `${spamTag}New lead: ${lead.name}${lead.city ? ` (${lead.city})` : ""} — ${lead.service}`
+  ).replace(/[\r\n]+/g, " ");
 
   const contact: [string, string][] = [
     ["Name", lead.name],
+    ...(p?.company ? ([["Company", p.company]] as [string, string][]) : []),
     ["Phone", lead.phone || "—"],
     ["Email", lead.email || "—"],
     ["City", lead.city || "—"],
@@ -140,15 +227,18 @@ export function leadEmail(lead: Lead): { subject: string; text: string; html: st
     ["Received", formatDate(lead.receivedAt)],
   ];
   const sources = sourceRows(lead);
+  const project = p ? projectRows(p) : [];
   const pad = (rows: [string, string][]) => rows.map(([k, v]) => `${`${k}:`.padEnd(17)}${v}`).join("\n");
+  const heading = p ? "New subcontract quote request" : "New consultation request";
 
   const text = [
-    `New consultation request from ${siteConfig.domain}`,
+    `${heading} from ${siteConfig.domain}`,
     ...(lead.suspectedSpam ? ["", "(The hidden anti-spam field was filled in — this may be a bot.)"] : []),
     "",
     pad(contact),
+    ...(p ? ["", "— Project —", pad(project), "", "Quantities:", p.quantities || "(none given)"] : []),
     "",
-    "Project details:",
+    p ? "Notes:" : "Project details:",
     lead.message || "(none given)",
     ...(sources.length ? ["", "— How they found the site —", pad(sources)] : []),
     "",
@@ -166,12 +256,25 @@ export function leadEmail(lead: Lead): { subject: string; text: string; html: st
     })
     .join("");
 
+  const projectHtml = p
+    ? `<h3 style="margin:20px 0 6px;font-size:16px">Project</h3><table style="border-collapse:collapse">${project
+        .map(([k, v]) =>
+          k === "Plans" && isHttpUrl(v)
+            ? cell(k, `<a href="${escapeHtml(v)}">${escapeHtml(v)}</a>`)
+            : cell(k, escapeHtml(v))
+        )
+        .join("")}</table>
+<h3 style="margin:20px 0 6px;font-size:16px">Quantities</h3>
+<p style="margin:0;white-space:pre-wrap">${escapeHtml(p.quantities || "(none given)")}</p>`
+    : "";
+
   const html = `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.5;color:#111827">
-<h2 style="margin:0 0 4px;font-size:19px">New consultation request</h2>
+<h2 style="margin:0 0 4px;font-size:19px">${heading}</h2>
 <p style="margin:0 0 16px;color:#6b7280">from ${escapeHtml(siteConfig.domain)}</p>
 ${lead.suspectedSpam ? '<p style="margin:0 0 16px;padding:8px 12px;background:#fef3c7;border-radius:6px">The hidden anti-spam field was filled in — this may be a bot.</p>' : ""}
 <table style="border-collapse:collapse">${contactHtml}</table>
-<h3 style="margin:20px 0 6px;font-size:16px">Project details</h3>
+${projectHtml}
+<h3 style="margin:20px 0 6px;font-size:16px">${p ? "Notes" : "Project details"}</h3>
 <p style="margin:0;white-space:pre-wrap">${escapeHtml(lead.message || "(none given)")}</p>
 ${
   sources.length
