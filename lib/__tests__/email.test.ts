@@ -74,4 +74,28 @@ describe('sendEmail', () => {
 
     expect(await sendEmail(message)).toEqual({ ok: false, error: 'ECONNRESET' });
   });
+
+  it.each(['{}', '{"id":""}', '{"id":"   "}', '{"id":42}', '[]', '"ok"', '<html>upstream error</html>', ''])
+    ('rejects an unacknowledged HTTP 200 response: %s', async body => {
+      vi.stubEnv('RESEND_API_KEY', 're_test_123');
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(body, { status: 200 })));
+      expect(await sendEmail(message)).toEqual({ ok: false, error: 'Resend returned no email ID' });
+    });
+
+  it('reports non-JSON provider errors without throwing', async () => {
+    vi.stubEnv('RESEND_API_KEY', 're_test_123');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('bad gateway', { status: 502, statusText: 'Bad Gateway' })));
+    expect(await sendEmail(message)).toEqual({ ok: false, error: 'Resend 502: Bad Gateway' });
+  });
+
+  it('provides a ten-second abort signal and reports a provider timeout', async () => {
+    vi.stubEnv('RESEND_API_KEY', 're_test_123');
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    const fetchMock = vi.fn().mockRejectedValue(new DOMException('Timed out', 'TimeoutError'));
+    vi.stubGlobal('fetch', fetchMock);
+    expect(await sendEmail(message)).toEqual({ ok: false, error: 'Timed out' });
+    expect(timeout).toHaveBeenCalledWith(10_000);
+    expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
 });
