@@ -51,11 +51,15 @@ export async function sendEmail(email: OutgoingEmail): Promise<SendResult> {
       }),
       signal: AbortSignal.timeout(10_000),
     });
-    const body = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
+    const body = (await res.json().catch(() => null)) as { id?: unknown; message?: string } | null;
     if (!res.ok) {
-      return { ok: false, error: `Resend ${res.status}: ${body.message ?? res.statusText}` };
+      return { ok: false, error: `Resend ${res.status}: ${body?.message ?? res.statusText}` };
     }
-    return { ok: true, id: body.id ?? "" };
+    // HTTP success alone is not an acknowledgement that Resend accepted mail.
+    if (typeof body?.id !== "string" || !body.id.trim()) {
+      return { ok: false, error: "Resend returned no email ID" };
+    }
+    return { ok: true, id: body.id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }

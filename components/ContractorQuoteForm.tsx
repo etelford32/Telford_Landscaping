@@ -90,10 +90,10 @@ export default function ContractorQuoteForm() {
         body: JSON.stringify(payload),
       });
       const json = await res.json();
-      if (!res.ok) {
-        setError(json.error || "Something went wrong. Please call or email us instead.");
+      if (!res.ok || json?.ok !== true) {
+        setError(json?.error || "Something went wrong. Please call or email us instead.");
         setStatus("error");
-        trackEvent("lead_form_error", { service: SERVICE, error_type: res.status >= 500 ? "server" : "validation" });
+        trackEvent("lead_form_error", { service: SERVICE, error_type: res.ok || res.status >= 500 ? "server" : "validation" });
         return;
       }
       setStatus("success");
