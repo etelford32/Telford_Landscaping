@@ -12,6 +12,7 @@ import {
   LogOut,
   MapPin,
   Menu,
+  Palette,
   Phone,
   Shield,
   ShieldCheck,
@@ -21,6 +22,7 @@ import { useAuth } from "@/lib/authContext";
 import { siteConfig } from "@/lib/siteConfig";
 import { serviceGroups } from "@/lib/services";
 import { serviceAreas } from "@/lib/serviceAreas";
+import { useContactSection } from "@/lib/useContactSection";
 
 /* Engraved-style bird silhouette, matching the logo artwork's palette */
 function Bird({ delay = "0s" }: { delay?: string }) {
@@ -51,15 +53,13 @@ const topLinks = [
   { href: "/for-contractors", label: "For Contractors", icon: HardHat, cta: "nav-for-contractors" },
 ];
 
-type MenuId = "services" | "areas";
-
-const cityLine = siteConfig.cities.join(" · ");
+type MenuId = "services" | "areas" | "account";
 
 export default function Navigation() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<MenuId | null>(null);
   const [burstId, setBurstId] = useState(0);
-  const { logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -70,8 +70,20 @@ export default function Navigation() {
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const servicesButton = useRef<HTMLButtonElement>(null);
   const areasButton = useRef<HTMLButtonElement>(null);
+  const accountButton = useRef<HTMLButtonElement>(null);
   const servicesOpen = openMenu === "services";
   const areasOpen = openMenu === "areas";
+  const accountOpen = openMenu === "account";
+
+  // "Free Estimate" goes to the form on the page the visitor is already on
+  // (it carries that page's service and city); otherwise to the homepage form.
+  const contactSection = useContactSection();
+  const estimateHref = contactSection ? `#${contactSection}` : "/#contact";
+
+  // The Admin link is shown to the owner's account only. This is tidiness,
+  // not security: /admin itself still needs a real role check.
+  const firstName = user?.name?.trim().split(/\s+/)[0] || "Account";
+  const isOwner = user?.email?.toLowerCase() === siteConfig.email.toLowerCase();
 
   const cancelClose = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -129,7 +141,8 @@ export default function Navigation() {
   // Escape and outside clicks dismiss whichever dropdown is open.
   useEffect(() => {
     if (!openMenu) return;
-    const button = openMenu === "services" ? servicesButton : areasButton;
+    const button =
+      openMenu === "services" ? servicesButton : openMenu === "areas" ? areasButton : accountButton;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       const focusWasInside = !!document.activeElement?.closest("[data-nav-menu]");
@@ -257,13 +270,31 @@ export default function Navigation() {
 
       {/* Utility bar: where we work and the license, before anything else.
           It scrolls away; the nav below it is what sticks. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-primary-900 focus:shadow-lg"
+      >
+        Skip to content
+      </a>
+
       <div data-cta-location="top-bar" className="bg-primary-900 text-primary-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-center md:justify-between gap-4 text-[11.5px] sm:text-[12.5px] font-medium tracking-wide">
           <div className="flex items-center gap-1.5 min-w-0">
             <MapPin className="w-3.5 h-3.5 text-primary-300 shrink-0" aria-hidden />
             <span className="truncate">
               <span className="hidden sm:inline">Serving </span>
-              {cityLine}
+              {serviceAreas.map((a, i) => (
+                <span key={a.slug}>
+                  {i > 0 && " · "}
+                  <Link
+                    href={`/${a.slug}`}
+                    data-cta={`topbar-area-${a.slug}`}
+                    className="hover:text-white hover:underline underline-offset-2"
+                  >
+                    {a.city}
+                  </Link>
+                </span>
+              ))}
             </span>
           </div>
           <div className="hidden md:flex items-center gap-1.5 whitespace-nowrap">
@@ -446,31 +477,79 @@ export default function Navigation() {
               </a>
 
               <Link
-                href="/#contact"
+                href={estimateHref}
                 data-cta="nav-free-estimate"
                 className="btn-3d ml-1.5 inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 text-white text-[15px] font-bold px-5 py-2.5 rounded-xl whitespace-nowrap"
               >
                 Free Estimate <ArrowRight className="w-4 h-4" aria-hidden />
               </Link>
 
-              {/* Only ever visible to a signed-in account (sign-in lives at /login). */}
+              {/* Account menu — only rendered for a signed-in visitor. Signed-out
+                  visitors see no account UI here; sign-in is linked from the footer. */}
               {isAuthenticated && (
-                <div className="ml-2 pl-2 border-l-2 border-primary-100 flex items-center gap-0.5">
-                  <Link
-                    href="/admin"
-                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-sm font-semibold text-purple-700 hover:bg-purple-50 transition-colors"
-                  >
-                    <Shield className="w-4 h-4" aria-hidden /> Admin
-                  </Link>
+                <div
+                  data-nav-menu
+                  className="relative ml-2 pl-2 border-l-2 border-primary-100"
+                  onMouseEnter={() => hoverOpen("account")}
+                  onMouseLeave={hoverClose}
+                >
                   <button
+                    ref={accountButton}
                     type="button"
-                    onClick={handleLogout}
-                    aria-label="Log out"
-                    title="Log out"
-                    className="p-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
+                    onClick={() => toggleMenu("account")}
+                    aria-expanded={accountOpen}
+                    aria-controls="account-menu"
+                    aria-label={`Account menu for ${user?.name ?? "your account"}`}
+                    title={user?.name}
+                    className={`flex items-center p-1.5 rounded-xl transition-colors ${
+                      accountOpen ? "bg-primary-50" : "hover:bg-primary-50"
+                    }`}
                   >
-                    <LogOut className="w-4 h-4" aria-hidden />
+                    {/* Initial only: the row has no room for a name beside the
+                        phone number and the estimate button. */}
+                    <span className="grid place-items-center w-8 h-8 rounded-full bg-primary-700 text-white text-[13px] font-bold uppercase">
+                      {firstName[0]}
+                    </span>
                   </button>
+                  <div
+                    id="account-menu"
+                    className={`absolute right-0 top-full pt-2 w-64 duration-200 ${
+                      accountOpen
+                        ? "visible opacity-100 translate-y-0 transition-[opacity,transform]"
+                        : "invisible opacity-0 -translate-y-1 pointer-events-none transition-[opacity,transform,visibility]"
+                    }`}
+                  >
+                    <div className="bg-white rounded-2xl border-2 border-primary-100 shadow-[0_30px_60px_-24px_rgba(20,83,45,0.45)] p-2">
+                      <div className="px-3 pt-2 pb-3 border-b border-earth-200 mb-1">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">Signed in as</div>
+                        <div className="text-[14.5px] font-bold text-gray-900 truncate">{user?.name}</div>
+                        <div className="text-[12.5px] text-gray-500 truncate">{user?.email}</div>
+                      </div>
+                      <Link
+                        href="/app"
+                        onClick={closeAll}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14.5px] font-semibold text-gray-800 hover:bg-primary-50 hover:text-primary-800 transition-colors"
+                      >
+                        <Palette className="w-[18px] h-[18px] text-primary-600" aria-hidden /> Design Tool
+                      </Link>
+                      {isOwner && (
+                        <Link
+                          href="/admin"
+                          onClick={closeAll}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14.5px] font-semibold text-gray-800 hover:bg-primary-50 hover:text-primary-800 transition-colors"
+                        >
+                          <Shield className="w-[18px] h-[18px] text-primary-600" aria-hidden /> Admin
+                        </Link>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14.5px] font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="w-[18px] h-[18px]" aria-hidden /> Sign out
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -486,7 +565,7 @@ export default function Navigation() {
                 <span className="hidden sm:inline">{siteConfig.phone}</span>
               </a>
               <Link
-                href="/#contact"
+                href={estimateHref}
                 data-cta="nav-free-estimate"
                 className="hidden md:inline-flex items-center gap-2 h-11 px-4 rounded-xl font-bold text-[15px] text-white bg-gradient-to-r from-primary-600 to-green-600 whitespace-nowrap active:scale-95 transition"
               >
@@ -581,7 +660,7 @@ export default function Navigation() {
                     <Phone className="w-4 h-4" aria-hidden /> {siteConfig.phone}
                   </a>
                   <Link
-                    href="/#contact"
+                    href={estimateHref}
                     data-cta="menu-free-estimate"
                     onClick={closeAll}
                     className="inline-flex items-center gap-1.5 text-[14px] font-bold text-white bg-primary-700 hover:bg-primary-800 px-4 py-2 rounded-lg whitespace-nowrap transition-colors"
@@ -612,7 +691,7 @@ export default function Navigation() {
                   <span className="text-[13px] font-semibold text-primary-800">{siteConfig.phone}</span>
                 </a>
                 <Link
-                  href="/#contact"
+                  href={estimateHref}
                   data-cta="nav-free-estimate"
                   onClick={closeAll}
                   className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-gradient-to-r from-primary-600 to-green-600 px-3 py-3 text-white shadow-md"
@@ -700,21 +779,35 @@ export default function Navigation() {
               </div>
 
               {isAuthenticated && (
-                <div className="mt-3 pt-3 border-t border-earth-200 flex items-center gap-2">
-                  <Link
-                    href="/admin"
-                    onClick={closeAll}
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-purple-700 active:bg-purple-50"
-                  >
-                    <Shield className="w-4 h-4" aria-hidden /> Admin
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 active:bg-red-50"
-                  >
-                    <LogOut className="w-4 h-4" aria-hidden /> Log out
-                  </button>
+                <div className="mt-3 pt-3 border-t border-earth-200">
+                  <p className="px-2 text-[12.5px] text-gray-500">
+                    Signed in as <span className="font-semibold text-gray-800">{user?.name}</span>
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    <Link
+                      href="/app"
+                      onClick={closeAll}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-800 active:bg-primary-50"
+                    >
+                      <Palette className="w-4 h-4 text-primary-600" aria-hidden /> Design Tool
+                    </Link>
+                    {isOwner && (
+                      <Link
+                        href="/admin"
+                        onClick={closeAll}
+                        className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-800 active:bg-primary-50"
+                      >
+                        <Shield className="w-4 h-4 text-primary-600" aria-hidden /> Admin
+                      </Link>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 active:bg-red-50"
+                    >
+                      <LogOut className="w-4 h-4" aria-hidden /> Sign out
+                    </button>
+                  </div>
                 </div>
               )}
 

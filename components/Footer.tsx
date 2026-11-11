@@ -4,6 +4,7 @@ import { MapPin, Mail, Phone } from "lucide-react";
 import { siteConfig } from "@/lib/siteConfig";
 import { serviceGroups } from "@/lib/services";
 import { serviceAreas } from "@/lib/serviceAreas";
+import FooterAccountLink from "@/components/FooterAccountLink";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -109,7 +110,8 @@ export default function Footer() {
             <p className="text-gray-400 text-sm">
               © {currentYear} {siteConfig.legalName}. All rights reserved.
             </p>
-            <div className="flex gap-6 text-sm text-gray-400">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-400">
+              <FooterAccountLink />
               <Link href="/privacy" className="hover:text-primary-400 transition-colors">
                 Privacy Policy
               </Link>

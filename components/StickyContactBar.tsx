@@ -6,13 +6,7 @@ import { usePathname } from "next/navigation";
 import { ArrowRight, Phone } from "lucide-react";
 import { siteConfig } from "@/lib/siteConfig";
 import { CallLink } from "@/components/ContactActions";
-
-/**
- * The contact section on each marketing page, by id. The bar hides while one
- * of these is on screen (so it never competes with the real form) and its
- * second button jumps to whichever one the current page has.
- */
-const CONTACT_SECTIONS = ["contact", "portfolio-contact", "bid", "send-plans"];
+import { CONTACT_SECTIONS, useContactSection } from "@/lib/useContactSection";
 
 /**
  * Thumb-reachable call / estimate bar for phones, on every marketing page
@@ -24,7 +18,7 @@ export default function StickyContactBar() {
   const pathname = usePathname();
   const [scrolledPast, setScrolledPast] = useState(false);
   const [contactVisible, setContactVisible] = useState(false);
-  const [target, setTarget] = useState<string | null>(null);
+  const target = useContactSection();
 
   useEffect(() => {
     const onScroll = () => setScrolledPast(window.scrollY > 480);
@@ -33,12 +27,13 @@ export default function StickyContactBar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Re-resolve on every navigation: the layout (and this bar) outlives the page.
+  // Hide while the page's contact section is on screen, so the bar never
+  // competes with the real thing. Re-resolved on every navigation: the layout
+  // (and this bar) outlives the page.
   useEffect(() => {
     const sections = CONTACT_SECTIONS.map((id) => document.getElementById(id)).filter(
       (el): el is HTMLElement => el !== null
     );
-    setTarget(sections[0]?.id ?? null);
     setContactVisible(false);
     if (!sections.length) return;
 
