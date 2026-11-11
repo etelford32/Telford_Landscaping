@@ -1,12 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight, MapPin, Calendar, Maximize2, Phone, Mail } from "lucide-react";
-import { categories, type Category, type Project } from "@/lib/portfolio";
+import { categories, categorySlugs, type Category, type Project } from "@/lib/portfolio";
 import { siteConfig } from "@/lib/siteConfig";
 import { CallLink, EmailLink } from "@/components/ContactActions";
 import { trackEvent } from "@/lib/analytics";
+
+/**
+ * Applies a `?type=` filter from the URL (the header menu links straight to a
+ * trade). It renders nothing and sits in its own Suspense boundary so reading
+ * the query string doesn't pull the whole gallery out of the static HTML.
+ */
+function CategoryFromUrl({ onCategory }: { onCategory: (c: Category) => void }) {
+  const type = useSearchParams().get("type");
+  useEffect(() => {
+    const match = type ? categorySlugs[type] : undefined;
+    if (match) onCategory(match);
+  }, [type, onCategory]);
+  return null;
+}
 
 /**
  * Filterable gallery of completed work, with a full-screen lightbox.
@@ -66,8 +81,17 @@ export default function PortfolioGallery({ projects }: { projects: Project[] }) 
     };
   }, [openIndex]);
 
+  const selectFromUrl = useCallback((c: Category) => {
+    setCategory(c);
+    setOpenIndex(null);
+  }, []);
+
   return (
     <>
+      <Suspense fallback={null}>
+        <CategoryFromUrl onCategory={selectFromUrl} />
+      </Suspense>
+
       {/* ── Filter bar — sticks under the 80px nav ── */}
       <div className="sticky top-20 z-30 bg-white/95 backdrop-blur-sm border-y border-earth-200">
         <div className="max-w-6xl mx-auto px-6 py-4">

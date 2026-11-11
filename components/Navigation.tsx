@@ -2,32 +2,24 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  Menu,
-  X,
-  TreePine,
-  LogOut,
-  User,
-  Palette,
-  Camera,
-  Mail,
-  Shield,
-  Sparkles,
-  Sprout,
-  Droplets,
-  BookOpen,
-  Phone,
+  ArrowRight,
   ChevronDown,
-  Flame,
-  Leaf,
   HardHat,
-  Waves,
+  Images,
+  LogOut,
+  MapPin,
+  Menu,
+  Phone,
+  Shield,
+  ShieldCheck,
+  X,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/lib/authContext";
-import { useRouter } from "next/navigation";
 import { siteConfig } from "@/lib/siteConfig";
+import { serviceGroups } from "@/lib/services";
 
 /* Engraved-style bird silhouette, matching the logo artwork's palette */
 function Bird({ delay = "0s" }: { delay?: string }) {
@@ -50,41 +42,116 @@ const BURST_LEAVES = [
   { leaf: "🍂", dx: "-12px", dy: "34px", rot: "-40deg", delay: "0.04s" },
 ];
 
-// Specialty / lead pages, grouped under a "Services" dropdown on desktop.
-// Drainage leads the list and is flagged `featured` so it gets an accent row.
-const serviceLinks: { href: string; label: string; icon: LucideIcon; featured?: boolean }[] = [
-  { href: "/drainage-trenching", label: "Drainage & Trenching", icon: Waves, featured: true },
-  { href: "/fire-wise-landscaping", label: "Fire-Wise Landscaping", icon: Flame },
-  { href: "/water-smart-landscaping", label: "Water-Smart Landscaping", icon: Droplets },
-  { href: "/native-low-maintenance", label: "Low-Maintenance Native", icon: Leaf },
-  { href: "/fertilization", label: "Fertilization", icon: Droplets },
-  { href: "/irrigation", label: "Irrigation", icon: Droplets },
-  { href: "/plant-care", label: "Plant Care", icon: Sprout },
-  { href: "/for-contractors", label: "For Contractors", icon: HardHat },
+// Top-level links beside the Services menu. Everything here is a page a
+// homeowner or a builder would look for; the design app, plant library, and
+// account links live at their own URLs and are deliberately not in the menu.
+const topLinks = [
+  { href: "/portfolio", label: "Our Work", icon: Images, cta: "nav-our-work" },
+  { href: "/#service-areas", label: "Service Areas", icon: MapPin, cta: "nav-service-areas" },
+  { href: "/for-contractors", label: "For Contractors", icon: HardHat, cta: "nav-for-contractors" },
 ];
 
+const cityLine = siteConfig.cities.join(" · ");
+
 export default function Navigation() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
-  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
-  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [burstId, setBurstId] = useState(0);
-  const { user, logout, isAuthenticated } = useAuth();
+  const { logout, isAuthenticated } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // The Services panel opens on hover and "pins" on click or keyboard, so a
+  // click right after hovering doesn't slam it shut, and touch/keyboard users
+  // get a panel that stays put until they dismiss it.
+  const pinned = useRef(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const servicesButton = useRef<HTMLButtonElement>(null);
+  const servicesPanel = useRef<HTMLDivElement>(null);
+
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+  };
+
+  const closeServices = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = null;
+    pinned.current = false;
+    setServicesOpen(false);
+  }, []);
+
+  const hoverOpen = () => {
+    cancelClose();
+    setServicesOpen(true);
+  };
+
+  // A short grace period lets the pointer cross the gap between the button
+  // and the panel without the panel closing underneath it.
+  const hoverClose = () => {
+    if (pinned.current) return;
+    cancelClose();
+    closeTimer.current = setTimeout(() => setServicesOpen(false), 160);
+  };
+
+  const toggleServices = () => {
+    cancelClose();
+    if (servicesOpen && !pinned.current) {
+      pinned.current = true; // opened by hover — the click keeps it open
+      return;
+    }
+    pinned.current = !servicesOpen;
+    setServicesOpen(!servicesOpen);
+  };
+
+  const closeAll = useCallback(() => {
+    closeServices();
+    setMobileOpen(false);
+  }, [closeServices]);
+
+  // Any navigation closes whatever is open.
+  useEffect(() => {
+    closeAll();
+  }, [pathname, closeAll]);
+
+  // Escape and outside clicks dismiss the Services panel.
+  useEffect(() => {
+    if (!servicesOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const focusWasInside = servicesPanel.current?.contains(document.activeElement);
+      closeServices();
+      if (focusWasInside) servicesButton.current?.focus();
+    };
+    const onPointer = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (servicesPanel.current?.contains(target) || servicesButton.current?.contains(target)) return;
+      closeServices();
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [servicesOpen, closeServices]);
+
+  useEffect(() => cancelClose, []);
 
   const handleLogout = async () => {
     await logout();
+    closeAll();
     router.push("/");
   };
 
-  // Primary top-level links (Services is rendered separately as a dropdown).
-  const primaryLinks = [
-    { href: "/plants", label: "Plant Library", icon: BookOpen, color: "from-green-500 to-teal-600" },
-    { href: "/app", label: "Design Tool", icon: Palette, color: "from-primary-500 to-primary-700", featured: true, cta: "open-design-tool" },
-    { href: "/portfolio", label: "Portfolio", icon: Camera, color: "from-earth-500 to-earth-700" },
-    { href: "/#contact", label: "Contact", icon: Mail, color: "from-sky-500 to-blue-600", cta: "nav-contact" },
-    ...(isAuthenticated ? [{ href: "/admin", label: "Admin", icon: Shield, color: "from-purple-500 to-indigo-600", admin: true }] : []),
-  ];
+  const servicesActive = serviceGroups.some((g) =>
+    g.links.some((l) => !l.href.startsWith("/portfolio") && !l.href.startsWith("/#") && l.href === pathname)
+  );
+
+  const linkBase =
+    "relative px-3 py-2 rounded-xl text-[15px] font-semibold whitespace-nowrap transition-colors duration-200 flex items-center gap-1";
+  const linkIdle = "text-gray-800 hover:bg-primary-50 hover:text-primary-800";
+  const linkActive = "text-primary-800 bg-primary-50";
 
   return (
     <>
@@ -139,21 +206,6 @@ export default function Navigation() {
           100% { opacity: 1; transform: translateX(0); }
         }
 
-        @keyframes leafFall {
-          0% { opacity: 0; transform: translateY(-20px) rotate(0deg); }
-          100% { opacity: 1; transform: translateY(0px) rotate(360deg); }
-        }
-
-        @keyframes branchGrow {
-          0% { transform: scaleX(0); opacity: 0; }
-          100% { transform: scaleX(1); opacity: 1; }
-        }
-
-        @keyframes ripple {
-          0% { transform: scale(0.8); opacity: 0.8; }
-          100% { transform: scale(1.2); opacity: 0; }
-        }
-
         .logo-sprout {
           animation: logoSprout 1s cubic-bezier(0.34, 1.56, 0.64, 1);
           transform-origin: 50% 100%;
@@ -190,65 +242,42 @@ export default function Navigation() {
         .wordmark-in {
           animation: wordmarkIn 0.6s ease-out 0.4s backwards;
         }
-
-        .leaf-fall {
-          animation: leafFall 0.6s ease-out forwards;
-        }
-
-        /* Run leafFall only while the group is hovered; when hover ends the
-           animation is removed, so fill-forwards can't pin the leaf visible */
-        .leaf-fall-on-hover {
-          opacity: 0;
-        }
-
-        .group:hover .leaf-fall-on-hover {
-          animation: leafFall 0.6s ease-out forwards;
-        }
-
-        .branch-grow {
-          animation: branchGrow 0.4s ease-out forwards;
-        }
-
-        .nav-link-hover {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .nav-link-hover::before {
-          content: '';
-          position: absolute;
-          bottom: -2px;
-          left: 0;
-          width: 100%;
-          height: 3px;
-          background: linear-gradient(90deg, transparent, currentColor, transparent);
-          transform: scaleX(0);
-          transform-origin: left;
-          transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .nav-link-hover:hover::before {
-          transform: scaleX(1);
-        }
-
-        .ripple-effect {
-          position: absolute;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.5);
-          animation: ripple 0.6s ease-out;
-          pointer-events: none;
-        }
       `}</style>
 
-      <nav data-cta-location="nav" className="bg-gradient-to-r from-white via-green-50/30 to-white backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b-2 border-primary-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+      {/* Utility bar: where we work and the license, before anything else.
+          It scrolls away; the nav below it is what sticks. */}
+      <div data-cta-location="top-bar" className="bg-primary-900 text-primary-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-center md:justify-between gap-4 text-[11.5px] sm:text-[12.5px] font-medium tracking-wide">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <MapPin className="w-3.5 h-3.5 text-primary-300 shrink-0" aria-hidden />
+            <span className="truncate">
+              <span className="hidden sm:inline">Serving </span>
+              {cityLine}
+            </span>
+          </div>
+          <div className="hidden md:flex items-center gap-1.5 whitespace-nowrap">
+            <ShieldCheck className="w-3.5 h-3.5 text-primary-300" aria-hidden />
+            <span>{siteConfig.license} · Bonded &amp; Insured</span>
+          </div>
+        </div>
+      </div>
+
+      <nav
+        aria-label="Main"
+        data-cta-location="nav"
+        className="bg-gradient-to-r from-white via-green-50/30 to-white backdrop-blur-sm shadow-lg sticky top-0 z-50 border-b-2 border-primary-100"
+      >
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20 gap-3">
             {/* Logo: grows from the ground on load, sways in the breeze,
                 birds take flight, and clicking it bursts leaves */}
             <Link
               href="/"
-              onClick={() => setBurstId((id) => id + 1)}
-              className="flex items-center gap-2 group relative"
+              onClick={() => {
+                setBurstId((id) => id + 1);
+                closeAll();
+              }}
+              className="flex items-center gap-2 group relative min-w-0"
             >
               {/* shrink-0: without it the overflow-hidden box gets flex-crushed to 0px
                   when the header row runs out of room, collapsing the logo entirely */}
@@ -261,21 +290,21 @@ export default function Navigation() {
                       width={64}
                       height={64}
                       priority
-                      className="w-16 h-16 object-cover"
+                      className="w-12 h-12 sm:w-16 sm:h-16 object-cover"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Birds taking flight from the canopy */}
-              <span aria-hidden className="pointer-events-none absolute left-9 top-1 z-10">
+              <span aria-hidden className="pointer-events-none absolute left-7 sm:left-9 top-1 z-10">
                 <span className="bird-a absolute left-0 top-0"><Bird /></span>
                 <span className="bird-b absolute left-1 top-3"><Bird delay="0.13s" /></span>
               </span>
 
               {/* Leaf poof on click; key change remounts and replays the burst */}
               {burstId > 0 && (
-                <span key={burstId} aria-hidden className="pointer-events-none absolute left-7 top-7 z-10">
+                <span key={burstId} aria-hidden className="pointer-events-none absolute left-5 top-5 sm:left-7 sm:top-7 z-10">
                   {BURST_LEAVES.map((p, i) => (
                     <span
                       key={i}
@@ -288,321 +317,316 @@ export default function Navigation() {
                 </span>
               )}
               <div className="relative wordmark-in whitespace-nowrap">
-                <div className="text-xl font-bold tracking-tight bg-gradient-to-r from-primary-700 to-green-700 bg-clip-text text-transparent">
+                <div className="text-[17px] sm:text-xl font-bold tracking-tight bg-gradient-to-r from-primary-700 to-green-700 bg-clip-text text-transparent">
                   Telford Landscaping
                 </div>
-                <div className="text-xs text-gray-600 flex items-center gap-1">
-                  <span>Telford Projects LLC</span>
-                  <Sparkles className="w-3 h-3 text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="text-[11px] sm:text-xs font-medium tracking-wide text-gray-600">
+                  Design · Build · Restore
                 </div>
-              </div>
-
-              {/* Decorative leaves on hover */}
-              <div className="absolute -top-2 -right-2 text-2xl leaf-fall-on-hover">
-                🍃
               </div>
             </Link>
 
-            {/* Desktop Navigation with Nature Animations.
-                Home is omitted here — the logo links home; it stays in the mobile menu. */}
-            <div className="hidden xl:flex items-center gap-0.5">
-              {/* Services dropdown */}
-              <div
-                className="relative"
-                onMouseEnter={() => setServicesOpen(true)}
-                onMouseLeave={() => setServicesOpen(false)}
+            {/* ── Desktop: links, phone, and the one primary action ── */}
+            <div className="hidden xl:flex items-center gap-1">
+              <button
+                ref={servicesButton}
+                type="button"
+                onClick={toggleServices}
+                onMouseEnter={hoverOpen}
+                onMouseLeave={hoverClose}
+                aria-expanded={servicesOpen}
+                aria-controls="services-menu"
+                className={`${linkBase} ${servicesOpen || servicesActive ? linkActive : linkIdle}`}
               >
-                <button
-                  onClick={() => setServicesOpen((v) => !v)}
-                  aria-expanded={servicesOpen}
-                  aria-haspopup="true"
-                  className="relative px-2 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-300 nav-link-hover flex items-center gap-1 text-gray-800 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700"
+                Services
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesOpen ? "rotate-180" : ""}`} aria-hidden />
+              </button>
+
+              {topLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  data-cta={link.cta}
+                  aria-current={pathname === link.href ? "page" : undefined}
+                  className={`${linkBase} ${pathname === link.href ? linkActive : linkIdle}`}
                 >
-                  <span className="relative z-10">Services</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${servicesOpen ? "rotate-180" : ""}`} />
-                </button>
-                {servicesOpen && (
-                  <div className="absolute left-0 top-full pt-2 w-64 z-50">
-                    <div className="bg-white rounded-2xl shadow-xl border-2 border-primary-100 p-2 animate-fade-in">
-                      {serviceLinks.map((link) => {
-                        const Icon = link.icon;
-                        return (
-                          <Link
-                            key={link.href}
-                            href={link.href}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                              link.featured
-                                ? "mb-1 bg-gradient-to-r from-sky-50 to-primary-50 border border-sky-200 text-gray-900 hover:border-sky-300 hover:text-primary-800"
-                                : "text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700"
-                            }`}
-                          >
-                            <span className={`p-1.5 rounded-lg ${link.featured ? "bg-sky-600 text-white" : "bg-primary-50 text-primary-600"}`}>
-                              <Icon className="w-4 h-4" />
-                            </span>
-                            {link.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+                  {link.label}
+                </Link>
+              ))}
 
-              {primaryLinks.map((link) => {
-                const isHovered = hoveredLink === link.href;
-                const isFeatured = link.featured;
-                const isAdmin = link.admin;
-
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    data-cta={link.cta}
-                    onMouseEnter={() => setHoveredLink(link.href)}
-                    onMouseLeave={() => setHoveredLink(null)}
-                    className={`
-                      relative px-2 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-300
-                      nav-link-hover group flex items-center
-                      ${isFeatured
-                        ? 'bg-gradient-to-r from-primary-600 to-green-600 text-white shadow-md hover:shadow-xl hover:scale-105'
-                        : isAdmin
-                        ? 'text-purple-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50'
-                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 hover:text-primary-700'
-                      }
-                    `}
-                  >
-                    <span className="relative z-10">{link.label}</span>
-
-                    {/* Leaf indicator on hover */}
-                    {isHovered && !isFeatured && (
-                      <span className="absolute -top-1 -right-1 text-sm leaf-fall">🌿</span>
-                    )}
-
-                    {/* Featured sparkle effect */}
-                    {isFeatured && (
-                      <Sparkles className="w-4 h-4 absolute -top-1 -right-1 text-yellow-300 animate-pulse" />
-                    )}
-                  </Link>
-                );
-              })}
-
-              {/* Phone CTA */}
               <a
                 href={siteConfig.phoneHref}
-                className="ml-1.5 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold whitespace-nowrap text-primary-800 bg-primary-50 border border-primary-200 hover:bg-primary-100 transition-all"
+                className="ml-3 flex items-center gap-2.5 pl-2 pr-3.5 py-1.5 rounded-xl whitespace-nowrap text-primary-900 hover:bg-primary-50 transition-colors"
               >
-                <Phone className="w-4 h-4" />
-                {siteConfig.phone}
+                <span className="grid place-items-center w-9 h-9 rounded-full bg-primary-100 text-primary-800">
+                  <Phone className="w-4 h-4" aria-hidden />
+                </span>
+                <span className="leading-tight">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+                    Call or text
+                  </span>
+                  <span className="block text-[15px] font-bold">{siteConfig.phone}</span>
+                </span>
               </a>
 
-              {/* User Section with Nature Theme */}
-              <div className="ml-1.5 pl-2 border-l-2 border-green-200 flex items-center gap-1.5">
-                {isAuthenticated ? (
-                  <>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 transition-all duration-300 hover:shadow-md hover:scale-105">
-                      <div className="bg-gradient-to-br from-primary-600 to-green-600 p-1.5 rounded-lg">
-                        <User className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-sm font-semibold text-gray-800">{user?.name}</span>
-                      {user?.subscription === 'pro' && (
-                        <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold">PRO</span>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-red-600 hover:bg-red-50 font-semibold transition-all duration-300 hover:scale-105 group"
-                    >
-                      <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="text-gray-700 hover:text-primary-700 text-sm font-semibold whitespace-nowrap px-2 py-2 rounded-xl hover:bg-green-50 transition-all duration-300"
-                    >
-                      Sign In
-                    </Link>
-                    <Link
-                      href="/signup"
-                      className="btn-3d bg-gradient-to-r from-primary-600 to-green-600 text-white text-sm px-3 py-2 rounded-xl font-bold whitespace-nowrap flex items-center gap-1.5 group"
-                    >
-                      <span>Start Free</span>
-                      <Sparkles className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
-                    </Link>
-                  </>
-                )}
-              </div>
+              <Link
+                href="/#contact"
+                data-cta="nav-free-estimate"
+                className="btn-3d ml-1.5 inline-flex items-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 text-white text-[15px] font-bold px-5 py-2.5 rounded-xl whitespace-nowrap"
+              >
+                Free Estimate <ArrowRight className="w-4 h-4" aria-hidden />
+              </Link>
+
+              {/* Only ever visible to a signed-in account (sign-in lives at /login). */}
+              {isAuthenticated && (
+                <div className="ml-2 pl-2 border-l-2 border-primary-100 flex items-center gap-0.5">
+                  <Link
+                    href="/admin"
+                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-sm font-semibold text-purple-700 hover:bg-purple-50 transition-colors"
+                  >
+                    <Shield className="w-4 h-4" aria-hidden /> Admin
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    aria-label="Log out"
+                    title="Log out"
+                    className="p-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" aria-hidden />
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Mobile Menu Button with Nature Animation */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="xl:hidden p-3 rounded-xl hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-300 group"
-              aria-label="Toggle menu"
-            >
-              {isOpen ? (
-                <X className="w-6 h-6 text-gray-900 group-hover:rotate-90 transition-transform duration-300" />
-              ) : (
-                <Menu className="w-6 h-6 text-gray-900 group-hover:scale-110 transition-transform duration-300" />
-              )}
-            </button>
+            {/* ── Phone / tablet: call and estimate stay in reach beside the menu button ── */}
+            <div className="flex xl:hidden items-center gap-1.5 sm:gap-2 shrink-0">
+              <a
+                href={siteConfig.phoneHref}
+                aria-label={`Call or text ${siteConfig.phone}`}
+                className="hidden min-[360px]:flex items-center gap-2 h-11 px-3 sm:px-4 rounded-xl font-bold text-[15px] text-primary-900 bg-primary-50 border border-primary-200 whitespace-nowrap active:scale-95 transition"
+              >
+                <Phone className="w-[18px] h-[18px]" aria-hidden />
+                <span className="hidden sm:inline">{siteConfig.phone}</span>
+              </a>
+              <Link
+                href="/#contact"
+                data-cta="nav-free-estimate"
+                className="hidden md:inline-flex items-center gap-2 h-11 px-4 rounded-xl font-bold text-[15px] text-white bg-gradient-to-r from-primary-600 to-green-600 whitespace-nowrap active:scale-95 transition"
+              >
+                Free Estimate <ArrowRight className="w-4 h-4" aria-hidden />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileOpen((v) => !v)}
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-menu"
+                aria-label={mobileOpen ? "Close menu" : "Open menu"}
+                className="grid place-items-center w-11 h-11 rounded-xl text-gray-900 hover:bg-primary-50 transition-colors"
+              >
+                {mobileOpen ? <X className="w-6 h-6" aria-hidden /> : <Menu className="w-6 h-6" aria-hidden />}
+              </button>
+            </div>
           </div>
 
-          {/* Mobile Navigation with Nature Theme */}
-          {isOpen && (
-            <div className="xl:hidden py-6 border-t-2 border-green-100 bg-gradient-to-b from-green-50/50 to-white rounded-b-2xl">
-              <div className="flex flex-col gap-3">
-                {/* Home */}
-                <Link
-                  href="/"
-                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600">
-                    <TreePine className="w-5 h-5 text-white" />
-                  </div>
-                  <span>Home</span>
-                </Link>
-
-                {/* Phone CTA */}
-                <a
-                  href={siteConfig.phoneHref}
-                  className="flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-bold text-primary-800 bg-primary-50 border border-primary-200"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary-600 to-green-600">
-                    <Phone className="w-5 h-5 text-white" />
-                  </div>
-                  <span>Call or Text {siteConfig.phone}</span>
-                </a>
-
-                {/* Services group */}
-                <div className="mx-2">
-                  <button
-                    onClick={() => setMobileServicesOpen((v) => !v)}
-                    aria-expanded={mobileServicesOpen}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all"
-                  >
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-primary-500 to-emerald-600">
-                      <Sprout className="w-5 h-5 text-white" />
+          {/* ── Services mega-menu (desktop). Kept mounted so its links are in
+              the HTML and its photos are already loaded when it opens. ── */}
+          <div
+            id="services-menu"
+            ref={servicesPanel}
+            onMouseEnter={hoverOpen}
+            onMouseLeave={hoverClose}
+            className={`hidden xl:block absolute inset-x-8 top-full pt-2 transition-[opacity,transform,visibility] duration-200 ${
+              servicesOpen ? "visible opacity-100 translate-y-0" : "invisible opacity-0 -translate-y-1 pointer-events-none"
+            }`}
+          >
+            <div className="bg-white rounded-2xl border-2 border-primary-100 shadow-[0_30px_60px_-24px_rgba(20,83,45,0.45)] overflow-hidden">
+              <div className="grid grid-cols-3 gap-5 p-5">
+                {serviceGroups.map((group) => (
+                  <section key={group.id} aria-labelledby={`menu-${group.id}`}>
+                    <div className="relative h-32 rounded-xl overflow-hidden mb-2.5">
+                      <Image
+                        src={group.image}
+                        alt={group.imageAlt}
+                        fill
+                        sizes="400px"
+                        className="object-cover"
+                        style={{ objectPosition: group.imagePosition }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-primary-900/90 via-primary-900/10 to-transparent" />
+                      <div className="absolute inset-x-3.5 bottom-3 text-white">
+                        <h3 id={`menu-${group.id}`} className="text-[16.5px] font-bold leading-tight">
+                          {group.title}
+                        </h3>
+                        <p className="text-[12.5px] text-primary-100">{group.tagline}</p>
+                      </div>
                     </div>
-                    <span>Services</span>
-                    <ChevronDown className={`w-5 h-5 ml-auto transition-transform ${mobileServicesOpen ? "rotate-180" : ""}`} />
-                  </button>
-                  {mobileServicesOpen && (
-                    <div className="mt-1 ml-4 flex flex-col gap-1 border-l-2 border-primary-100 pl-3">
-                      {serviceLinks.map((link) => {
+                    <ul>
+                      {group.links.map((link) => {
                         const Icon = link.icon;
                         return (
-                          <Link
-                            key={link.href}
-                            href={link.href}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                              link.featured
-                                ? "bg-sky-50 border border-sky-200 text-gray-900"
-                                : "text-gray-700 hover:bg-green-50 hover:text-primary-700"
-                            }`}
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <Icon className={`w-4 h-4 ${link.featured ? "text-sky-700" : "text-primary-600"}`} />
-                            <span>{link.label}</span>
-                          </Link>
+                          <li key={link.href}>
+                            <Link
+                              href={link.href}
+                              data-cta={link.cta}
+                              onClick={closeAll}
+                              className="group/item flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-primary-50 transition-colors"
+                            >
+                              <span className="grid place-items-center w-9 h-9 rounded-lg bg-primary-50 text-primary-700 group-hover/item:bg-primary-600 group-hover/item:text-white transition-colors shrink-0">
+                                <Icon className="w-[18px] h-[18px]" aria-hidden />
+                              </span>
+                              <span className="min-w-0">
+                                <span className="block text-[14.5px] font-semibold text-gray-900 group-hover/item:text-primary-800">
+                                  {link.label}
+                                </span>
+                                <span className="block text-[12.5px] text-gray-500 truncate">{link.blurb}</span>
+                              </span>
+                            </Link>
+                          </li>
                         );
                       })}
-                    </div>
-                  )}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-6 bg-earth-50 border-t border-earth-200 px-7 py-3.5">
+                <p className="text-[13.5px] text-gray-700">
+                  <span className="font-bold text-gray-900">Not sure what the yard needs?</span> We&rsquo;ll walk
+                  the property with you and write up a scope and a price.
+                </p>
+                <div className="flex items-center gap-5 shrink-0">
+                  <a
+                    href={siteConfig.phoneHref}
+                    className="flex items-center gap-1.5 text-[14px] font-bold text-primary-800 hover:underline whitespace-nowrap"
+                  >
+                    <Phone className="w-4 h-4" aria-hidden /> {siteConfig.phone}
+                  </a>
+                  <Link
+                    href="/#contact"
+                    data-cta="menu-free-estimate"
+                    onClick={closeAll}
+                    className="inline-flex items-center gap-1.5 text-[14px] font-bold text-white bg-primary-700 hover:bg-primary-800 px-4 py-2 rounded-lg whitespace-nowrap transition-colors"
+                  >
+                    Book a free estimate <ArrowRight className="w-4 h-4" aria-hidden />
+                  </Link>
                 </div>
+              </div>
+            </div>
+          </div>
 
-                {/* Primary links */}
-                {primaryLinks.map((link, index) => {
+          {/* ── Mobile / tablet menu ── */}
+          {mobileOpen && (
+            <div
+              id="mobile-menu"
+              className="xl:hidden border-t-2 border-primary-100 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pt-4 pb-6 max-h-[calc(100dvh-7.25rem)] overflow-y-auto overscroll-contain bg-white"
+            >
+              {/* The two actions that matter, first. From md up the header
+                  row already shows both, so they aren't repeated here. */}
+              <div className="grid grid-cols-2 gap-2.5 md:hidden">
+                <a
+                  href={siteConfig.phoneHref}
+                  className="flex flex-col items-center justify-center gap-0.5 rounded-xl border-2 border-primary-200 bg-primary-50 px-3 py-3 text-primary-900"
+                >
+                  <span className="flex items-center gap-1.5 text-[15px] font-bold">
+                    <Phone className="w-4 h-4" aria-hidden /> Call or Text
+                  </span>
+                  <span className="text-[13px] font-semibold text-primary-800">{siteConfig.phone}</span>
+                </a>
+                <Link
+                  href="/#contact"
+                  data-cta="nav-free-estimate"
+                  onClick={closeAll}
+                  className="flex flex-col items-center justify-center gap-0.5 rounded-xl bg-gradient-to-r from-primary-600 to-green-600 px-3 py-3 text-white shadow-md"
+                >
+                  <span className="flex items-center gap-1.5 text-[15px] font-bold">
+                    Free Estimate <ArrowRight className="w-4 h-4" aria-hidden />
+                  </span>
+                  <span className="text-[13px] font-medium text-primary-50">Written scope &amp; price</span>
+                </Link>
+              </div>
+
+              {/* Services, grouped — each group headed by a real job photo */}
+              <div className="mt-5 md:mt-1 grid grid-cols-1 md:grid-cols-3 gap-5">
+                {serviceGroups.map((group) => (
+                  <section key={group.id} aria-labelledby={`mobile-menu-${group.id}`}>
+                    <div className="flex items-center gap-3 mb-1.5">
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 ring-1 ring-earth-200">
+                        <Image src={group.image} alt="" fill sizes="56px" className="object-cover" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 id={`mobile-menu-${group.id}`} className="text-[15.5px] font-bold text-gray-900 leading-tight">
+                          {group.title}
+                        </h3>
+                        <p className="text-[12.5px] text-gray-500">{group.tagline}</p>
+                      </div>
+                    </div>
+                    <ul>
+                      {group.links.map((link) => {
+                        const Icon = link.icon;
+                        return (
+                          <li key={link.href}>
+                            <Link
+                              href={link.href}
+                              data-cta={link.cta}
+                              onClick={closeAll}
+                              className="flex items-center gap-3 px-2 py-2.5 rounded-xl text-[15px] font-semibold text-gray-800 active:bg-primary-50"
+                            >
+                              <Icon className="w-[18px] h-[18px] text-primary-600 shrink-0" aria-hidden />
+                              {link.label}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-earth-200 grid grid-cols-1 sm:grid-cols-3 gap-1">
+                {topLinks.map((link) => {
                   const Icon = link.icon;
-                  const isFeatured = link.featured;
-                  const isAdmin = link.admin;
-
                   return (
                     <Link
                       key={link.href}
                       href={link.href}
                       data-cta={link.cta}
-                      className={`
-                        flex items-center gap-3 px-4 py-3 mx-2 rounded-xl font-semibold transition-all duration-300
-                        ${isFeatured
-                          ? 'bg-gradient-to-r from-primary-600 to-green-600 text-white shadow-md'
-                          : isAdmin
-                          ? 'text-purple-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50'
-                          : 'text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50'
-                        }
-                        leaf-fall
-                      `}
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                      onClick={() => setIsOpen(false)}
+                      onClick={closeAll}
+                      className="flex items-center gap-3 px-2 py-3 rounded-xl text-[15.5px] font-bold text-gray-900 active:bg-primary-50"
                     >
-                      <div className={`p-2 rounded-lg ${isFeatured ? 'bg-white/20' : 'bg-gradient-to-br ' + link.color}`}>
-                        <Icon className={`w-5 h-5 ${isFeatured ? 'text-white' : 'text-white'}`} />
-                      </div>
-                      <span>{link.label}</span>
-                      {isFeatured && <Sparkles className="w-4 h-4 ml-auto" />}
+                      <Icon className="w-5 h-5 text-primary-700 shrink-0" aria-hidden />
+                      {link.label}
                     </Link>
                   );
                 })}
-
-                <div className="border-t-2 border-green-100 mt-2 pt-4 mx-2">
-                  {isAuthenticated ? (
-                    <>
-                      <div className="px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl mx-2 mb-3 border-2 border-green-200">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-gradient-to-br from-primary-600 to-green-600 p-2 rounded-lg">
-                            <User className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-gray-900">{user?.name}</div>
-                            <div className="text-xs text-gray-600 flex items-center gap-2">
-                              {user?.subscription === 'pro' ? (
-                                <span className="bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold">PRO</span>
-                              ) : (
-                                <span className="text-gray-500">Free Account</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          handleLogout();
-                          setIsOpen(false);
-                        }}
-                        className="flex items-center gap-3 text-red-600 font-semibold px-4 py-3 mx-2 rounded-xl hover:bg-red-50 transition-all w-full"
-                      >
-                        <div className="bg-red-100 p-2 rounded-lg">
-                          <LogOut className="w-5 h-5" />
-                        </div>
-                        <span>Logout</span>
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link
-                        href="/login"
-                        className="flex items-center gap-3 text-gray-700 font-semibold px-4 py-3 mx-2 rounded-xl hover:bg-green-50 transition-all"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <User className="w-5 h-5" />
-                        <span>Sign In</span>
-                      </Link>
-                      <Link
-                        href="/signup"
-                        className="btn-3d flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-green-600 text-white px-6 py-3 rounded-xl font-bold mx-2 mt-2"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <span>Start Free</span>
-                        <Sparkles className="w-5 h-5" />
-                      </Link>
-                    </>
-                  )}
-                </div>
               </div>
+
+              {isAuthenticated && (
+                <div className="mt-3 pt-3 border-t border-earth-200 flex items-center gap-2">
+                  <Link
+                    href="/admin"
+                    onClick={closeAll}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-purple-700 active:bg-purple-50"
+                  >
+                    <Shield className="w-4 h-4" aria-hidden /> Admin
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-red-600 active:bg-red-50"
+                  >
+                    <LogOut className="w-4 h-4" aria-hidden /> Log out
+                  </button>
+                </div>
+              )}
+
+              <p className="mt-4 flex items-start gap-2 text-[12.5px] text-gray-500 leading-snug">
+                <ShieldCheck className="w-4 h-4 text-primary-600 shrink-0 mt-px" aria-hidden />
+                <span>
+                  {siteConfig.license} · Bonded &amp; Insured · Serving {siteConfig.cities.slice(0, -1).join(", ")} and{" "}
+                  {siteConfig.cities[siteConfig.cities.length - 1]}
+                </span>
+              </p>
             </div>
           )}
         </div>

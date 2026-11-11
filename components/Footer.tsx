@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Mail, Phone } from "lucide-react";
 import { siteConfig } from "@/lib/siteConfig";
+import { serviceGroups } from "@/lib/services";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -9,9 +10,9 @@ export default function Footer() {
   return (
     <footer data-cta-location="footer" className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.35fr_1fr_1fr_1fr] gap-x-8 gap-y-10">
           {/* Company Info */}
-          <div className="col-span-1 md:col-span-2">
+          <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-3 mb-4">
               <div className="rounded-lg overflow-hidden shadow-lg ring-1 ring-white/10">
                 <Image
@@ -28,9 +29,9 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-gray-400 mb-4 max-w-md">
-              Estate-scale landscape design-build for Granite Bay, Loomis, and the Sacramento
-              foothills. Heavy hardscape, mature tree installation, and heritage landscapes. Built by
-              hand, designed by science, meant to outlast us.
+              Full-service landscaping for Granite Bay, Loomis, and the Sacramento foothills —
+              design, hardscape, drainage, irrigation, and long-term care. Built by hand, designed
+              by science, meant to outlast us.
             </p>
             <div className="flex flex-col gap-2 text-gray-400">
               <a href={siteConfig.phoneHref} className="flex items-center gap-2 hover:text-primary-400 transition-colors">
@@ -48,62 +49,51 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Services */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Services</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/drainage-trenching" className="text-gray-400 hover:text-primary-400 transition-colors">
-                  Drainage &amp; Trenching
-                </Link>
-              </li>
-              <li>
-                <Link href="/fire-wise-landscaping" className="text-gray-400 hover:text-primary-400 transition-colors">
-                  Fire-Wise Landscaping
-                </Link>
-              </li>
-              <li>
-                <Link href="/water-smart-landscaping" className="text-gray-400 hover:text-primary-400 transition-colors">
-                  Water-Smart Landscaping
-                </Link>
-              </li>
-              <li>
-                <Link href="/native-low-maintenance" className="text-gray-400 hover:text-primary-400 transition-colors">
-                  Low-Maintenance Native
-                </Link>
-              </li>
-              <li>
-                <Link href="/for-contractors" className="text-gray-400 hover:text-primary-400 transition-colors">
-                  For Contractors
-                </Link>
-              </li>
-              <li>
-                <Link href="/portfolio" className="text-gray-400 hover:text-primary-400 transition-colors">
-                  Portfolio
-                </Link>
-              </li>
-              <li>
-                <Link href="/app" className="text-gray-400 hover:text-primary-400 transition-colors">
-                  Design Tool
-                </Link>
-              </li>
-              <li>
-                <Link href="/#contact" data-cta="request-bid" className="text-gray-400 hover:text-primary-400 transition-colors">
-                  Request a Bid
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Services — the same three groups as the header menu */}
+          {serviceGroups.map((group) => (
+            <div key={group.id}>
+              <h3 className="text-[15px] font-semibold mb-4">{group.title}</h3>
+              <ul className="space-y-2">
+                {group.links.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className="text-sm text-gray-400 hover:text-primary-400 transition-colors">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
 
-          {/* Service Areas */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Service Areas</h3>
-            <ul className="space-y-2 text-gray-400">
-              {siteConfig.cities.map((city) => (
-                <li key={city}>{city}, CA</li>
-              ))}
-            </ul>
-          </div>
+        {/* Service areas + the handful of non-service pages */}
+        <div className="mt-10 pt-8 border-t border-gray-800 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <p className="text-sm text-gray-400">
+            <span className="font-semibold text-white">Service areas:</span>{" "}
+            {siteConfig.cities.map((city) => `${city}, CA`).join(" · ")}
+          </p>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <li>
+              <Link href="/portfolio" className="text-gray-400 hover:text-primary-400 transition-colors">
+                Our Work
+              </Link>
+            </li>
+            <li>
+              <Link href="/#service-areas" className="text-gray-400 hover:text-primary-400 transition-colors">
+                Service Areas
+              </Link>
+            </li>
+            <li>
+              <Link href="/for-contractors" className="text-gray-400 hover:text-primary-400 transition-colors">
+                For Contractors
+              </Link>
+            </li>
+            <li>
+              <Link href="/#contact" data-cta="request-bid" className="font-semibold text-primary-400 hover:text-primary-300 transition-colors">
+                Request a Free Estimate
+              </Link>
+            </li>
+          </ul>
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-8">

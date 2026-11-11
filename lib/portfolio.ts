@@ -17,6 +17,17 @@ export const categories = [
 
 export type Category = (typeof categories)[number];
 
+/**
+ * URL slugs for the gallery filter, so a menu link can land on the gallery
+ * with one trade already selected: /portfolio?type=fences-gates#work
+ */
+export const categorySlugs: Record<string, Exclude<Category, "All">> = {
+  "fences-gates": "Fences & Gates",
+  "decks-carpentry": "Decks & Carpentry",
+  "walls-grading": "Walls & Grading",
+  "patios-stonework": "Patios & Stonework",
+};
+
 export interface Project {
   /** URL-safe id; also the image filename in /public/portfolio. */
   slug: string;

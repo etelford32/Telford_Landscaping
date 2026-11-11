@@ -190,7 +190,7 @@ export default function PortfolioPage() {
       </header>
 
       {/* ── GALLERY (filters + lightbox) ── */}
-      <section aria-labelledby="gallery-heading">
+      <section id="work" aria-labelledby="gallery-heading" className="scroll-mt-20">
         <div className="max-w-6xl mx-auto px-6 pt-14 lg:pt-16 text-center">
           <div className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-primary-700 mb-3.5">
             Recent Projects

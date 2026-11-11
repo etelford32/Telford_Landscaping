@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CheckCircle2, Phone, Mail } from "lucide-react";
-import { siteConfig } from "@/lib/siteConfig";
+import { ArrowRight, CheckCircle2, MapPin, Phone, Mail } from "lucide-react";
+import { siteConfig, siteUrl } from "@/lib/siteConfig";
 import { projects } from "@/lib/portfolio";
+import { allServiceLinks, serviceGroups } from "@/lib/services";
 import BeforeAfterSlider from "@/components/home/BeforeAfterSlider";
 import CaliforniaTabs from "@/components/home/CaliforniaTabs";
 import PortfolioCarousel from "@/components/home/PortfolioCarousel";
@@ -67,9 +68,41 @@ const portfolioSlides = projects.map((p) => ({
   meta: p.specs[0],
 }));
 
+// What the work in each town usually comes down to. Kept to ground
+// conditions anyone local will recognise — no project claims we can't show.
+const serviceAreas: { city: string; note: string }[] = [
+  { city: "Granite Bay", note: "Estate lots, decomposed-granite soil, and heritage oaks worth building around." },
+  { city: "Loomis", note: "Acreage and long property lines — fencing, gates, grading, and drainage at scale." },
+  { city: "Auburn", note: "Slopes, red clay, and fire country: walls, stairs, and defensible space." },
+  { city: "Roseville", note: "Tighter lots on heavy clay — patios, drainage, and lawns converted to low-water yards." },
+  { city: "Lincoln", note: "Newer homes with blank back yards, ready for a full design and install." },
+];
+
 export default function Home() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HomeAndConstructionBusiness",
+    "@id": `${siteUrl}/#business`,
+    name: siteConfig.name,
+    legalName: siteConfig.legalName,
+    url: siteUrl,
+    telephone: siteConfig.phone,
+    email: siteConfig.email,
+    image: `${siteUrl}/home/hero-redwood-deck.jpg`,
+    areaServed: siteConfig.cities.map((city) => ({ "@type": "City", name: `${city}, CA` })),
+    makesOffer: allServiceLinks.map((l) => ({
+      "@type": "Offer",
+      itemOffered: { "@type": "Service", name: l.label },
+    })),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* ── HERO ── */}
       <header data-cta-location="hero" className="border-b border-earth-200 bg-gradient-to-b from-white via-primary-50 to-earth-50">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1fr_1.05fr] gap-12 lg:gap-16 items-center pt-16 pb-20 lg:pt-24 lg:pb-28">
@@ -82,8 +115,8 @@ export default function Home() {
               Sacramento foothills.
             </h1>
             <p className="text-[17px] text-gray-600 mb-8 max-w-[46ch] leading-relaxed">
-              Design-build for Granite Bay, Loomis, and Auburn. Heavy hardscape, mature trees, and
-              thirty-year planting plans — one shop, one set of hands, start to finish.
+              Full-service landscaping for Granite Bay, Loomis, and Auburn. Design, hardscape,
+              drainage, irrigation, and long-term care — one licensed crew, start to finish.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -203,7 +236,8 @@ export default function Home() {
               What We Do
             </h2>
             <p className="text-[16.5px] text-gray-600">
-              Estate-scale landscape design-build. Designed and built by the same hands.
+              Full-service landscaping, from the first sketch to the tenth year of care — designed,
+              built, and looked after by the same hands.
             </p>
           </div>
 
@@ -237,6 +271,44 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Every service, one tap away — the same list the header menu shows */}
+          <div className="mt-12 rounded-2xl border-2 border-earth-200 bg-gradient-to-br from-earth-50 to-white p-6 md:p-8">
+            <h3 className="text-[19px] font-bold text-gray-900 mb-6 text-center md:text-left">
+              Everything we do, in one place
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {serviceGroups.map((group) => (
+                <div key={group.id}>
+                  <div className="text-[12px] font-bold tracking-[0.16em] uppercase text-primary-700 mb-2.5">
+                    {group.title}
+                  </div>
+                  <ul className="space-y-0.5">
+                    {group.links.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <li key={link.href}>
+                          <Link
+                            href={link.href}
+                            data-cta={link.cta}
+                            className="group flex items-start gap-3 -mx-2 px-2 py-2 rounded-xl hover:bg-white hover:shadow-[0_8px_20px_-14px_rgba(20,83,45,0.5)] transition"
+                          >
+                            <Icon className="w-[18px] h-[18px] text-primary-600 mt-0.5 shrink-0" aria-hidden />
+                            <span>
+                              <span className="block text-[15px] font-semibold text-gray-900 group-hover:text-primary-800">
+                                {link.label}
+                              </span>
+                              <span className="block text-[13px] text-gray-500">{link.blurb}</span>
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -352,28 +424,56 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── DESIGN TOOL ── */}
-      <section data-cta-location="design-tool-band" className="py-20 lg:py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="bg-gradient-to-br from-primary-800 to-primary-900 text-white rounded-3xl px-8 py-12 md:px-14 md:py-[52px] flex flex-col md:flex-row gap-9 items-start md:items-center justify-between shadow-[0_26px_52px_-22px_rgba(20,83,45,0.5)]">
-            <div className="max-w-2xl">
-              <div className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-primary-300 mb-3.5">
-                Part of Every Design
-              </div>
-              <h2 className="text-[26px] font-extrabold tracking-tight mb-2.5">See Your Yard in 2055</h2>
-              <p className="text-[15.5px] text-primary-100/90 leading-relaxed">
-                Every plan is simulated thirty years out with real growth models for California
-                natives — valley oak, Japanese maple, Atlas cedar. Try it on your own yard, free. If
-                you like what you see, we&rsquo;ll build it.
+      {/* ── SERVICE AREAS ── */}
+      <section id="service-areas" data-cta-location="service-areas" className="py-20 lg:py-24 scroll-mt-20">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-14 items-center">
+          <div className="frame-earth -rotate-[0.6deg] max-w-md mx-auto lg:max-w-none w-full">
+            <Image
+              src="/menu/tree-care.jpg"
+              alt="Mature blue Atlas cedar under care beside a foothill home, with ponderosa pines behind"
+              width={960}
+              height={720}
+              sizes="(max-width: 1024px) 92vw, 440px"
+              className="aspect-[4/3] w-full object-cover"
+            />
+          </div>
+          <div>
+            <div className="text-[12.5px] font-bold tracking-[0.2em] uppercase text-primary-700 mb-3.5">
+              Service Areas
+            </div>
+            <h2 className="text-[clamp(27px,3.2vw,38px)] font-extrabold tracking-tight text-gray-900 mb-3.5">
+              Local to the Placer County Foothills
+            </h2>
+            <p className="text-[16.5px] text-gray-600 mb-7 leading-relaxed max-w-[56ch]">
+              We work where we live. That means we already know the soil, the slopes, the water
+              rules, and the fire rules on your street — and we&rsquo;re close enough to come back.
+            </p>
+            <ul className="divide-y divide-earth-200 border-y border-earth-200">
+              {serviceAreas.map((a) => (
+                <li key={a.city} className="flex items-start gap-3.5 py-3.5">
+                  <MapPin className="w-[18px] h-[18px] text-primary-600 mt-1 shrink-0" aria-hidden />
+                  <div>
+                    <div className="text-[16px] font-bold text-gray-900">{a.city}, CA</div>
+                    <div className="text-[14px] text-gray-600 leading-snug">{a.note}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link
+                href="#contact"
+                data-cta="service-areas-estimate"
+                className="btn-3d inline-flex items-center gap-2.5 bg-gradient-to-r from-primary-600 to-green-600 hover:from-primary-500 hover:to-green-500 text-white font-semibold px-7 py-3.5 rounded-xl"
+              >
+                Get a Free Estimate <ArrowRight className="w-4 h-4" />
+              </Link>
+              <p className="text-[14px] text-gray-600">
+                Nearby in Rocklin, Penryn, or Newcastle?{" "}
+                <a href={siteConfig.phoneHref} className="font-semibold text-primary-800 hover:underline whitespace-nowrap">
+                  Call or text {siteConfig.phone}
+                </a>
               </p>
             </div>
-            <Link
-              href="/app"
-              data-cta="open-design-tool"
-              className="btn-3d btn-3d-dark inline-flex items-center gap-2 bg-white text-primary-900 font-bold px-8 py-4 rounded-xl whitespace-nowrap hover:bg-primary-50"
-            >
-              Open the Design Tool <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
         </div>
       </section>
