@@ -106,8 +106,8 @@ export default function PrivacyPolicyPage() {
           </p>
           <p>
             <strong className="text-gray-900">Accounts.</strong> If you create an account (used for the
-            design tool and plant-care requests), we collect your name, email address, and password. The
-            password is stored only in scrambled (hashed) form. Signed-in plant-care requests also include
+            design tool), we collect your name, email address, and password. The password is stored only
+            in scrambled (hashed) form. Plant-care requests don&rsquo;t need an account; they also include
             your property size and the service you&rsquo;re asking about.
           </p>
           <p>

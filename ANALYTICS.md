@@ -14,7 +14,7 @@ Google Analytics needs no configuration: the measurement ID (`G-GMYQFMRVWS`) is 
 
 ## 1. Lead emails (Resend)
 
-Every lead form posts to `/api/contact/lead`: the homepage, the portfolio, and the fire-wise, water-smart and native pages. The logged-in plant-care form posts to `/api/contact/plant-care`. Both routes validate the request and email it through Resend (`lib/email.ts`, `lib/leads.ts`).
+Every lead form posts to `/api/contact/lead`: the homepage, the portfolio, and the fire-wise, water-smart and native pages. The plant-care form (no account needed) posts to `/api/contact/plant-care`. Both routes validate the request and email it through Resend (`lib/email.ts`, `lib/leads.ts`).
 
 Each email contains:
 

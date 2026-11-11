@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, MapPin, Phone, Mail } from "lucide-react";
 import { siteConfig, siteUrl } from "@/lib/siteConfig";
 import { projects } from "@/lib/portfolio";
 import { allServiceLinks, serviceGroups } from "@/lib/services";
+import { serviceAreas } from "@/lib/serviceAreas";
 import BeforeAfterSlider from "@/components/home/BeforeAfterSlider";
 import CaliforniaTabs from "@/components/home/CaliforniaTabs";
 import PortfolioCarousel from "@/components/home/PortfolioCarousel";
@@ -67,16 +68,6 @@ const portfolioSlides = projects.map((p) => ({
   title: p.title,
   meta: p.specs[0],
 }));
-
-// What the work in each town usually comes down to. Kept to ground
-// conditions anyone local will recognise — no project claims we can't show.
-const serviceAreas: { city: string; note: string }[] = [
-  { city: "Granite Bay", note: "Estate lots, decomposed-granite soil, and heritage oaks worth building around." },
-  { city: "Loomis", note: "Acreage and long property lines — fencing, gates, grading, and drainage at scale." },
-  { city: "Auburn", note: "Slopes, red clay, and fire country: walls, stairs, and defensible space." },
-  { city: "Roseville", note: "Tighter lots on heavy clay — patios, drainage, and lawns converted to low-water yards." },
-  { city: "Lincoln", note: "Newer homes with blank back yards, ready for a full design and install." },
-];
 
 export default function Home() {
   const jsonLd = {
@@ -450,12 +441,21 @@ export default function Home() {
             </p>
             <ul className="divide-y divide-earth-200 border-y border-earth-200">
               {serviceAreas.map((a) => (
-                <li key={a.city} className="flex items-start gap-3.5 py-3.5">
-                  <MapPin className="w-[18px] h-[18px] text-primary-600 mt-1 shrink-0" aria-hidden />
-                  <div>
-                    <div className="text-[16px] font-bold text-gray-900">{a.city}, CA</div>
-                    <div className="text-[14px] text-gray-600 leading-snug">{a.note}</div>
-                  </div>
+                <li key={a.slug}>
+                  <Link
+                    href={`/${a.slug}`}
+                    data-cta={`area-${a.slug}`}
+                    className="group flex items-start gap-3.5 py-3.5 -mx-3 px-3 rounded-xl hover:bg-primary-50 transition-colors"
+                  >
+                    <MapPin className="w-[18px] h-[18px] text-primary-600 mt-1 shrink-0" aria-hidden />
+                    <span className="flex-1">
+                      <span className="block text-[16px] font-bold text-gray-900 group-hover:text-primary-800">
+                        Landscaping in {a.city}, CA
+                      </span>
+                      <span className="block text-[14px] text-gray-600 leading-snug">{a.note}</span>
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-primary-600 mt-1.5 shrink-0 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition" aria-hidden />
+                  </Link>
                 </li>
               ))}
             </ul>

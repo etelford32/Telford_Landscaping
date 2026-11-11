@@ -15,7 +15,6 @@ import { siteConfig, siteUrl } from "@/lib/siteConfig";
 import { projects } from "@/lib/portfolio";
 import { CallLink, EmailLink } from "@/components/ContactActions";
 import PortfolioGallery from "@/components/portfolio/PortfolioGallery";
-import StickyContactBar from "@/components/portfolio/StickyContactBar";
 import BeforeAfterSlider from "@/components/home/BeforeAfterSlider";
 import LeadForm from "@/components/LeadForm";
 
@@ -417,8 +416,6 @@ export default function PortfolioPage() {
           </div>
         </div>
       </section>
-
-      <StickyContactBar />
     </div>
   );
 }

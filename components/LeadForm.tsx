@@ -13,6 +13,8 @@ interface LeadFormProps {
   submitLabel?: string;
   /** Optional short line under the button. */
   note?: string;
+  /** Pre-selects the City field — used by the city landing pages. */
+  defaultCity?: string;
 }
 
 /**
@@ -29,6 +31,7 @@ export default function LeadForm({
   service = "General inquiry",
   submitLabel = "Request Free Consultation",
   note = "Replies within one business day. No pressure, no phone trees.",
+  defaultCity = "",
 }: LeadFormProps) {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [error, setError] = useState("");
@@ -157,7 +160,7 @@ export default function LeadForm({
         aria-label="Email"
         className={`${fieldCls} sm:col-span-2`}
       />
-      <select name="city" aria-label="City" defaultValue="" className={`${fieldCls} sm:col-span-2`}>
+      <select name="city" aria-label="City" defaultValue={defaultCity} className={`${fieldCls} sm:col-span-2`}>
         <option value="" disabled>
           City
         </option>

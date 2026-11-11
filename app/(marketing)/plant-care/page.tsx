@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuth } from '@/lib/authContext';
-import { trackEvent } from '@/lib/analytics';
-import { useRouter } from 'next/navigation';
+import { useRef, useState } from 'react';
+import { getAttribution, trackEvent } from '@/lib/analytics';
+import { siteConfig } from '@/lib/siteConfig';
 import {
   Leaf,
   TreePine,
@@ -21,17 +20,20 @@ import {
 } from 'lucide-react';
 
 export default function PlantCarePage() {
-  const { isAuthenticated, user } = useAuth();
-  const router = useRouter();
-  const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
+  // No account needed: anyone can ask for a consultation. The request goes
+  // straight to the inbox through /api/contact/plant-care.
+  const emptyForm = {
+    name: '',
+    email: '',
     phone: '',
     location: '',
     propertySize: '',
     service: '',
-    message: ''
-  });
+    message: '',
+    website: '' // honeypot — hidden from people, see the form below
+  };
+  const [formData, setFormData] = useState(emptyForm);
+  const startedRef = useRef(false);
   const [formStatus, setFormStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -64,17 +66,11 @@ export default function PlantCarePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isAuthenticated) {
-      // Redirect to signup with return URL
-      router.push('/signup?redirect=/plant-care');
-      return;
-    }
-
     setFormStatus('submitting');
     setErrorMessage('');
+    trackEvent('lead_form_submit', { service: `Plant care — ${formData.service}` });
 
     try {
-      // TODO: Replace with actual API endpoint
       const response = await fetch('/api/contact/plant-care', {
         method: 'POST',
         headers: {
@@ -82,8 +78,7 @@ export default function PlantCarePage() {
         },
         body: JSON.stringify({
           ...formData,
-          userId: user?.id,
-          timestamp: new Date().toISOString()
+          attribution: getAttribution()
         }),
       });
 
@@ -96,7 +91,7 @@ export default function PlantCarePage() {
       } else {
         const json = await response.json().catch(() => ({}));
         setFormStatus('error');
-        setErrorMessage(json.error || 'Failed to submit form. Please try again.');
+        setErrorMessage(json.error || `Something went wrong. Please call or text ${siteConfig.phone} instead.`);
         trackEvent('lead_form_error', {
           service: `Plant care — ${formData.service}`,
           error_type: response.status >= 500 ? 'server' : 'validation',
@@ -104,7 +99,7 @@ export default function PlantCarePage() {
       }
     } catch (error) {
       setFormStatus('error');
-      setErrorMessage('Failed to submit form. Please try again.');
+      setErrorMessage(`Network error. Please call or text ${siteConfig.phone} instead.`);
       trackEvent('lead_form_error', { service: `Plant care — ${formData.service}`, error_type: 'network' });
       console.error('Form submission error:', error);
     }
@@ -278,16 +273,13 @@ export default function PlantCarePage() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-white mb-4">Schedule Your Consultation</h2>
-            {!isAuthenticated && (
-              <div className="bg-primary-600/20 backdrop-blur-md border border-primary-400/30 rounded-lg p-4 mb-6">
-                <p className="text-primary-100 text-lg">
-                  <strong>Create a free account</strong> to schedule your plant health consultation.
-                  It only takes a moment!
-                </p>
-              </div>
-            )}
             <p className="text-primary-100 text-lg">
-              Get a professional assessment of your property's plant health needs
+              Get a professional assessment of your property&rsquo;s plant health needs. No account
+              needed &mdash; or call or text{' '}
+              <a href={siteConfig.phoneHref} className="font-semibold text-white underline underline-offset-2 whitespace-nowrap">
+                {siteConfig.phone}
+              </a>
+              .
             </p>
           </div>
 
@@ -301,15 +293,7 @@ export default function PlantCarePage() {
               <button
                 onClick={() => {
                   setFormStatus('idle');
-                  setFormData({
-                    name: user?.name || '',
-                    email: user?.email || '',
-                    phone: '',
-                    location: '',
-                    propertySize: '',
-                    service: '',
-                    message: ''
-                  });
+                  setFormData(emptyForm);
                 }}
                 className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors"
               >
@@ -317,17 +301,32 @@ export default function PlantCarePage() {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="bg-white/10 backdrop-blur-md rounded-xl p-8 border border-white/20">
-              {!isAuthenticated && (
-                <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-                  <p className="text-yellow-100 text-center">
-                    You'll be prompted to create an account before submitting
-                  </p>
-                </div>
-              )}
+            <form
+              onSubmit={handleSubmit}
+              onFocus={() => {
+                if (startedRef.current) return;
+                startedRef.current = true;
+                trackEvent('lead_form_start', { service: 'Plant care' });
+              }}
+              className="bg-white/10 backdrop-blur-md rounded-xl p-6 sm:p-8 border border-white/20"
+            >
+              {/* Honeypot: invisible to people, tempting to form-filling bots. */}
+              <div aria-hidden="true" className="absolute -left-[10000px] w-px h-px overflow-hidden">
+                <label>
+                  Leave this field empty
+                  <input
+                    name="website"
+                    type="text"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={formData.website}
+                    onChange={handleInputChange}
+                  />
+                </label>
+              </div>
 
               {errorMessage && (
-                <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
+                <div role="alert" className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
                   <p className="text-red-100 text-center">{errorMessage}</p>
                 </div>
               )}
@@ -347,7 +346,8 @@ export default function PlantCarePage() {
                       onChange={handleInputChange}
                       required
                       className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                      placeholder="John Doe"
+                      placeholder="Your name"
+                      autoComplete="name"
                     />
                   </div>
                 </div>
@@ -366,7 +366,8 @@ export default function PlantCarePage() {
                       onChange={handleInputChange}
                       required
                       className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                      placeholder="john@example.com"
+                      placeholder="you@example.com"
+                      autoComplete="email"
                     />
                   </div>
                 </div>
@@ -387,7 +388,8 @@ export default function PlantCarePage() {
                       onChange={handleInputChange}
                       required
                       className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/30 rounded-lg text-white placeholder-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-                      placeholder="(555) 123-4567"
+                      placeholder="(916) 555-0123"
+                      autoComplete="tel"
                     />
                   </div>
                 </div>
@@ -479,18 +481,13 @@ export default function PlantCarePage() {
                 disabled={formStatus === 'submitting'}
                 className="w-full bg-primary-600 text-white font-bold py-4 px-6 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 focus:ring-offset-primary-900 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed group"
               >
-                <span>{formStatus === 'submitting' ? 'Submitting...' : isAuthenticated ? 'Schedule Consultation' : 'Create Account & Schedule'}</span>
+                <span>{formStatus === 'submitting' ? 'Sending…' : 'Request My Consultation'}</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
 
-              {!isAuthenticated && (
-                <p className="text-primary-200 text-sm text-center mt-4">
-                  Already have an account?{' '}
-                  <a href="/login?redirect=/plant-care" className="text-primary-300 hover:text-primary-200 underline">
-                    Sign in here
-                  </a>
-                </p>
-              )}
+              <p className="text-primary-200 text-sm text-center mt-4">
+                We reply within one business day. No account, no phone trees.
+              </p>
             </form>
           )}
         </div>

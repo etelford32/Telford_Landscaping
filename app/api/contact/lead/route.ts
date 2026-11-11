@@ -6,8 +6,7 @@ import { sendEmail } from "@/lib/email";
 /**
  * Public lead / consultation-request endpoint.
  *
- * Unlike /api/contact/plant-care this route is intentionally unauthenticated —
- * it backs the "request a free consultation / bid" forms on the homepage, the
+ * Intentionally unauthenticated, like /api/contact/plant-care — it backs the "request a free consultation / bid" forms on the homepage, the
  * portfolio, and the fire-wise / water-smart / native lead pages, where
  * prospects are not logged in.
  *

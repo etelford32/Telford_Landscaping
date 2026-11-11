@@ -3,6 +3,7 @@ import Image from "next/image";
 import { MapPin, Mail, Phone } from "lucide-react";
 import { siteConfig } from "@/lib/siteConfig";
 import { serviceGroups } from "@/lib/services";
+import { serviceAreas } from "@/lib/serviceAreas";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -70,7 +71,14 @@ export default function Footer() {
         <div className="mt-10 pt-8 border-t border-gray-800 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
           <p className="text-sm text-gray-400">
             <span className="font-semibold text-white">Service areas:</span>{" "}
-            {siteConfig.cities.map((city) => `${city}, CA`).join(" · ")}
+            {serviceAreas.map((a, i) => (
+              <span key={a.slug}>
+                {i > 0 && " · "}
+                <Link href={`/${a.slug}`} className="hover:text-primary-400 transition-colors">
+                  {a.city}, CA
+                </Link>
+              </span>
+            ))}
           </p>
           <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
             <li>

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
 import { siteConfig } from '@/lib/siteConfig';
 import { parseLead, leadEmail, leadInbox } from '@/lib/leads';
 import { sendEmail } from '@/lib/email';
 
-// Must match the cookie name and secret that /api/auth/login and /signup issue.
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'telford-landscapes-secret-change-in-production'
-);
-
+/**
+ * Plant-care consultation requests. Public, like /api/contact/lead: asking a
+ * prospect to create an account before they can ask for help cost the lead.
+ * The honeypot and first-touch attribution ride along exactly as they do on
+ * the main lead form.
+ */
 interface ContactFormData {
   name: string;
   email: string;
@@ -17,32 +17,13 @@ interface ContactFormData {
   propertySize?: string;
   service: string;
   message: string;
-  userId?: string;
-  timestamp: string;
+  /** Honeypot — real visitors never see or fill this. */
+  website?: string;
+  attribution?: unknown;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const token = request.cookies.get('auth-token')?.value;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Verify JWT token
-    try {
-      await jwtVerify(token, JWT_SECRET);
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
-      );
-    }
-
     // Parse request body
     const formData: ContactFormData = await request.json();
 
@@ -68,6 +49,8 @@ export async function POST(request: NextRequest) {
         ? `Property size: ${formData.propertySize}\n\n${formData.message}`
         : formData.message,
       page: '/plant-care',
+      website: formData.website,
+      attribution: formData.attribution,
     });
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });

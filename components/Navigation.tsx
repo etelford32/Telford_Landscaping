@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/lib/authContext";
 import { siteConfig } from "@/lib/siteConfig";
 import { serviceGroups } from "@/lib/services";
+import { serviceAreas } from "@/lib/serviceAreas";
 
 /* Engraved-style bird silhouette, matching the logo artwork's palette */
 function Bird({ delay = "0s" }: { delay?: string }) {
@@ -47,86 +48,97 @@ const BURST_LEAVES = [
 // account links live at their own URLs and are deliberately not in the menu.
 const topLinks = [
   { href: "/portfolio", label: "Our Work", icon: Images, cta: "nav-our-work" },
-  { href: "/#service-areas", label: "Service Areas", icon: MapPin, cta: "nav-service-areas" },
   { href: "/for-contractors", label: "For Contractors", icon: HardHat, cta: "nav-for-contractors" },
 ];
+
+type MenuId = "services" | "areas";
 
 const cityLine = siteConfig.cities.join(" · ");
 
 export default function Navigation() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [servicesOpen, setServicesOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<MenuId | null>(null);
   const [burstId, setBurstId] = useState(0);
   const { logout, isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  // The Services panel opens on hover and "pins" on click or keyboard, so a
-  // click right after hovering doesn't slam it shut, and touch/keyboard users
-  // get a panel that stays put until they dismiss it.
+  // Dropdowns open on hover and "pin" on click or keyboard, so a click right
+  // after hovering doesn't slam the panel shut, and touch/keyboard users get
+  // one that stays put until they dismiss it. Only one is open at a time.
   const pinned = useRef(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const servicesButton = useRef<HTMLButtonElement>(null);
-  const servicesPanel = useRef<HTMLDivElement>(null);
+  const areasButton = useRef<HTMLButtonElement>(null);
+  const servicesOpen = openMenu === "services";
+  const areasOpen = openMenu === "areas";
 
   const cancelClose = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     closeTimer.current = null;
   };
 
-  const closeServices = useCallback(() => {
+  const closeMenus = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     closeTimer.current = null;
     pinned.current = false;
-    setServicesOpen(false);
+    setOpenMenu(null);
   }, []);
 
-  const hoverOpen = () => {
+  const hoverOpen = (menu: MenuId) => {
     cancelClose();
-    setServicesOpen(true);
+    if (openMenu !== menu) pinned.current = false;
+    setOpenMenu(menu);
   };
 
   // A short grace period lets the pointer cross the gap between the button
-  // and the panel without the panel closing underneath it.
+  // and its panel without the panel closing underneath it.
   const hoverClose = () => {
     if (pinned.current) return;
     cancelClose();
-    closeTimer.current = setTimeout(() => setServicesOpen(false), 160);
+    closeTimer.current = setTimeout(() => setOpenMenu(null), 160);
   };
 
-  const toggleServices = () => {
+  const toggleMenu = (menu: MenuId) => {
     cancelClose();
-    if (servicesOpen && !pinned.current) {
+    if (openMenu === menu && !pinned.current) {
       pinned.current = true; // opened by hover — the click keeps it open
       return;
     }
-    pinned.current = !servicesOpen;
-    setServicesOpen(!servicesOpen);
+    pinned.current = openMenu !== menu;
+    setOpenMenu(openMenu === menu ? null : menu);
   };
 
   const closeAll = useCallback(() => {
-    closeServices();
+    closeMenus();
     setMobileOpen(false);
-  }, [closeServices]);
+  }, [closeMenus]);
 
   // Any navigation closes whatever is open.
   useEffect(() => {
     closeAll();
   }, [pathname, closeAll]);
 
-  // Escape and outside clicks dismiss the Services panel.
+  // The phone call bar (StickyContactBar) steps aside while this menu is
+  // open — the menu leads with the same two actions.
   useEffect(() => {
-    if (!servicesOpen) return;
+    document.body.classList.toggle("nav-menu-open", mobileOpen);
+    return () => document.body.classList.remove("nav-menu-open");
+  }, [mobileOpen]);
+
+  // Escape and outside clicks dismiss whichever dropdown is open.
+  useEffect(() => {
+    if (!openMenu) return;
+    const button = openMenu === "services" ? servicesButton : areasButton;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      const focusWasInside = servicesPanel.current?.contains(document.activeElement);
-      closeServices();
-      if (focusWasInside) servicesButton.current?.focus();
+      const focusWasInside = !!document.activeElement?.closest("[data-nav-menu]");
+      closeMenus();
+      if (focusWasInside) button.current?.focus();
     };
     const onPointer = (e: PointerEvent) => {
-      const target = e.target as Node;
-      if (servicesPanel.current?.contains(target) || servicesButton.current?.contains(target)) return;
-      closeServices();
+      if ((e.target as Element).closest?.("[data-nav-menu]")) return;
+      closeMenus();
     };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onPointer);
@@ -134,7 +146,7 @@ export default function Navigation() {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPointer);
     };
-  }, [servicesOpen, closeServices]);
+  }, [openMenu, closeMenus]);
 
   useEffect(() => cancelClose, []);
 
@@ -144,9 +156,8 @@ export default function Navigation() {
     router.push("/");
   };
 
-  const servicesActive = serviceGroups.some((g) =>
-    g.links.some((l) => !l.href.startsWith("/portfolio") && !l.href.startsWith("/#") && l.href === pathname)
-  );
+  const servicesActive = serviceGroups.some((g) => g.links.some((l) => l.href === pathname));
+  const areasActive = serviceAreas.some((a) => `/${a.slug}` === pathname);
 
   const linkBase =
     "relative px-3 py-2 rounded-xl text-[15px] font-semibold whitespace-nowrap transition-colors duration-200 flex items-center gap-1";
@@ -331,8 +342,19 @@ export default function Navigation() {
               <button
                 ref={servicesButton}
                 type="button"
-                onClick={toggleServices}
-                onMouseEnter={hoverOpen}
+                data-nav-menu
+                onClick={(e) => {
+                  const opening = openMenu !== "services";
+                  toggleMenu("services");
+                  // Opened from the keyboard (a click with no pointer): the panel sits
+                  // after the rest of the row in tab order, so step straight into it.
+                  if (opening && e.detail === 0) {
+                    requestAnimationFrame(() =>
+                      document.querySelector<HTMLElement>("#services-menu a")?.focus()
+                    );
+                  }
+                }}
+                onMouseEnter={() => hoverOpen("services")}
                 onMouseLeave={hoverClose}
                 aria-expanded={servicesOpen}
                 aria-controls="services-menu"
@@ -341,6 +363,60 @@ export default function Navigation() {
                 Services
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesOpen ? "rotate-180" : ""}`} aria-hidden />
               </button>
+
+              {/* Service Areas: one landing page per town */}
+              <div
+                data-nav-menu
+                className="relative"
+                onMouseEnter={() => hoverOpen("areas")}
+                onMouseLeave={hoverClose}
+              >
+                <button
+                  ref={areasButton}
+                  type="button"
+                  onClick={() => toggleMenu("areas")}
+                  aria-expanded={areasOpen}
+                  aria-controls="areas-menu"
+                  className={`${linkBase} ${areasOpen || areasActive ? linkActive : linkIdle}`}
+                >
+                  Service Areas
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${areasOpen ? "rotate-180" : ""}`} aria-hidden />
+                </button>
+                <div
+                  id="areas-menu"
+                  className={`absolute left-0 top-full pt-2 w-72 duration-200 ${
+                    areasOpen
+                ? "visible opacity-100 translate-y-0 transition-[opacity,transform]"
+                : "invisible opacity-0 -translate-y-1 pointer-events-none transition-[opacity,transform,visibility]"
+                  }`}
+                >
+                  <div className="bg-white rounded-2xl border-2 border-primary-100 shadow-[0_30px_60px_-24px_rgba(20,83,45,0.45)] p-2">
+                    <ul>
+                      {serviceAreas.map((a) => (
+                        <li key={a.slug}>
+                          <Link
+                            href={`/${a.slug}`}
+                            data-cta={`menu-area-${a.slug}`}
+                            onClick={closeAll}
+                            aria-current={pathname === `/${a.slug}` ? "page" : undefined}
+                            className="group/item flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-primary-50 transition-colors"
+                          >
+                            <span className="grid place-items-center w-9 h-9 rounded-lg bg-primary-50 text-primary-700 group-hover/item:bg-primary-600 group-hover/item:text-white transition-colors shrink-0">
+                              <MapPin className="w-[18px] h-[18px]" aria-hidden />
+                            </span>
+                            <span className="text-[14.5px] font-semibold text-gray-900 group-hover/item:text-primary-800">
+                              {a.city}, CA
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-1 px-3 py-2.5 border-t border-earth-200 text-[12.5px] text-gray-500 leading-snug">
+                      Nearby in Rocklin, Penryn, or Newcastle? Call or text — we&rsquo;re on the same routes.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {topLinks.map((link) => (
                 <Link
@@ -433,11 +509,13 @@ export default function Navigation() {
               the HTML and its photos are already loaded when it opens. ── */}
           <div
             id="services-menu"
-            ref={servicesPanel}
-            onMouseEnter={hoverOpen}
+            data-nav-menu
+            onMouseEnter={() => hoverOpen("services")}
             onMouseLeave={hoverClose}
-            className={`hidden xl:block absolute inset-x-8 top-full pt-2 transition-[opacity,transform,visibility] duration-200 ${
-              servicesOpen ? "visible opacity-100 translate-y-0" : "invisible opacity-0 -translate-y-1 pointer-events-none"
+            className={`hidden xl:block absolute inset-x-8 top-full pt-2 duration-200 ${
+              servicesOpen
+                ? "visible opacity-100 translate-y-0 transition-[opacity,transform]"
+                : "invisible opacity-0 -translate-y-1 pointer-events-none transition-[opacity,transform,visibility]"
             }`}
           >
             <div className="bg-white rounded-2xl border-2 border-primary-100 shadow-[0_30px_60px_-24px_rgba(20,83,45,0.45)] overflow-hidden">
@@ -583,7 +661,27 @@ export default function Navigation() {
                 ))}
               </div>
 
-              <div className="mt-4 pt-4 border-t border-earth-200 grid grid-cols-1 sm:grid-cols-3 gap-1">
+              <section aria-labelledby="mobile-menu-areas" className="mt-4 pt-4 border-t border-earth-200">
+                <h3 id="mobile-menu-areas" className="flex items-center gap-2 text-[15.5px] font-bold text-gray-900 mb-2">
+                  <MapPin className="w-5 h-5 text-primary-700" aria-hidden /> Service Areas
+                </h3>
+                <ul className="flex flex-wrap gap-2">
+                  {serviceAreas.map((a) => (
+                    <li key={a.slug}>
+                      <Link
+                        href={`/${a.slug}`}
+                        data-cta={`menu-area-${a.slug}`}
+                        onClick={closeAll}
+                        className="inline-flex items-center px-4 py-2.5 rounded-full border-[1.5px] border-primary-200 bg-primary-50 text-[14.5px] font-semibold text-primary-900 active:bg-primary-100"
+                      >
+                        {a.city}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <div className="mt-4 pt-4 border-t border-earth-200 grid grid-cols-1 sm:grid-cols-2 gap-1">
                 {topLinks.map((link) => {
                   const Icon = link.icon;
                   return (

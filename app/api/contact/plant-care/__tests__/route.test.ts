@@ -1,7 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import { SignJWT } from 'jose';
 import { POST } from '../route';
 
 const form = {
@@ -14,19 +13,10 @@ const form = {
   message: 'Oak looks stressed.',
 };
 
-/** A session cookie exactly as /api/auth/login issues it. */
-async function authToken(): Promise<string> {
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'telford-landscapes-secret-change-in-production');
-  return new SignJWT({ id: '1', email: form.email, name: form.name })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('7d')
-    .sign(secret);
-}
-
-function post(body: unknown, cookie?: string): NextRequest {
+function post(body: unknown): NextRequest {
   return new NextRequest('http://localhost/api/contact/plant-care', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
@@ -47,8 +37,8 @@ afterEach(() => {
 });
 
 describe('POST /api/contact/plant-care', () => {
-  it('accepts the session cookie that login issues and emails the request', async () => {
-    const res = await POST(post(form, `auth-token=${await authToken()}`));
+  it('emails the request from a visitor with no account', async () => {
+    const res = await POST(post(form));
 
     expect(res.status).toBe(200);
     const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -58,15 +48,16 @@ describe('POST /api/contact/plant-care', () => {
     expect(sent.reply_to).toBe('jane@example.com');
   });
 
-  it('rejects a request with no session', async () => {
-    const res = await POST(post(form));
-    expect(res.status).toBe(401);
+  it('rejects a request missing a required field', async () => {
+    const res = await POST(post({ ...form, phone: '' }));
+    expect(res.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('rejects a forged session', async () => {
-    const res = await POST(post(form, 'auth-token=not-a-jwt'));
-    expect(res.status).toBe(401);
-    expect(fetchMock).not.toHaveBeenCalled();
+  it('flags a filled honeypot instead of dropping the request', async () => {
+    const res = await POST(post({ ...form, website: 'http://spam.example' }));
+    expect(res.status).toBe(200);
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent.subject).toMatch(/spam/i);
   });
 });
